@@ -56,7 +56,7 @@ export default function AdminAnalyticsPage() {
   const isLight = theme === 'light';
 
   // Fetch real-time analytical data
-  const { data, error, isLoading, mutate } = useSWR('/api/admin/analytics', fetcher, {
+  const { data, error, isLoading, mutate } = useSWR<any>('/api/admin/analytics', fetcher, {
     revalidateOnFocus: false,
   });
 

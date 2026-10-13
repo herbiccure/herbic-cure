@@ -236,10 +236,12 @@ export default function AdminCategoriesPage() {
   const columns: Column<CategoryItem>[] = [
     {
       header: 'Order',
-      cell: (cat, idx) => (
+      cell: (cat) => {
+        const idx = categories.findIndex((c) => c.id === cat.id);
+        return (
         <div className="flex items-center gap-1.5">
           <span className="w-6 text-center text-xs font-mono font-bold text-slate-400">
-            {idx !== undefined ? idx + 1 : cat.displayOrder}
+            {cat.displayOrder}
           </span>
           <div className="flex flex-col gap-0.5">
             <button
@@ -262,7 +264,8 @@ export default function AdminCategoriesPage() {
             </button>
           </div>
         </div>
-      ),
+        );
+      },
     },
     {
       header: 'Category',

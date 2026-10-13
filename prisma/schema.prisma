@@ -7,33 +7,161 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// =========================================================================
+// 1. IDENTITY, SESSIONS & ROLES (BETTER AUTH + RBAC ARCHITECTURE)
+// =========================================================================
+
+model User {
+  id                  String           @id @default(uuid())
+  name                String
+  email               String           @unique
+  emailVerified       Boolean          @default(false)
+  image               String?
+  phone               String?          @unique
+  phoneVerified       Boolean          @default(false)
+  role                String           @default("CUSTOMER") // CUSTOMER, SUPPORT, MANAGER, OWNER
+  status              String           @default("ACTIVE")   // ACTIVE, INVITED, SUSPENDED, DEACTIVATED
+  twoFactorEnabled    Boolean          @default(false)
+  lastLoginAt         DateTime?
+  lastActiveAt        DateTime?
+  failedLoginAttempts Int              @default(0)
+  lockedUntil         DateTime?
+  version             Int              @default(1)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @default(now()) @updatedAt
+
+  accounts            Account[]
+  sessions            Session[]
+  twoFactorSecret     TwoFactorSecret?
+  backupCodes         BackupCode[]
+  addresses           Address[]
+  orders              Order[]
+  reviews             Review[]
+  invitesSent         StaffInvite[]    @relation("InvitedByStaff")
+  auditLogs           AuditLog[]       @relation("ActorAuditLogs")
+}
+
+model Session {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token          String   @unique
+  expiresAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+  impersonatedBy String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId             String
+  providerId            String
+  passwordHash          String?
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  expiresAt             DateTime?
+  passwordResetRequired Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @default(now()) @updatedAt
+
+  @@unique([providerId, accountId])
+}
+
+model VerificationToken {
+  id         String   @id @default(uuid())
+  identifier String
+  tokenHash  String   @unique
+  type       String   // EMAIL_VERIFICATION, PASSWORD_RESET, OTP_LOGIN
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
+model StaffInvite {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  role        String    // SUPPORT, MANAGER, OWNER
+  tokenHash   String    @unique
+  invitedById String
+  invitedBy   User      @relation("InvitedByStaff", fields: [invitedById], references: [id])
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model TwoFactorSecret {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secretKey String
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model BackupCode {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actor      User?    @relation("ActorAuditLogs", fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail String
+  actorRole  String   // OWNER, MANAGER, SUPPORT, SYSTEM
+  action     String   // LOGIN, LOGOUT, ROLE_CHANGE, REFUND_ISSUED, SETTING_UPDATE, etc.
+  resource   String   // User, Order, Product, Coupon, System
+  resourceId String?
+  diffJson   String?  // Structured before/after diff in JSON string
+  ipAddress  String
+  userAgent  String
+  status     String   @default("SUCCESS") // SUCCESS, FAILURE, BLOCKED
+  timestamp  DateTime @default(now())
+}
+
+// Legacy tables preserved for zero-downtime migration
 model AdminUser {
   id           String   @id @default(uuid())
   email        String   @unique
   passwordHash String
   name         String
-  role         String   @default("SUPER_ADMIN") // SUPER_ADMIN, CONTENT_MANAGER, ORDER_MANAGER
+  role         String   @default("SUPER_ADMIN")
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime @default(now()) @updatedAt
 }
 
 model Customer {
   id           String    @id @default(uuid())
   email        String    @unique
-  passwordHash String
+  passwordHash String?
   name         String
   phone        String?
+  totalOrders  Int       @default(0)
+  totalSpend   Float     @default(0)
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  updatedAt    DateTime  @default(now()) @updatedAt
   orders       Order[]
   addresses    Address[]
 }
 
 model Address {
-  id           String   @id @default(uuid())
-  customerId   String
-  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  id           String    @id @default(uuid())
+  userId       String?
+  user         User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
   name         String
   phone        String
   addressLine1 String
@@ -41,9 +169,15 @@ model Address {
   city         String
   state        String
   pinCode      String
-  country      String   @default("India")
-  isDefault    Boolean  @default(false)
+  country      String    @default("India")
+  isDefault    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
 }
+
+// =========================================================================
+// 2. STORE, CATALOG & OPTIMISTIC CONCURRENCY
+// =========================================================================
 
 model Category {
   id           String    @id @default(uuid())
@@ -53,7 +187,9 @@ model Category {
   image        String?
   displayOrder Int       @default(0)
   active       Boolean   @default(true)
+  version      Int       @default(1)
   createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
   products     Product[]
 }
 
@@ -66,7 +202,9 @@ model Collection {
   bannerImage  String?
   displayOrder Int                 @default(0)
   active       Boolean             @default(true)
+  version      Int                 @default(1)
   createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @default(now()) @updatedAt
   products     ProductCollection[]
 }
 
@@ -94,13 +232,14 @@ model Product {
   displayOrder       Int                 @default(0)
   rating             Float               @default(4.9)
   reviewCount        Int                 @default(0)
-  benefits           String?             // JSON string array
+  benefits           String?
   howToUse           String?
-  faqJson            String?             // JSON array of {q, a}
+  faqJson            String?
   seoTitle           String?
   seoDescription     String?
+  version            Int                 @default(1) // Optimistic lock
   createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  updatedAt          DateTime            @default(now()) @updatedAt
   
   categoryId         String?
   category           Category?           @relation(fields: [categoryId], references: [id])
@@ -152,10 +291,21 @@ model ProductIngredient {
   @@id([productId, ingredientId])
 }
 
+model InventoryLog {
+  id            String   @id @default(uuid())
+  productId     String
+  changeAmount  Int
+  type          String   // RESTOCK, ORDER, ADJUSTMENT, RETURN
+  notes         String?
+  createdAt     DateTime @default(now())
+}
+
 model Review {
   id                 String   @id @default(uuid())
   productId          String
   product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId             String?
+  user               User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   customerName       String
   customerEmail      String?
   rating             Int      @default(5)
@@ -179,44 +329,56 @@ model Coupon {
   usedCount      Int       @default(0)
   expiresAt      DateTime?
   active         Boolean   @default(true)
-  isPublic       Boolean   @default(true) // Publicly visible on website / offers page vs hidden creator promo
-  creatorName    String?   // Optional: Name/handle of the content creator (e.g. "@neha_vlogs")
+  isPublic       Boolean   @default(true)
+  creatorName    String?
+  version        Int       @default(1)
   createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
 }
 
+// =========================================================================
+// 3. ORDERS, PAYMENTS & REFUNDS
+// =========================================================================
+
 model Order {
-  id              String          @id @default(uuid())
-  orderNumber     String          @unique
-  customerId      String?
-  customer        Customer?       @relation(fields: [customerId], references: [id])
-  customerName    String
-  customerEmail   String
-  customerPhone   String
-  shippingAddress String          // JSON string
-  billingAddress  String?         // JSON string
-  subtotal        Float
-  discount        Float           @default(0)
-  shippingFee     Float           @default(0)
-  tax             Float           @default(0)
-  total           Float
-  couponCode      String?
-  paymentMethod   String          @default("COD") // COD or RAZORPAY
-  paymentStatus   String          @default("PENDING") // PENDING, PAID, FAILED
-  orderStatus     String          @default("CONFIRMED") // PENDING, CONFIRMED, PROCESSING, SHIPPED, OUT_FOR_DELIVERY, DELIVERED, CANCELLED
-  trackingNumber  String?
-  trackingUrl     String?
-  carrier         String?         @default("Shiprocket")
-  notes           String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  items           OrderItem[]
-  events          ShipmentEvent[]
+  id               String          @id @default(uuid())
+  orderNumber      String          @unique
+  userId           String?
+  user             User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customerId       String?
+  customer         Customer?       @relation(fields: [customerId], references: [id])
+  customerName     String
+  customerEmail    String
+  customerPhone    String
+  guestAccessToken String?         // Signed HMAC token for guest tracking links
+  shippingAddress  String          // JSON string snapshot
+  billingAddress   String?         // JSON string
+  subtotal         Float
+  discount         Float           @default(0)
+  shippingFee      Float           @default(0)
+  tax              Float           @default(0)
+  total            Float
+  couponCode       String?
+  paymentMethod    String          @default("COD") // COD or RAZORPAY
+  paymentStatus    String          @default("PENDING") // PENDING, PAID, FAILED, REFUNDED
+  orderStatus      String          @default("CONFIRMED") // PENDING, CONFIRMED, PROCESSING, SHIPPED, OUT_FOR_DELIVERY, DELIVERED, CANCELLED, REFUNDED
+  trackingNumber   String?
+  trackingUrl      String?
+  carrier          String?         @default("Shiprocket")
+  notes            String?
+  version          Int             @default(1)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @default(now()) @updatedAt
+
+  items            OrderItem[]
+  events           ShipmentEvent[]
+  refunds          RefundRequest[]
 }
 
 model OrderItem {
-  id           String  @id @default(uuid())
+  id           String   @id @default(uuid())
   orderId      String
-  order        Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId    String?
   product      Product? @relation(fields: [productId], references: [id])
   productName  String
@@ -224,6 +386,19 @@ model OrderItem {
   price        Float
   quantity     Int
   total        Float
+}
+
+model RefundRequest {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount      Float
+  reason      String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED, PROCESSED
+  requestedBy String   // Staff ID
+  approvedBy  String?  // OWNER ID
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 }
 
 model ShipmentEvent {
@@ -236,15 +411,21 @@ model ShipmentEvent {
   timestamp   DateTime @default(now())
 }
 
+// =========================================================================
+// 4. CONTENT, FAQ, PROMOS & SETTINGS
+// =========================================================================
+
 model HomepageSection {
-  id           String   @id @default(uuid())
-  sectionType  String   // HERO, BEST_SELLERS, OFFER_BANNER, CATEGORIES, FEATURED_PRODUCTS, DISCOVER, REELS, RESULTS, WHY_US, REVIEWS, FAQ, WHATSAPP_CTA, NEWSLETTER
+  id           String    @id @default(uuid())
+  sectionType  String
   title        String?
   subtitle     String?
-  contentJson  String   // JSON payload for configuration
-  displayOrder Int      @default(0)
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  contentJson  String
+  displayOrder Int       @default(0)
+  active       Boolean   @default(true)
+  offerEndsAt  DateTime? // Time bounds for promotional countdowns
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
 }
 
 model CustomerResult {
@@ -280,29 +461,30 @@ model BlogPost {
   content        String
   author         String    @default("Herbicas Ayurvedic Team")
   category       String    @default("Hair Care")
-  tags           String?   // comma separated
+  tags           String?
   seoTitle       String?
   seoDescription String?
   published      Boolean   @default(true)
   publishedAt    DateTime  @default(now())
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  updatedAt      DateTime  @default(now()) @updatedAt
 }
 
 model FAQ {
   id           String   @id @default(uuid())
   question     String
   answer       String
-  category     String   @default("GENERAL") // GENERAL, HAIR_CARE, SHIPPING, ORDERS
-  placement    String   @default("HOMEPAGE") // HOMEPAGE, PRODUCT, CONTACT, ALL
+  category     String   @default("GENERAL")
+  placement    String   @default("HOMEPAGE")
   displayOrder Int      @default(0)
   active       Boolean  @default(true)
 }
 
 model SiteSetting {
-  id    String @id @default(uuid())
-  key   String @unique
-  value String // Raw value or JSON string
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @default(now()) @updatedAt
 }
 
 model Media {
@@ -322,7 +504,7 @@ model ContactSubmission {
   phone     String?
   subject   String?
   message   String
-  status    String   @default("NEW") // NEW, READ, REPLIED, ARCHIVED
+  status    String   @default("NEW")
   createdAt DateTime @default(now())
 }
 

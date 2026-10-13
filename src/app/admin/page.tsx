@@ -23,8 +23,8 @@ export default async function AdminDashboardPage() {
     prisma.product.count(),
     prisma.order.findMany({
       select: {
-        totalAmount: true,
-        status: true,
+        total: true,
+        orderStatus: true,
         paymentStatus: true,
       },
     }),
@@ -32,10 +32,10 @@ export default async function AdminDashboardPage() {
   ]);
 
   const orderCount = orders.length;
-  const totalGmv = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+  const totalGmv = orders.reduce((sum, o) => sum + (o.total || 0), 0);
   const avgOrderValue = orderCount > 0 ? Math.round(totalGmv / orderCount) : 0;
   const paidOrdersCount = orders.filter(
-    (o) => o.paymentStatus?.toUpperCase() === 'PAID' || o.status?.toUpperCase() === 'DELIVERED'
+    (o) => o.paymentStatus?.toUpperCase() === 'PAID' || o.orderStatus?.toUpperCase() === 'DELIVERED'
   ).length;
   const paymentFulfillmentRate = orderCount > 0 ? Math.round((paidOrdersCount / orderCount) * 100) : 0;
 
