@@ -1,9 +1,57 @@
 import 'server-only';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { twoFactor, admin, haveIBeenPwned } from 'better-auth/plugins';
+import { twoFactor, admin, haveIBeenPwned, createAccessControl } from 'better-auth/plugins';
 import { prisma } from '@/lib/prisma';
 import * as argon2 from '@node-rs/argon2';
+
+const statement = {
+  user: [
+    'create',
+    'list',
+    'set-role',
+    'ban',
+    'impersonate',
+    'delete',
+    'set-password',
+    'set-email',
+    'get',
+    'update',
+  ],
+  session: ['list', 'revoke', 'delete'],
+};
+const ac = createAccessControl(statement);
+
+const OWNER = ac.newRole({
+  user: [
+    'create',
+    'list',
+    'set-role',
+    'ban',
+    'impersonate',
+    'delete',
+    'set-password',
+    'set-email',
+    'get',
+    'update',
+  ],
+  session: ['list', 'revoke', 'delete'],
+});
+
+const MANAGER = ac.newRole({
+  user: ['list', 'get', 'update'],
+  session: ['list'],
+});
+
+const SUPPORT = ac.newRole({
+  user: ['list', 'get'],
+  session: ['list'],
+});
+
+const CUSTOMER = ac.newRole({
+  user: [],
+  session: [],
+});
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -18,7 +66,7 @@ export const auth = betterAuth({
           memoryCost: 65536,
           timeCost: 3,
           parallelism: 4,
-          // Argon2id is default
+          // Argon2id is default algorithm in @node-rs/argon2
         });
       },
       verify: async ({ password, hash }: { password: string; hash: string }) => {
@@ -37,6 +85,12 @@ export const auth = betterAuth({
     admin({
       defaultRole: 'CUSTOMER',
       adminRoles: ['OWNER', 'MANAGER', 'SUPPORT'],
+      roles: {
+        OWNER,
+        MANAGER,
+        SUPPORT,
+        CUSTOMER,
+      },
     }),
     haveIBeenPwned(),
   ],
