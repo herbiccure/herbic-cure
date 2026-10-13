@@ -1,45 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { verifyGuestAccessToken } from '@/lib/auth/guest-token';
 
 export async function GET(request: NextRequest) {
   try {
-    // 1. Rate limiting: max 20 order track queries per minute per IP
-    const rateLimitError = enforceRateLimit(request, 'order_tracking', 20, 60 * 1000);
+    // 1. Rate limiting: max 15 lookups per minute per IP to prevent enumeration
+    const rateLimitError = enforceRateLimit(request, 'order_tracking', 15, 60 * 1000);
     if (rateLimitError) return rateLimitError;
 
     const { searchParams } = new URL(request.url);
+    const token = searchParams.get('token');
     const q = searchParams.get('q');
 
-    if (!q || !q.trim() || q.length > 100) {
-      return NextResponse.json({ error: 'Order number or mobile number is required' }, { status: 400 });
+    let order = null;
+
+    // A) If a signed guest token is provided (from email confirmation link)
+    if (token) {
+      const verified = verifyGuestAccessToken(token);
+      if (verified) {
+        order = await prisma.order.findFirst({
+          where: { id: verified.orderId, orderNumber: verified.orderNumber },
+          include: {
+            items: true,
+            events: { orderBy: { timestamp: 'desc' } },
+          },
+        });
+      }
     }
 
-    const qClean = q.trim();
-
-    const order = await prisma.order.findFirst({
-      where: {
-        OR: [
-          { orderNumber: { equals: qClean } },
-          { customerPhone: { equals: qClean.replace(/\D/g, '').slice(-10) } },
-          { customerEmail: { equals: qClean.toLowerCase() } },
-        ],
-      },
-      include: {
-        items: true,
-        events: { orderBy: { timestamp: 'desc' } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    // B) If querying by order number or mobile
+    if (!order && q && q.trim()) {
+      const qClean = q.trim();
+      order = await prisma.order.findFirst({
+        where: {
+          OR: [
+            { orderNumber: { equals: qClean } },
+            { customerPhone: { equals: qClean.replace(/\D/g, '').slice(-10) } },
+          ],
+        },
+        include: {
+          items: true,
+          events: { orderBy: { timestamp: 'desc' } },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
 
     if (!order) {
       return NextResponse.json({
         found: false,
-        message: `No active order found matching "${qClean}". Please verify your Order ID (e.g. HC-10028) or registered 10-digit mobile number.`,
+        message: 'No active shipment found matching the provided reference.',
       });
     }
 
-    // Default timeline events if none exist in DB yet
+    // Timeline events
     const events =
       order.events && order.events.length > 0
         ? order.events
@@ -54,13 +69,14 @@ export async function GET(request: NextRequest) {
             {
               id: 'ev-0',
               status: 'CONFIRMED',
-              description: 'Order confirmed & freshly bottled with 21 Ayurvedic herbs',
-              location: 'Hyderabad Apothecary Facility',
+              description: 'Order confirmed and prepared at apothecary facility',
+              location: 'Herbicas Apothecary Facility',
               timestamp: order.createdAt,
             },
           ];
 
-    // Mask customer email for public tracking view
+    // Mask customer PII to prevent data harvesting
+    const maskedName = order.customerName.replace(/(\S)\S+/g, '$1***');
     const maskedEmail = order.customerEmail.replace(/(.{2})(.*)(@.*)/, '$1***$3');
 
     return NextResponse.json({
@@ -68,13 +84,11 @@ export async function GET(request: NextRequest) {
       order: {
         id: order.id,
         orderNumber: order.orderNumber,
-        customerName: order.customerName,
+        customerName: maskedName,
         customerEmail: maskedEmail,
         orderStatus: order.orderStatus,
         carrier: order.carrier || 'Shiprocket Express',
-        trackingNumber:
-          order.trackingNumber ||
-          `SR${order.orderNumber.replace(/[^0-9]/g, '') || '918237'}IN`,
+        trackingNumber: order.trackingNumber || `SR${order.orderNumber.replace(/[^0-9]/g, '') || '918237'}IN`,
         total: order.total,
         paymentStatus: order.paymentStatus,
         createdAt: order.createdAt,

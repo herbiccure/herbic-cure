@@ -1,58 +1,78 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
+import { authClient } from '@/lib/auth/auth-client';
 
 export interface CustomerUser {
   id: string;
   name: string;
   email: string;
+  role: string;
   phone?: string | null;
 }
 
 interface AuthContextType {
   customer: CustomerUser | null;
+  session: unknown;
   isLoading: boolean;
-  login: (customer: CustomerUser) => void;
-  register: (customer: CustomerUser) => void;
-  logout: () => void;
+  login: (credentials: { email: string; password: string }) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  refetchSession: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [customer, setCustomer] = useState<CustomerUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: sessionData, isPending, refetch } = authClient.useSession();
 
-  useEffect(() => {
+  const customer: CustomerUser | null = useMemo(() => {
+    if (!sessionData?.user) return null;
+    return {
+      id: sessionData.user.id,
+      name: sessionData.user.name || 'Customer',
+      email: sessionData.user.email,
+      role: (sessionData.user as { role?: string }).role || 'CUSTOMER',
+      phone: (sessionData.user as { phone?: string | null }).phone || null,
+    };
+  }, [sessionData]);
+
+  const login = async ({ email, password }: { email: string; password: string }) => {
     try {
-      const saved = localStorage.getItem('herbic_customer') || localStorage.getItem('herbicas_customer');
-      if (saved) {
-        setCustomer(JSON.parse(saved));
+      const res = await authClient.signIn.email({
+        email,
+        password,
+      });
+      if (res.error) {
+        return { success: false, error: res.error.message || 'Login failed' };
       }
-    } catch (e) {
-      console.error('Failed to parse customer session', e);
-    } finally {
-      setIsLoading(false);
+      refetch();
+      return { success: true };
+    } catch (err: unknown) {
+      return { success: false, error: (err instanceof Error ? err.message : null) || 'An unexpected error occurred' };
     }
-  }, []);
-
-  const login = (userData: CustomerUser) => {
-    setCustomer(userData);
-    localStorage.setItem('herbic_customer', JSON.stringify(userData));
   };
 
-  const register = (userData: CustomerUser) => {
-    login(userData);
-  };
-
-  const logout = () => {
-    setCustomer(null);
-    localStorage.removeItem('herbic_customer');
-    localStorage.removeItem('herbicas_customer');
+  const logout = async () => {
+    try {
+      await authClient.signOut();
+      refetch();
+      window.location.href = '/account/login';
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ customer, isLoading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{
+        customer,
+        session: sessionData,
+        isLoading: isPending,
+        login,
+        logout,
+        refetchSession: refetch,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

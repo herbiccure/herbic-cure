@@ -2,14 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { ArrowRight, Lock, User, AlertCircle, Loader2 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { authClient } from '@/lib/auth/auth-client';
+import { ArrowRight, Lock, Mail, AlertCircle, Loader2, Sparkles, ShieldCheck } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
-  const [identifier, setIdentifier] = useState('');
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/account';
+
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,123 +23,125 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/customer/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: identifier.trim(),
-          password,
-        }),
+      const res = await authClient.signIn.email({
+        email: email.trim(),
+        password,
       });
 
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        setError(data.error || 'Invalid credentials. Please try again.');
+      if (res.error) {
+        setError(res.error.message || 'Invalid email or password.');
         setLoading(false);
         return;
       }
 
-      login(data.customer);
-      router.push('/account');
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Connection failed. Please check your network and try again.');
+      toast.success('Signed in successfully!');
+      router.push(callbackUrl);
+      router.refresh();
+    } catch {
+      setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center py-12 px-4 sm:px-6">
-      <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-stone-200/90 shadow-xl space-y-6">
+    <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-stone-50">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 sm:p-10 rounded-3xl border border-stone-200/80 shadow-xl shadow-stone-200/50">
         <div className="text-center">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#A84358] bg-rose-100/80 px-3 py-1 rounded-full mb-3 inline-block">
-            Member Access
-          </span>
-          <h1 className="text-2xl font-extrabold text-stone-900 font-serif">
-            Welcome to Herbic Cure
-          </h1>
-          <p className="text-xs text-stone-500 mt-1">
-            Sign in with your Email or verified Mobile Number
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 mb-4 shadow-sm">
+            <Sparkles className="w-6 h-6 text-emerald-700" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-stone-900 font-serif">Welcome Back</h1>
+          <p className="mt-2 text-sm text-stone-600">
+            Sign in to access your Ayurvedic orders, consultations, and saved addresses.
           </p>
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700 animate-fadeIn">
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-            <span>{error}</span>
+          <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <p className="text-sm font-medium text-rose-800">{error}</p>
           </div>
         )}
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleSubmit(e);
-          }}
-          action="javascript:void(0);"
-          noValidate
-          className="space-y-4"
-        >
-          <div>
-            <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
-              Email or Mobile Number
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                required
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="your@email.com or 10-digit mobile"
-                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-4 py-2.5 text-xs text-stone-900 focus:border-[#A84358] outline-none"
-              />
-              <User className="w-4 h-4 text-stone-400 absolute right-3.5 top-3" />
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1.5">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-stone-400" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="w-full pl-10 pr-4 py-3 bg-stone-50/50 border border-stone-200 rounded-xl text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white text-sm transition-all"
+                />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-stone-50 border border-stone-300 rounded-xl px-4 py-2.5 text-xs text-stone-900 focus:border-[#A84358] outline-none"
-              />
-              <Lock className="w-4 h-4 text-stone-400 absolute right-3.5 top-3" />
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-stone-700">
+                  Password
+                </label>
+                <Link
+                  href="/track-order"
+                  className="text-xs text-emerald-700 hover:text-emerald-800 font-semibold"
+                >
+                  Track guest order?
+                </Link>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-stone-400" />
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full pl-10 pr-4 py-3 bg-stone-50/50 border border-stone-200 rounded-xl text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white text-sm transition-all"
+                />
+              </div>
             </div>
           </div>
 
           <button
-            type="button"
-            onClick={(e) => handleSubmit(e)}
+            type="submit"
             disabled={loading}
-            className="w-full py-3.5 rounded-xl bg-[#A84358] hover:bg-[#45363B] disabled:opacity-70 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md active:scale-98 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-900/20 disabled:opacity-50 transition-all cursor-pointer"
           >
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Signing In...</span>
+                <span>Verifying credentials...</span>
               </>
             ) : (
               <>
                 <span>Sign In</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
         </form>
 
-        <div className="text-center text-xs text-stone-500">
-          Don&apos;t have an account?{' '}
-          <Link href="/account/register" className="text-[#A84358] font-bold hover:underline">
-            Register with Mobile OTP
-          </Link>
+        <div className="pt-4 border-t border-stone-100 text-center">
+          <p className="text-sm text-stone-600">
+            Don&apos;t have an account yet?{' '}
+            <Link
+              href="/account/register"
+              className="font-bold text-emerald-800 hover:text-emerald-900 underline underline-offset-4"
+            >
+              Create Account
+            </Link>
+          </p>
+        </div>
+
+        <div className="flex items-center justify-center gap-2 text-xs text-stone-500 pt-2">
+          <ShieldCheck className="w-4 h-4 text-emerald-700" />
+          <span>Protected with Argon2id cryptographic encryption</span>
         </div>
       </div>
     </div>
