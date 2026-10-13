@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --font-serif-luxury: "Cormorant Garamond", Georgia, serif;

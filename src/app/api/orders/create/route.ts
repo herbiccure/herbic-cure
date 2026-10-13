@@ -1,3 +1,4 @@
+import { getServerSession } from '@/lib/auth/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { checkoutSchema } from '@/lib/validations';
@@ -135,6 +136,35 @@ export async function POST(req: NextRequest) {
       pincode,
     });
 
+        // Authoritative User Account & Customer Linking
+    let matchedUserId: string | null = null;
+    let matchedCustomerId: string | null = null;
+
+    try {
+      const session = await getServerSession();
+      if (session?.user?.id) {
+        matchedUserId = session.user.id;
+      }
+    } catch {
+      // Fallback
+    }
+
+    if (!matchedUserId) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email: email.toLowerCase().trim() },
+      });
+      if (existingUser) {
+        matchedUserId = existingUser.id;
+      }
+    }
+
+    const existingCustomerRecord = await prisma.customer.findUnique({
+      where: { email: email.toLowerCase().trim() },
+    });
+    if (existingCustomerRecord) {
+      matchedCustomerId = existingCustomerRecord.id;
+    }
+
     const orderNumber = `HC-${Date.now().toString().slice(-6)}`;
 
     // 7. Atomic Database Transaction: Order Creation + Stock Decrement + Coupon Usage
@@ -143,6 +173,8 @@ export async function POST(req: NextRequest) {
       const order = await tx.order.create({
         data: {
           orderNumber,
+          userId: matchedUserId,
+          customerId: matchedCustomerId,
           customerName: name,
           customerEmail: email.toLowerCase(),
           customerPhone: phone,

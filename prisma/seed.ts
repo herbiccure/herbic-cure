@@ -1,3 +1,4 @@
+import * as argon2 from '@node-rs/argon2';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -30,6 +31,32 @@ async function main() {
   await prisma.address.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.adminUser.deleteMany();
+
+  console.log('--- Seeding Unified Admin User for Better Auth ---');
+  const argonHash = await argon2.hash('admin123');
+  const adminUserRecord = await prisma.user.upsert({
+    where: { email: 'admin@herbiccure.com' },
+    update: { role: 'OWNER', status: 'ACTIVE' },
+    create: {
+      name: 'Herbic Cure Admin',
+      email: 'admin@herbiccure.com',
+      role: 'OWNER',
+      status: 'ACTIVE',
+      emailVerified: true,
+    },
+  });
+  await prisma.account.upsert({
+    where: { id: 'admin-credential-account' },
+    update: { password: argonHash, passwordHash: argonHash },
+    create: {
+      id: 'admin-credential-account',
+      userId: adminUserRecord.id,
+      accountId: adminUserRecord.id,
+      providerId: 'credential',
+      password: argonHash,
+      passwordHash: argonHash,
+    },
+  });
 
   console.log('--- Seeding Admin Users ---');
   const adminPassword = await bcrypt.hash('admin123', 10);

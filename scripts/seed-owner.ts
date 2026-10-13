@@ -47,6 +47,7 @@ async function main() {
       accountId: user.id,
       providerId: 'credential',
       passwordHash,
+      password: passwordHash,
     },
   });
 

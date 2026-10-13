@@ -2,6 +2,7 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import ProductDetailClient from '@/components/product/ProductDetailClient';
+import ProductReviewsSection from '@/components/product/ProductReviewsSection';
 import type { Metadata } from 'next';
 
 interface Props {
@@ -71,9 +72,23 @@ export default async function ProductPage({ params }: Props) {
     notFound();
   }
 
+  const reviews = await prisma.review.findMany({
+    where: {
+      productId: product.id,
+      isApproved: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
   return (
     <main className="min-h-screen bg-[#FCF8F9]">
       <ProductDetailClient product={product} />
+      <ProductReviewsSection
+        productId={product.id}
+        productName={product.name}
+        productSlug={product.slug}
+        initialReviews={reviews}
+      />
     </main>
   );
 }

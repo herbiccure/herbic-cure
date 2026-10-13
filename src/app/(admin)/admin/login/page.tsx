@@ -11,7 +11,6 @@ import {
   ShieldAlert,
   ArrowRight,
   Loader2,
-  Sparkles,
   ArrowLeft,
   KeyRound,
 } from 'lucide-react';
@@ -71,13 +70,6 @@ function LoginForm() {
       setLoading(false);
     }
   };
-
-  const fillDemoCredentials = () => {
-    setEmail('admin@herbiccure.com');
-    setPassword('admin123');
-    setError(null);
-  };
-
   return (
     <div className="w-full max-w-md mx-auto">
       {/* Top Header Card */}
@@ -193,25 +185,6 @@ function LoginForm() {
             )}
           </button>
         </form>
-
-        {/* Demo Credentials Quick-Fill helper */}
-        <div className="mt-6 pt-5 border-t border-slate-200 dark:border-slate-800/80 text-center">
-          <button
-            type="button"
-            onClick={fillDemoCredentials}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all cursor-pointer ${
-              isLight
-                ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700'
-                : 'bg-slate-800 hover:bg-slate-750 border-slate-700 text-rose-400'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Fill Demo Admin Credentials</span>
-          </button>
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2">
-            admin@herbiccure.com • admin123
-          </p>
-        </div>
       </div>
 
       {/* Back to Live Store */}
