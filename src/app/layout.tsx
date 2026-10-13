@@ -19,10 +19,72 @@ const serifFont = Cormorant_Garamond({
   weight: ['400', '500', '600', '700'],
 });
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.herbiccure.com';
+
 export const metadata: Metadata = {
-  title: 'Herbic Cure | 100% Ayurvedic Hair Oil & Natural Hair Care Solutions',
+  metadataBase: new URL(appUrl),
+  title: {
+    default: 'Herbic Cure | 21 Herbs Fusion Hair Oil & Ayurvedic Hair Wellness',
+    template: '%s | Herbic Cure',
+  },
   description:
-    'Experience the ancient science of 21 Himalayan Herbs fusion for root-to-tip hair regrowth, fall reduction, and scalp vitality.',
+    'Herbic Cure: Nature in Every Drop. 100% natural, mineral-oil-free 21 Herbs Fusion Hair Oil prepared using 72-hour Vedic Kshirapak Vidhi, handcrafted neem wood combs, and sulfate-free cleansers.',
+  applicationName: 'Herbic Cure',
+  keywords: [
+    'Ayurvedic hair oil',
+    '21 herbs hair oil',
+    'Kshirapak Vidhi hair oil',
+    'hair fall control oil India',
+    'neem wood comb',
+    'ayurvedic hair care routine',
+    'chemical free hair oil',
+  ],
+  authors: [{ name: 'Herbic Cure Ayurvedic Naturals' }],
+  creator: 'Herbic Cure',
+  publisher: 'Herbic Cure',
+  formatDetection: {
+    telephone: true,
+    email: true,
+    address: true,
+  },
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_IN',
+    url: '/',
+    siteName: 'Herbic Cure',
+    title: 'Herbic Cure | 21 Herbs Fusion Hair Oil & Ayurvedic Hair Wellness',
+    description:
+      'Experience authentic Vedic botanical hair restoration. 100% mineral-oil-free, 21 Himalayan Herbs, handcrafted neem combs, and Pan-India delivery.',
+    images: [
+      {
+        url: '/images/banners/herbic-hero-banner-1.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Herbic Cure 21 Herbs Fusion Hair Oil & Ayurvedic Hair Wellness',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Herbic Cure | 21 Herbs Fusion Hair Oil',
+    description:
+      'Experience authentic Vedic botanical hair restoration with 21 pure Himalayan herbs slow-cooked in milk.',
+    images: ['/images/banners/herbic-hero-banner-1.jpg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default function RootLayout({

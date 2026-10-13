@@ -1,3 +1,14 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Herbic Cure | 100% Ayurvedic Hair Oil & Natural Hair Care Solutions',
+  description:
+    'Experience the ancient science of 21 Himalayan Herbs fusion prepared via 72-hour Kshirapak Vidhi. 100% mineral-oil-free Ayurvedic hair oils, neem combs, and herbal cleansers.',
+  alternates: {
+    canonical: '/',
+  },
+};
+
 export const revalidate = 60;
 
 import React from 'react';

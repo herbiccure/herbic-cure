@@ -10,6 +10,51 @@ interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
 }
 
+import type { Metadata } from 'next';
+
+export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await prisma.blogPost.findUnique({
+    where: { slug },
+  });
+
+  if (!post || !post.published) {
+    return {
+      title: 'Article Not Found | Herbic Cure',
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const title = `${post.title} | Herbic Cure Hair Care Tips`;
+  const description =
+    post.excerpt ||
+    `Read ${post.title} on Herbic Cure. Ancient Ayurvedic hair rituals, Kshirapak Vidhi science, and root nourishment.`;
+  const imageUrl = post.featuredImage || '/images/banners/herbic-hero-banner-1.jpg';
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `/hair-care-tips/${post.slug}`,
+    },
+    openGraph: {
+      title,
+      description,
+      url: `/hair-care-tips/${post.slug}`,
+      type: 'article',
+      publishedTime: post.publishedAt?.toISOString(),
+      authors: [post.author],
+      images: [{ url: imageUrl, alt: post.title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [imageUrl],
+    },
+  };
+}
+
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params;
 

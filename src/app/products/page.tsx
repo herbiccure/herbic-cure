@@ -1,3 +1,14 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'All Ayurvedic Formulations & Therapy Kits | Herbic Cure',
+  description:
+    'Explore the complete range of Herbic Cure Ayurvedic hair oils, handcrafted neem wood combs, sulfate-free cleansers, and complete hair therapy kits.',
+  alternates: {
+    canonical: '/products',
+  },
+};
+
 import React from 'react';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';

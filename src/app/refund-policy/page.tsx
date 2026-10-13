@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import React from 'react';
 import { getPolicyData } from '@/lib/policies';
 import PolicyRenderer from '@/components/ui/PolicyRenderer';

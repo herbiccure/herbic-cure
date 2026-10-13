@@ -516,3 +516,17 @@ model NewsletterSubscriber {
   active       Boolean  @default(true)
   subscribedAt DateTime @default(now())
 }
+
+// =========================================================================
+// 8. TECHNICAL SEO & URL REDIRECT ENGINE
+// =========================================================================
+
+model Redirect {
+  id          String   @id @default(uuid())
+  source      String   @unique
+  destination String
+  statusCode  Int      @default(301)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+}

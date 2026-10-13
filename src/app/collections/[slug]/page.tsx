@@ -10,6 +10,47 @@ interface CollectionDetailPageProps {
   params: Promise<{ slug: string }>;
 }
 
+import type { Metadata } from 'next';
+
+export async function generateMetadata({ params }: CollectionDetailPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const collection = await prisma.collection.findUnique({
+    where: { slug },
+  });
+
+  if (!collection) {
+    return {
+      title: 'Collection Not Found | Herbic Cure',
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const title = `${collection.name} | Herbic Cure Herbal Collections`;
+  const description =
+    collection.description ||
+    `Discover Herbic Cure ${collection.name}. Authentic Ayurvedic formulations made with 21 rare herbs for scalp and hair vitality.`;
+  const imageUrl = collection.bannerImage || collection.image || '/images/banners/banner-1.png';
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `/collections/${collection.slug}`,
+    },
+    openGraph: {
+      title,
+      description,
+      url: `/collections/${collection.slug}`,
+      images: [{ url: imageUrl, alt: collection.name }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+  };
+}
+
 export default async function CollectionDetailPage({ params }: CollectionDetailPageProps) {
   const { slug } = await params;
 

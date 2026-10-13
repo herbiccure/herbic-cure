@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -13,10 +14,13 @@ import {
   Lightbulb,
 } from 'lucide-react';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'How to Use & Ayurvedic Hair Care Guides | Herbic Cure',
   description:
     'Step-by-step application rituals, scalp massage guides, and usage frequency for Herbic Cure 21 Herbs Fusion Hair Oil and Kshirapak formulations.',
+  alternates: {
+    canonical: '/how-to-use',
+  },
 };
 
 export default async function HowToUsePage() {

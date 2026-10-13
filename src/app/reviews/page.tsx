@@ -1,12 +1,16 @@
+import type { Metadata } from 'next';
 import React from 'react';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { Star, CheckCircle2 } from 'lucide-react';
 import WriteReviewModal from '@/components/review/WriteReviewModal';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Customer Reviews & Real Feedback | Herbic Cure',
   description: 'Read verified testimonials and reviews from over 2,50,000 customers using Herbic Cure 21 herbs formulations.',
+  alternates: {
+    canonical: '/reviews',
+  },
 };
 
 export default async function ReviewsPage() {

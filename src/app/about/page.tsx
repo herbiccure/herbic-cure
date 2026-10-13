@@ -1,12 +1,16 @@
+import type { Metadata } from 'next';
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShieldCheck, Sparkles, Heart, Award, ArrowRight, CheckCircle2 } from 'lucide-react';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Our Heritage & Ayurvedic Science | Herbic Cure',
   description:
     'Discover how Herbic Cure revives ancient Kshirapak Vidhi using 21 rare Himalayan herbs for deep root nourishment.',
+  alternates: {
+    canonical: '/about',
+  },
 };
 
 export default function AboutPage() {

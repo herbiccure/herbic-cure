@@ -1,12 +1,16 @@
+import type { Metadata } from 'next';
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { prisma } from '@/lib/prisma';
 import ProductCard from '@/components/product/ProductCard';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'All Ayurvedic Collections | Herbic Cure',
   description: 'Explore the full spectrum of 21 Herbs Fusion hair oils, herbal shampoos, combs, and therapy kits.',
+  alternates: {
+    canonical: '/collections',
+  },
 };
 
 export default async function CollectionsPage() {

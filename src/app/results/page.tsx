@@ -1,3 +1,14 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Customer Transformations & Hair Wellness Results | Herbic Cure',
+  description:
+    'Explore real hair wellness routines, scalp nourishment results, and customer feedback with Herbic Cure 21 herbs formulations.',
+  alternates: {
+    canonical: '/results',
+  },
+};
+
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';

@@ -1,12 +1,16 @@
+import type { Metadata } from 'next';
 import React from 'react';
 import { prisma } from '@/lib/prisma';
 import { Leaf, Check, Sparkles } from 'lucide-react';
 
 export const revalidate = 60;
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'The 21 Rare Himalayan Herbs | Herbic Cure Formulation',
   description: 'Explore the 21 medicinal Ayurvedic herbs infused into Herbic Cure hair elixirs.',
+  alternates: {
+    canonical: '/ingredients',
+  },
 };
 
 export default async function IngredientsPage() {
