@@ -1,13 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth/auth';
 
-export async function POST() {
-  const response = NextResponse.json({ success: true, message: 'Logged out successfully' });
-  response.cookies.set('admin_session', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0,
-  });
-  return response;
+export async function POST(req: NextRequest) {
+  try {
+    return await auth.api.signOut({
+      headers: req.headers,
+      asResponse: true,
+    });
+  } catch {
+    const res = NextResponse.json({ success: true });
+    res.cookies.delete('better-auth.session_token');
+    res.cookies.delete('admin_session');
+    return res;
+  }
 }

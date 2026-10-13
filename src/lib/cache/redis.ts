@@ -3,7 +3,7 @@ import { Redis } from '@upstash/redis';
 // Interface for unified Redis operations
 export interface ICacheClient {
   get<T>(key: string): Promise<T | null>;
-  set(key: string, value: unknown, options?: { ex?: number; px?: number; nx?: boolean }): Promise<'OK' | null>;
+  set(key: string, value: unknown, options?: { ex?: number; px?: number; nx?: boolean }): Promise<any>;
   del(key: string): Promise<number>;
   incr(key: string): Promise<number>;
 }

@@ -28,6 +28,7 @@ import {
   LogOut,
   ShieldCheck,
   FileText,
+  RotateCcw,
   TrendingUp,
 } from 'lucide-react';
 import { AdminThemeToggle } from './AdminThemeToggle';
@@ -36,6 +37,7 @@ import { Toaster } from 'sonner';
 
 interface AdminShellProps {
   children: React.ReactNode;
+  userRole?: string;
 }
 
 interface NavSection {
@@ -60,6 +62,7 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Orders', href: '/admin/orders', icon: ShoppingCart },
       { label: 'Products & Deals', href: '/admin/products', icon: Package },
       { label: 'Inventory', href: '/admin/inventory', icon: Boxes },
+      { label: 'Refunds', href: '/admin/refunds', icon: RotateCcw },
     ],
   },
   {
@@ -95,12 +98,14 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: 'System',
     items: [
+      { label: 'Staff & Roles', href: '/admin/staff', icon: ShieldCheck },
+      { label: 'Audit Trail', href: '/admin/audit', icon: FileText },
       { label: 'Store Settings', href: '/admin/settings', icon: Settings },
     ],
   },
 ];
 
-export function AdminShell({ children }: AdminShellProps) {
+export function AdminShell({ children, userRole }: AdminShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { theme } = useAdminTheme();
