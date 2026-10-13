@@ -1,85 +1,71 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifySessionToken, AdminSessionPayload } from '@/lib/auth/session';
 
+/**
+ * Next.js 16 Edge Proxy (Replaces deprecated middleware convention)
+ * Layer 1: Edge Security, Zero-Private-Cache Enforcement, and Admin Edge Guard.
+ */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const response = NextResponse.next();
 
-  // Only protect /admin and /api/admin routes
-  const isAdminPage = pathname.startsWith('/admin');
-  const isAdminApi = pathname.startsWith('/api/admin');
+  // 1. Edge Security Headers
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  if (!isAdminPage && !isAdminApi) {
-    return NextResponse.next();
+  // 2. ZERO-CACHE on Private, Admin, Account, Payment, and Orders Routes
+  const isPrivateOrMoney =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/api/admin') ||
+    pathname.startsWith('/account') ||
+    pathname.startsWith('/api/account') ||
+    pathname.startsWith('/api/orders') ||
+    pathname.startsWith('/api/payment') ||
+    pathname.startsWith('/api/auth');
+
+  if (isPrivateOrMoney) {
+    response.headers.set(
+      'Cache-Control',
+      'private, no-cache, no-store, max-age=0, must-revalidate, proxy-revalidate'
+    );
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('Surrogate-Control', 'no-store');
+  } else if (
+    pathname.startsWith('/images/') ||
+    pathname.startsWith('/_next/static/') ||
+    pathname.match(/\.(jpg|jpeg|png|webp|svg|ico|css|js)$/)
+  ) {
+    response.headers.set(
+      'Cache-Control',
+      'public, max-age=31536000, immutable'
+    );
   }
 
-  // Allow login page and login API endpoint
-  const isLoginPage = pathname === '/admin/login';
-  const isLoginApi = pathname === '/api/admin/login';
-
-  const sessionCookie = request.cookies.get('admin_session')?.value;
-  let isAuthenticated = false;
-
-  if (sessionCookie) {
-    const verifiedSession = verifySessionToken<AdminSessionPayload>(sessionCookie);
-    if (verifiedSession && (verifiedSession.id || verifiedSession.email)) {
-      isAuthenticated = true;
-    }
-  }
-
-  // If trying to access API route without authentication
-  if (isAdminApi) {
-    if (isLoginApi) {
-      return NextResponse.next();
-    }
-    if (!isAuthenticated) {
-      return NextResponse.json(
-        { error: 'Unauthorized: Valid admin authentication token required' },
-        { status: 401 }
-      );
-    }
-
-    const response = NextResponse.next();
+  // 3. Admin Route Edge Guard
+  if (pathname.startsWith('/admin')) {
     response.headers.set('X-Robots-Tag', 'noindex, nofollow');
-    return response;
-  }
 
-  // Handle /admin page routes
-  if (isAdminPage) {
-    // If not authenticated and trying to access any admin page other than /admin/login
-    if (!isAuthenticated) {
-      if (isLoginPage) {
-        const response = NextResponse.next();
-        response.headers.set('X-Robots-Tag', 'noindex, nofollow');
-        return response;
-      }
+    const hasBetterAuthSession = request.cookies.has('better-auth.session_token');
+    const hasAdminSession = request.cookies.has('admin_session');
+    const isAuthenticated = hasBetterAuthSession || hasAdminSession;
+    const isLoginPage = pathname === '/admin/login';
+
+    if (!isAuthenticated && !isLoginPage) {
       const loginUrl = new URL('/admin/login', request.url);
       if (pathname !== '/admin') {
         loginUrl.searchParams.set('from', pathname);
       }
-      const response = NextResponse.redirect(loginUrl);
-      response.headers.set('X-Robots-Tag', 'noindex, nofollow');
-      return response;
+      return NextResponse.redirect(loginUrl);
     }
-
-    // If authenticated and visiting /admin/login, redirect to /admin
-    if (isAuthenticated && isLoginPage) {
-      const response = NextResponse.redirect(new URL('/admin', request.url));
-      response.headers.set('X-Robots-Tag', 'noindex, nofollow');
-      return response;
-    }
-
-    const response = NextResponse.next();
-    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
-    return response;
   }
 
-  return NextResponse.next();
+  return response;
 }
 
-export const middleware = proxy;
 export default proxy;
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/admin/:path*'],
+  matcher: ['/((?!_next/image|favicon.ico).*)'],
 };
