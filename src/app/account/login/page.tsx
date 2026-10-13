@@ -7,7 +7,7 @@ import { authClient } from '@/lib/auth/auth-client';
 import { ArrowRight, Lock, Mail, AlertCircle, Loader2, Sparkles, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/account';
@@ -145,5 +145,18 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+
+export default function LoginPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="min-h-[80vh] flex items-center justify-center bg-stone-50">
+        <div className="w-8 h-8 border-2 border-emerald-800 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginContent />
+    </React.Suspense>
   );
 }

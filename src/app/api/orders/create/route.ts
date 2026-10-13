@@ -10,6 +10,18 @@ export async function POST(req: NextRequest) {
     const rateLimitError = enforceRateLimit(req, 'checkout_create', 10, 60 * 1000);
     if (rateLimitError) return rateLimitError;
 
+    // 2. Strict Server-Side Authentication: Only logged-in customers can place orders
+    const session = await getServerSession();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        {
+          error: 'You must be logged in to place an order. Please sign in or create an account to proceed.',
+          requiresAuth: true,
+        },
+        { status: 401 }
+      );
+    }
+
     // 2. Strict Zod Schema Validation
     const body = await req.json().catch(() => null);
     const parsed = checkoutSchema.safeParse(body);
@@ -136,30 +148,12 @@ export async function POST(req: NextRequest) {
       pincode,
     });
 
-        // Authoritative User Account & Customer Linking
-    let matchedUserId: string | null = null;
+        const matchedUserId = session.user.id;
+    const authoritativeEmail = (session.user.email || email).toLowerCase().trim();
     let matchedCustomerId: string | null = null;
 
-    try {
-      const session = await getServerSession();
-      if (session?.user?.id) {
-        matchedUserId = session.user.id;
-      }
-    } catch {
-      // Fallback
-    }
-
-    if (!matchedUserId) {
-      const existingUser = await prisma.user.findUnique({
-        where: { email: email.toLowerCase().trim() },
-      });
-      if (existingUser) {
-        matchedUserId = existingUser.id;
-      }
-    }
-
     const existingCustomerRecord = await prisma.customer.findUnique({
-      where: { email: email.toLowerCase().trim() },
+      where: { email: authoritativeEmail },
     });
     if (existingCustomerRecord) {
       matchedCustomerId = existingCustomerRecord.id;
@@ -176,7 +170,7 @@ export async function POST(req: NextRequest) {
           userId: matchedUserId,
           customerId: matchedCustomerId,
           customerName: name,
-          customerEmail: email.toLowerCase(),
+          customerEmail: authoritativeEmail,
           customerPhone: phone,
           shippingAddress: fullShippingAddress,
           subtotal: calculatedSubtotal,
@@ -223,7 +217,7 @@ export async function POST(req: NextRequest) {
       // Upsert or update customer record for repeat tracking
       try {
         const existingCustomer = await tx.customer.findUnique({
-          where: { email: email.toLowerCase() },
+          where: { email: authoritativeEmail },
         });
 
         if (existingCustomer) {
@@ -239,7 +233,7 @@ export async function POST(req: NextRequest) {
         } else {
           await tx.customer.create({
             data: {
-              email: email.toLowerCase(),
+              email: authoritativeEmail,
               name,
               phone,
               totalOrders: 1,

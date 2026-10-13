@@ -7,7 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:seed:owner": "tsx scripts/seed-owner.ts",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",
@@ -46,5 +52,8 @@
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^2.1.8"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

@@ -108,6 +108,14 @@ export default function Footer({
             <ul className="mt-4 space-y-2.5 text-xs font-medium text-stone-700">
               <li>
                 <Link
+                  href="/collections"
+                  className="hover:text-[#A84358] hover:translate-x-1 inline-block transition-all"
+                >
+                  All Collections
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/collections/hair-oils"
                   className="hover:text-[#A84358] hover:translate-x-1 inline-block transition-all"
                 >
@@ -132,7 +140,7 @@ export default function Footer({
               </li>
               <li>
                 <Link
-                  href="/products/herbic-cure-shampoo-with-conditioner-q1"
+                  href="/collections/shampoo-and-conditioner"
                   className="hover:text-[#A84358] hover:translate-x-1 inline-block transition-all"
                 >
                   Shampoo and Conditioner
@@ -177,6 +185,14 @@ export default function Footer({
                   className="hover:text-[#A84358] hover:translate-x-1 inline-block transition-all"
                 >
                   Customer Results
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/hair-care-tips"
+                  className="hover:text-[#A84358] hover:translate-x-1 inline-block transition-all"
+                >
+                  Hair Care Tips
                 </Link>
               </li>
             </ul>

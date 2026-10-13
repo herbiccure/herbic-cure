@@ -2,13 +2,15 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { authClient } from '@/lib/auth/auth-client';
 import { ArrowRight, Lock, Mail, User, Phone, AlertCircle, Loader2, Sparkles, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/account';
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -54,7 +56,7 @@ export default function RegisterPage() {
       }
 
       toast.success('Account created successfully!');
-      router.push('/account');
+      router.push(callbackUrl);
       router.refresh();
     } catch {
       setError('An unexpected error occurred. Please try again.');
@@ -206,5 +208,18 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+
+export default function RegisterPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="min-h-[80vh] flex items-center justify-center bg-stone-50">
+        <div className="w-8 h-8 border-2 border-emerald-800 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <RegisterContent />
+    </React.Suspense>
   );
 }

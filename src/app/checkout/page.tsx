@@ -25,7 +25,7 @@ import { checkoutSchema } from '@/lib/schemas/checkout';
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, discountAmount, shippingFee, finalTotal, clearCart } = useCart();
-  const { customer } = useAuth();
+  const { customer, isLoading } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
@@ -53,7 +53,81 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) {
+    if (!customer) {
+      toast.error('Please log in or create an account to complete checkout');
+      router.push('/account/login?callbackUrl=/checkout');
+      return;
+    }
+    if (isLoading) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center bg-[#FCF8F9]">
+        <div className="w-10 h-10 border-2 border-[#8C3A4F] border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-xs text-[#7A5B64] font-medium tracking-wide">Securing session...</p>
+      </div>
+    );
+  }
+
+  if (!customer) {
+    return (
+      <div className="min-h-[75vh] flex flex-col items-center justify-center p-6 text-center bg-[#FCF8F9]">
+        <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-10 border border-[#EAC9D1] shadow-xl shadow-rose-950/5">
+          <div className="w-16 h-16 rounded-2xl bg-[#F6DFE7] text-[#8C3A4F] flex items-center justify-center mx-auto mb-5 border border-[#EAC9D1]">
+            <Lock className="w-8 h-8" />
+          </div>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF0F4] text-[#8C3A4F] text-[11px] font-bold tracking-wider uppercase mb-3">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Sign In Required
+          </span>
+          <h2 className="text-2xl font-bold text-[#2D1B1B] font-serif tracking-tight">
+            Sign In to Complete Order
+          </h2>
+          <p className="text-xs text-[#7A5B64] mt-2.5 leading-relaxed">
+            Herbic Cure requires an authenticated customer account to place an order. Having an account secures your shipment tracking, doorstep updates, and unlocks verified buyer reviews.
+          </p>
+
+          <div className="my-6 p-4 rounded-2xl bg-[#FCF8F9] border border-[#F2D7DE] flex items-center justify-between text-left">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#F6DFE7] flex items-center justify-center text-[#8C3A4F]">
+                <ShoppingBag className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-[#2D1B1B]">
+                  {items.length} {items.length === 1 ? 'item' : 'items'} in your bag
+                </p>
+                <p className="text-[10px] text-[#7A5B64]">Preserved and ready</p>
+              </div>
+            </div>
+            <span className="text-sm font-extrabold text-[#8C3A4F]">
+              ₹{finalTotal.toLocaleString('en-IN')}
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            <Link
+              href="/account/login?callbackUrl=/checkout"
+              className="w-full py-3.5 px-5 rounded-full bg-[#8C3A4F] hover:bg-[#722E3F] text-white text-xs font-bold shadow-md shadow-rose-900/15 transition-all flex items-center justify-center gap-2"
+            >
+              <span>Sign In to Checkout</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+
+            <Link
+              href="/account/register?callbackUrl=/checkout"
+              className="w-full py-3.5 px-5 rounded-full bg-[#FAF0F4] hover:bg-[#F6DFE7] text-[#8C3A4F] text-xs font-bold border border-[#EAC9D1] transition-all flex items-center justify-center gap-2"
+            >
+              <span>Create New Account</span>
+            </Link>
+          </div>
+
+          <p className="text-[10px] text-[#A3828B] mt-5">
+            Your shopping cart items will be preserved safely.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
       toast.error('Your shopping bag is empty');
       return;
     }
@@ -86,6 +160,11 @@ export default function CheckoutPage() {
         clearCart();
         router.push(`/order-success?orderId=${data.orderId || 'HC-' + Date.now().toString().slice(-6)}`);
       } else {
+        if (res.status === 401) {
+          toast.error('Please log in to complete your purchase');
+          router.push('/account/login?callbackUrl=/checkout');
+          return;
+        }
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || 'Failed to process order');
       }
@@ -226,6 +305,31 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {customer && (
+              <div className="mb-6 p-4 rounded-2xl bg-[#FCF4F7] border border-[#EAC9D1] flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#8C3A4F] text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                    {customer.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-[#2D1B1B]">{customer.name}</span>
+                      <span className="text-[9px] font-bold text-[#8C3A4F] bg-white px-2 py-0.5 rounded-full border border-[#EAC9D1]">
+                        Verified Customer
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#7A5B64] mt-0.5">{customer.email}</p>
+                  </div>
+                </div>
+                <Link
+                  href="/account"
+                  className="text-xs font-semibold text-[#8C3A4F] hover:underline"
+                >
+                  My Account
+                </Link>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -260,14 +364,27 @@ export default function CheckoutPage() {
                 <label className="block text-xs font-semibold text-[#45363B] mb-1.5">
                   Email Address <span className="text-[#8C3A4F]">*</span>
                 </label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="For invoice & order confirmation"
-                  className="w-full bg-[#FAF5F7] hover:bg-white focus:bg-white border border-[#E2CBD2] rounded-xl px-4 py-3 text-xs text-[#2D1B1B] placeholder:text-[#9E828A] focus:border-[#8C3A4F] focus:ring-2 focus:ring-[#8C3A4F]/20 outline-none transition-all"
-                />
+                <div className="relative">
+                  <input
+                    type="email"
+                    required
+                    readOnly={Boolean(customer?.email)}
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="For invoice & order confirmation"
+                    className={`w-full bg-[#FAF5F7] border border-[#E2CBD2] rounded-xl px-4 py-3 text-xs text-[#2D1B1B] placeholder:text-[#9E828A] outline-none transition-all ${
+                      customer?.email
+                        ? 'cursor-not-allowed bg-stone-100/70 text-stone-600'
+                        : 'focus:border-[#8C3A4F] focus:ring-2 focus:ring-[#8C3A4F]/20 hover:bg-white focus:bg-white'
+                    }`}
+                  />
+                  {customer?.email && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3" />
+                      Verified
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div>
