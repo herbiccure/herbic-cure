@@ -1,0 +1,554 @@
+@import "tailwindcss";
+
+:root {
+  --font-serif-luxury: "Cormorant Garamond", Georgia, serif;
+  --font-sans-clean: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+
+  /* Palette 1 Luxe Rose & Velvet Berry Design System */
+  --color-rose-950: #2D1B1B; /* Dark velvet espresso neutral */
+  --color-rose-900: #45363B; /* Deep plum charcoal */
+  --color-rose-800: #6B2E3D; /* Deep royal berry wine */
+  --color-rose-700: #8C374A; /* Deep velvet rose */
+  --color-rose-600: #A84358; /* Velvet rose primary CTA */
+  --color-rose-500: #B0565F; /* Dusty rose hero swatch (Palette 1) */
+  --color-rose-400: #BD8E96; /* Dusty rosewood accent (Palette 1) */
+  --color-rose-300: #D8B2BA; /* Soft rosewood border */
+  --color-rose-200: #EAC9D1; /* Delicate petal border */
+  --color-rose-100: #F6DFE7; /* Soft rose petal cream (Palette 1) */
+  --color-rose-50: #FCF4F7;  /* Light pearl blush background */
+  --color-rose-pearl: #FCF8F9;
+
+  /* Earthy Botanical Herbal Warmth (Palette 1 #927469) */
+  --color-bark-800: #543E36;
+  --color-bark-600: #72584E;
+  --color-bark-500: #927469; /* Warm cedar / herbal bark */
+  --color-bark-100: #F3ECE8;
+
+  /* Backward Compatibility Aliases for Herb/Green */
+  --color-herb-900: #45363B;
+  --color-herb-800: #A84358;
+  --color-herb-700: #B0565F;
+  --color-herb-600: #BD8E96;
+  --color-herb-500: #B0565F;
+  --color-herb-100: #F6DFE7;
+  --color-herb-50: #FCF4F7;
+
+  /* Luxury Champagne Gold Accents (Reviews, Badges, Stars) */
+  --color-gold-700: #9a6519;
+  --color-gold-600: #b97c23;
+  --color-gold-500: #d69532;
+  --color-gold-400: #e8b159;
+  --color-gold-100: #fbf2e1;
+  --color-gold-50: #fdfaf3;
+
+  --color-cream-50: #FCF8F9;
+  --color-cream-100: #F9EFF2;
+  --color-cream-200: #F3E3E8;
+
+  --color-charcoal-900: #2D1B1B;
+  --color-charcoal-800: #45363B;
+  --color-charcoal-700: #625056;
+  --color-charcoal-500: #88727A;
+}
+
+body {
+  background-color: #FCF8F9;
+  color: #2D1B1B;
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Luxury Brand Accent Utilities */
+.bg-rose-dark, .bg-herb-dark {
+  background-color: #45363B;
+}
+.bg-rose-primary, .bg-herb-primary {
+  background-color: #A84358;
+}
+.bg-rose-secondary {
+  background-color: #B0565F;
+}
+.bg-rose-medium, .bg-herb-medium {
+  background-color: #BD8E96;
+}
+.bg-rose-light, .bg-herb-light {
+  background-color: #FCF4F7;
+}
+.bg-rose-petal {
+  background-color: #F6DFE7;
+}
+.bg-gold-accent {
+  background-color: #c48b36;
+}
+.bg-gold-subtle {
+  background-color: #fcf6ec;
+}
+
+.text-rose-dark, .text-herb-dark {
+  color: #2D1B1B;
+}
+.text-rose-primary, .text-herb-primary {
+  color: #A84358;
+}
+.text-rose-secondary {
+  color: #B0565F;
+}
+.text-rose-medium, .text-herb-medium {
+  color: #BD8E96;
+}
+.text-gold-accent {
+  color: #b97c23;
+}
+
+.border-rose-primary, .border-herb-primary {
+  border-color: #A84358;
+}
+.border-rose-light, .border-herb-light {
+  border-color: #F6DFE7;
+}
+.border-rose-subtle {
+  border-color: #EAC9D1;
+}
+
+/* Glassmorphism */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(246, 223, 231, 0.7);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(246, 223, 231, 0.85);
+}
+
+.glass-dark {
+  background: rgba(45, 27, 27, 0.92);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #FCF4F7;
+}
+::-webkit-scrollbar-thumb {
+  background: #D8B2BA;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B0565F;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Smooth Announcement Marquee */
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 65s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Pulse Glow with Soft Rose */
+@keyframes gentle-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(176, 86, 95, 0.22); }
+  50% { box-shadow: 0 0 25px rgba(168, 67, 88, 0.45); }
+}
+
+.glow-herb, .glow-rose {
+  animation: gentle-glow 3s infinite ease-in-out;
+}
+
+/* Floating Animation for Footer & Interactive Elements */
+@keyframes float-subtle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.animate-float {
+  animation: float-subtle 3.5s ease-in-out infinite;
+}
+
+.animate-float-delay-1 {
+  animation: float-subtle 3.5s ease-in-out 0.8s infinite;
+}
+
+.animate-float-delay-2 {
+  animation: float-subtle 3.5s ease-in-out 1.6s infinite;
+}
+
+.animate-float-card {
+  animation: float-subtle 5s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   ADMIN PANEL SCOPED THEME SYSTEM (ONLY APPLIES TO ADMIN PANEL)
+   ========================================================================== */
+
+.admin-theme-root {
+  min-height: 100vh;
+}
+
+/* Light Theme Variables & Overrides (Scoped strictly to [data-admin-theme="light"] and .admin-theme-light) */
+[data-admin-theme="light"],
+.admin-theme-light {
+  background-color: #FCF8F9 !important;
+  color: #2D1B1B !important;
+}
+
+[data-admin-theme="light"] .admin-shell-container,
+.admin-theme-light .admin-shell-container {
+  background-color: #FCF8F9 !important;
+  color: #2D1B1B !important;
+}
+
+/* Panels, Cards & Containers in Light Theme */
+[data-admin-theme="light"] .bg-slate-900,
+.admin-theme-light .bg-slate-900,
+[data-admin-theme="light"] .bg-stone-900,
+.admin-theme-light .bg-stone-900,
+[data-admin-theme="light"] .bg-stone-800,
+.admin-theme-light .bg-stone-800,
+[data-admin-theme="light"] .bg-slate-950,
+.admin-theme-light .bg-slate-950,
+[data-admin-theme="light"] [class*="bg-slate-900"],
+.admin-theme-light [class*="bg-slate-900"] {
+  background-color: #ffffff !important;
+  color: #2D1B1B !important;
+  border-color: #F1DFE5 !important;
+}
+
+/* Inner Item Cards & Sub-panels in Light Theme */
+[data-admin-theme="light"] .bg-slate-800,
+.admin-theme-light .bg-slate-800,
+[data-admin-theme="light"] .bg-slate-800\/60,
+.admin-theme-light .bg-slate-800\/60,
+[data-admin-theme="light"] .bg-slate-800\/50,
+.admin-theme-light .bg-slate-800\/50,
+[data-admin-theme="light"] .bg-slate-800\/80,
+.admin-theme-light .bg-slate-800\/80,
+[data-admin-theme="light"] .bg-slate-700,
+.admin-theme-light .bg-slate-700,
+[data-admin-theme="light"] .bg-stone-800,
+.admin-theme-light .bg-stone-800,
+[data-admin-theme="light"] [class*="bg-slate-800"],
+.admin-theme-light [class*="bg-slate-800"],
+[data-admin-theme="light"] [class*="bg-slate-700"],
+.admin-theme-light [class*="bg-slate-700"],
+[data-admin-theme="light"] [class*="bg-stone-800"],
+.admin-theme-light [class*="bg-stone-800"] {
+  background-color: #FCF8F9 !important;
+  border-color: #F1DFE5 !important;
+  color: #2D1B1B !important;
+}
+
+[data-admin-theme="light"] div[class*="bg-slate-800"].relative,
+.admin-theme-light div[class*="bg-slate-800"].relative,
+[data-admin-theme="light"] div[class*="bg-slate-700"].relative,
+.admin-theme-light div[class*="bg-slate-700"].relative {
+  background-color: #F6DFE7 !important;
+  border-color: #EAC9D1 !important;
+}
+
+/* Typography in Light Theme */
+[data-admin-theme="light"] h1,
+.admin-theme-light h1,
+[data-admin-theme="light"] h2,
+.admin-theme-light h2,
+[data-admin-theme="light"] h3,
+.admin-theme-light h3,
+[data-admin-theme="light"] h4,
+.admin-theme-light h4,
+[data-admin-theme="light"] h5,
+.admin-theme-light h5,
+[data-admin-theme="light"] h6,
+.admin-theme-light h6 {
+  color: #2D1B1B !important;
+}
+
+[data-admin-theme="light"] [class*="bg-slate-800"] h1,
+.admin-theme-light [class*="bg-slate-800"] h1,
+[data-admin-theme="light"] [class*="bg-slate-800"] h2,
+.admin-theme-light [class*="bg-slate-800"] h2,
+[data-admin-theme="light"] [class*="bg-slate-800"] h3,
+.admin-theme-light [class*="bg-slate-800"] h3,
+[data-admin-theme="light"] [class*="bg-slate-800"] h4,
+.admin-theme-light [class*="bg-slate-800"] h4,
+[data-admin-theme="light"] [class*="bg-slate-800"] .text-white,
+.admin-theme-light [class*="bg-slate-800"] .text-white,
+[data-admin-theme="light"] [class*="bg-slate-900"] .text-white,
+.admin-theme-light [class*="bg-slate-900"] .text-white {
+  color: #2D1B1B !important;
+}
+
+[data-admin-theme="light"] .text-slate-100,
+.admin-theme-light .text-slate-100,
+[data-admin-theme="light"] .text-slate-200,
+.admin-theme-light .text-slate-200 {
+  color: #2D1B1B !important;
+}
+
+[data-admin-theme="light"] .text-slate-300,
+.admin-theme-light .text-slate-300,
+[data-admin-theme="light"] .text-slate-400,
+.admin-theme-light .text-slate-400,
+[data-admin-theme="light"] .text-stone-400,
+.admin-theme-light .text-stone-400,
+[data-admin-theme="light"] [class*="bg-slate-800"] p,
+.admin-theme-light [class*="bg-slate-800"] p {
+  color: #6E555C !important;
+}
+
+[data-admin-theme="light"] .text-slate-500,
+.admin-theme-light .text-slate-500 {
+  color: #88727A !important;
+}
+
+/* Borders in Light Theme */
+[data-admin-theme="light"] .border-slate-800,
+[data-admin-theme="light"] .border-slate-800\/60,
+[data-admin-theme="light"] .border-slate-700,
+[data-admin-theme="light"] .border-slate-700\/60,
+[data-admin-theme="light"] .border-slate-700\/80,
+[data-admin-theme="light"] .border-stone-800 {
+  border-color: #F1DFE5 !important;
+}
+
+/* Primary Action Buttons in Light Theme */
+[data-admin-theme="light"] button[class*="bg-emerald-600"],
+[data-admin-theme="light"] button[class*="bg-emerald-700"],
+[data-admin-theme="light"] button[class*="bg-emerald-800"],
+[data-admin-theme="light"] a[class*="bg-emerald-600"],
+[data-admin-theme="light"] a[class*="bg-emerald-700"],
+[data-admin-theme="light"] a[class*="bg-emerald-800"],
+[data-admin-theme="light"] button[class*="144e29"],
+[data-admin-theme="light"] a[class*="144e29"] {
+  background-color: #A84358 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px -1px rgba(168, 67, 88, 0.35) !important;
+}
+
+[data-admin-theme="light"] button[class*="bg-emerald-600"]:hover,
+[data-admin-theme="light"] button[class*="bg-emerald-700"]:hover,
+[data-admin-theme="light"] button[class*="bg-emerald-800"]:hover,
+[data-admin-theme="light"] a[class*="bg-emerald-600"]:hover,
+[data-admin-theme="light"] a[class*="bg-emerald-700"]:hover,
+[data-admin-theme="light"] a[class*="bg-emerald-800"]:hover,
+[data-admin-theme="light"] button[class*="144e29"]:hover,
+[data-admin-theme="light"] a[class*="144e29"]:hover {
+  background-color: #8C374A !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px -2px rgba(168, 67, 88, 0.45) !important;
+}
+
+/* Secondary & Item Action Buttons in Light Theme */
+[data-admin-theme="light"] button[class*="bg-slate-700"],
+[data-admin-theme="light"] button[class*="bg-slate-800"],
+[data-admin-theme="light"] a[class*="bg-slate-700"],
+[data-admin-theme="light"] a[class*="bg-slate-800"] {
+  background-color: #F6DFE7 !important;
+  color: #8C374A !important;
+  border: 1px solid #EAC9D1 !important;
+}
+
+[data-admin-theme="light"] button[class*="bg-slate-700"]:hover,
+[data-admin-theme="light"] button[class*="bg-slate-800"]:hover,
+[data-admin-theme="light"] a[class*="bg-slate-700"]:hover,
+[data-admin-theme="light"] a[class*="bg-slate-800"]:hover {
+  background-color: #A84358 !important;
+  color: #ffffff !important;
+  border-color: #A84358 !important;
+}
+
+/* Item Action Icon Buttons in Light Theme */
+[data-admin-theme="light"] a[class*="hover:bg-slate-700"],
+[data-admin-theme="light"] button[class*="hover:bg-slate-700"] {
+  color: #6E555C !important;
+}
+
+[data-admin-theme="light"] a[class*="hover:bg-slate-700"]:hover,
+[data-admin-theme="light"] button[class*="hover:bg-slate-700"]:hover {
+  background-color: #F6DFE7 !important;
+  color: #A84358 !important;
+}
+
+[data-admin-theme="light"] button[class*="hover:text-red-400"] {
+  color: #88727A !important;
+}
+
+[data-admin-theme="light"] button[class*="hover:text-red-400"]:hover {
+  background-color: #FEE2E2 !important;
+  color: #DC2626 !important;
+}
+
+/* Rose / Mauve Category Badges in Light Theme */
+[data-admin-theme="light"] [class*="bg-rose-950"],
+[data-admin-theme="light"] [class*="bg-rose-900"] {
+  background-color: #FDF0F4 !important;
+  color: #8C374A !important;
+  border: 1px solid #EAC9D1 !important;
+}
+
+[data-admin-theme="light"] .text-rose-400,
+[data-admin-theme="light"] .text-rose-300 {
+  color: #A84358 !important;
+}
+
+/* Emerald Badges & Pills in Light Theme */
+[data-admin-theme="light"] [class*="bg-emerald-950"] {
+  background-color: #ECFDF5 !important;
+  color: #047857 !important;
+  border: 1px solid #A7F3D0 !important;
+}
+
+[data-admin-theme="light"] .text-emerald-400,
+[data-admin-theme="light"] .text-emerald-300 {
+  color: #047857 !important;
+}
+
+/* Amber / Warning Badges in Light Theme */
+[data-admin-theme="light"] [class*="bg-amber-950"] {
+  background-color: #FFFBEB !important;
+  color: #B45309 !important;
+  border: 1px solid #FDE68A !important;
+}
+
+[data-admin-theme="light"] .text-amber-400 {
+  color: #B45309 !important;
+}
+
+/* Admin Sidebar Active Navigation Item (Light Theme) */
+[data-admin-theme="light"] .admin-sidebar-nav-active,
+[data-admin-theme="light"] a.admin-sidebar-nav-active {
+  background-color: #FCF4F7 !important;
+  color: #8C374A !important;
+  border-left-color: #A84358 !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-admin-theme="light"] .admin-sidebar-nav-active,
+[data-admin-theme="light"] .admin-sidebar-nav-active span,
+[data-admin-theme="light"] .admin-sidebar-nav-active p,
+[data-admin-theme="light"] .admin-sidebar-nav-active div {
+  color: #8C374A !important;
+  font-weight: 700 !important;
+}
+
+[data-admin-theme="light"] .admin-sidebar-nav-active svg {
+  color: #A84358 !important;
+}
+
+/* Admin Option Selection Pills */
+[data-admin-theme="light"] .admin-selection-btn-active,
+[data-admin-theme="light"] button.admin-selection-btn-active {
+  background-color: #FCF4F7 !important;
+  color: #8C374A !important;
+  border-color: #A84358 !important;
+}
+
+[data-admin-theme="light"] .admin-selection-btn-active *,
+[data-admin-theme="light"] button.admin-selection-btn-active * {
+  color: #8C374A !important;
+  font-weight: 700 !important;
+}
+
+[data-admin-theme="light"] .admin-selection-btn-inactive,
+[data-admin-theme="light"] button.admin-selection-btn-inactive {
+  background-color: #ffffff !important;
+  color: #45363B !important;
+  border-color: #F1DFE5 !important;
+}
+
+[data-admin-theme="light"] .admin-selection-btn-inactive *,
+[data-admin-theme="light"] button.admin-selection-btn-inactive * {
+  color: #45363B !important;
+}
+
+/* Inputs & Form Controls in Light Theme */
+[data-admin-theme="light"] input,
+[data-admin-theme="light"] select,
+[data-admin-theme="light"] textarea {
+  background-color: #ffffff !important;
+  border-color: #E8D3DC !important;
+  color: #2D1B1B !important;
+}
+
+[data-admin-theme="light"] input::placeholder,
+[data-admin-theme="light"] textarea::placeholder {
+  color: #A38D95 !important;
+}
+
+/* Table Overrides in Light Theme */
+[data-admin-theme="light"] table,
+[data-admin-theme="light"] tbody,
+[data-admin-theme="light"] tbody tr {
+  background-color: #ffffff !important;
+  color: #2D1B1B !important;
+}
+
+[data-admin-theme="light"] tbody tr:hover {
+  background-color: #FCF4F7 !important;
+}
+
+[data-admin-theme="light"] thead tr {
+  background-color: #FCF4F7 !important;
+  border-color: #F1DFE5 !important;
+}
+
+[data-admin-theme="light"] thead th {
+  color: #45363B !important;
+}
+
+[data-admin-theme="light"] td span.text-white,
+[data-admin-theme="light"] td p.text-white,
+[data-admin-theme="light"] td div.text-white,
+[data-admin-theme="light"] table span.text-white,
+[data-admin-theme="light"] table p.text-white,
+[data-admin-theme="light"] table .text-white:not(button):not(button *):not(a):not(a *) {
+  color: #2D1B1B !important;
+}
+
+/* Dark Theme Defaults */
+[data-admin-theme="dark"] {
+  background-color: #1A1215;
+  color: #fdf0f4;
+}
+
+[data-admin-theme="dark"] .admin-shell-container {
+  background-color: #1A1215;
+}
+
+/* Horizontal Smooth Carousel Utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
