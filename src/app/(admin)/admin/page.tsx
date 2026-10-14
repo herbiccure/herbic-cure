@@ -48,7 +48,7 @@ export default async function AdminDashboardPage() {
         </div>
         <Link
           href="/admin/analytics"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#8C3A4F] hover:bg-[#722E3F] text-white dark:bg-emerald-600 dark:hover:bg-emerald-500 text-xs font-bold rounded-xl shadow-xs transition-all group shrink-0"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#8C3A4F] hover:bg-[#722E3F] text-white  text-xs font-bold rounded-xl shadow-xs transition-all group shrink-0"
         >
           <LineChart className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
           <span>Executive Analytics Studio</span>
@@ -57,13 +57,13 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Featured Executive Analytics & Growth Cockpit */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#FAF0F4] via-white to-[#F5E6EC] dark:from-slate-900 dark:via-slate-900/95 dark:to-emerald-950/40 border border-[#E8CAD2] dark:border-emerald-500/30 p-6 sm:p-7 shadow-xs">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#8C3A4F]/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#FAF0F4] via-white to-[#F5E6EC] dark:from-slate-900 dark:via-slate-900/95 dark:to-[#2D1B1B]/40 border border-[#E8CAD2] dark:border-[#8C3A4F]/30 p-6 sm:p-7 shadow-xs">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#8C3A4F]/5 dark:bg-[#8C3A4F]/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
         
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="space-y-2.5 max-w-xl">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F6DFE7] dark:bg-emerald-500/15 border border-[#EAC9D1] dark:border-emerald-500/30 text-[11px] font-bold text-[#8C3A4F] dark:text-emerald-400">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F6DFE7] dark:bg-[#8C3A4F]/20 border border-[#EAC9D1] dark:border-[#8C3A4F]/40 text-[11px] font-bold text-[#8C3A4F] dark:text-[#EAC9D1]">
                 <Sparkles className="w-3.5 h-3.5" />
                 Senior Data Analyst Suite Active
               </div>
@@ -78,7 +78,7 @@ export default async function AdminDashboardPage() {
             <div className="flex flex-wrap sm:flex-nowrap gap-3 items-center">
               <Link
                 href="/admin/analytics"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-[#8C3A4F] hover:bg-[#722E3F] text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-950 font-bold text-xs shadow-sm transition-all hover:scale-[1.02]"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-[#8C3A4F] hover:bg-[#722E3F] text-white font-bold text-xs shadow-md transition-all hover:scale-[1.02]"
               >
                 <TrendingUp className="w-4 h-4" />
                 <span>Open Growth &amp; Predictions Studio</span>
@@ -90,7 +90,7 @@ export default async function AdminDashboardPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-6 pt-6 border-t border-[#E8CAD2]/60 dark:border-slate-800/80">
             <div className="bg-white/95 dark:bg-slate-950/60 rounded-2xl p-4 border border-[#E8CAD2] dark:border-slate-800/80 shadow-2xs">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#7A5B64] dark:text-slate-400">Lifetime GMV</p>
-              <p className="text-xl sm:text-2xl font-black text-[#8C3A4F] dark:text-emerald-400 mt-1">₹{totalGmv.toLocaleString('en-IN')}</p>
+              <p className="text-xl sm:text-2xl font-black text-[#8C3A4F] dark:text-[#EAC9D1] mt-1">₹{totalGmv.toLocaleString('en-IN')}</p>
               <p className="text-[11px] text-[#7A5B64] dark:text-slate-400 mt-0.5">Gross revenue booked</p>
             </div>
 
@@ -102,13 +102,13 @@ export default async function AdminDashboardPage() {
 
             <div className="bg-white/95 dark:bg-slate-950/60 rounded-2xl p-4 border border-[#E8CAD2] dark:border-slate-800/80 shadow-2xs">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#7A5B64] dark:text-slate-400">Fulfillment / Paid Rate</p>
-              <p className="text-xl sm:text-2xl font-black text-teal-700 dark:text-teal-400 mt-1">{paymentFulfillmentRate}%</p>
+              <p className="text-xl sm:text-2xl font-black text-[#8C3A4F] dark:text-[#EAC9D1] mt-1">{paymentFulfillmentRate}%</p>
               <p className="text-[11px] text-[#7A5B64] dark:text-slate-400 mt-0.5">{paidOrdersCount} verified successful</p>
             </div>
 
             <div className="bg-white/95 dark:bg-slate-950/60 rounded-2xl p-4 border border-[#E8CAD2] dark:border-slate-800/80 shadow-2xs">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#7A5B64] dark:text-slate-400">Scenario Simulator</p>
-              <p className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-400 mt-1">Editable OKRs</p>
+              <p className="text-xl sm:text-2xl font-black text-[#543E36] mt-1">Editable OKRs</p>
               <p className="text-[11px] text-[#7A5B64] dark:text-slate-400 mt-0.5">What-if ROAS &amp; Spend modeler</p>
             </div>
           </div>
@@ -142,12 +142,12 @@ export default async function AdminDashboardPage() {
         <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-[#E8CAD2] dark:border-slate-800 shadow-2xs hover:shadow-xs transition-shadow">
           <div className="flex items-center justify-between text-[#7A5B64] dark:text-slate-400 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Subscribers</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 flex items-center justify-center border border-emerald-200/60 dark:border-emerald-500/20">
+            <div className="w-9 h-9 rounded-xl bg-[#F6DFE7] text-[#8C3A4F] dark:bg-[#8C3A4F]/20 dark:text-[#EAC9D1] flex items-center justify-center border border-[#EAC9D1] dark:border-[#8C3A4F]/30">
               <Users className="w-4 h-4" />
             </div>
           </div>
           <p className="text-3xl font-extrabold text-[#2D1B1B] dark:text-white mt-1">{subscriberCount}</p>
-          <p className="text-[11px] font-semibold text-[#8C3A4F] dark:text-emerald-400 mt-1.5">VIP Newsletter leads</p>
+          <p className="text-[11px] font-semibold text-[#8C3A4F] dark:text-[#EAC9D1] mt-1.5">VIP Newsletter leads</p>
         </div>
       </div>
 
@@ -159,12 +159,12 @@ export default async function AdminDashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Link
             href="/admin/analytics"
-            className="p-5 bg-white dark:bg-slate-900 hover:border-[#8C3A4F]/60 dark:hover:border-emerald-500/50 border border-[#E8CAD2] dark:border-slate-800 rounded-3xl transition group shadow-2xs hover:shadow-sm"
+            className="p-5 bg-white dark:bg-slate-900 hover:border-[#8C3A4F]/60 dark:hover:border-[#8C3A4F]/50 border border-[#E8CAD2] dark:border-slate-800 rounded-3xl transition group shadow-2xs hover:shadow-sm"
           >
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center justify-center mb-3 border border-emerald-200/60 dark:border-emerald-500/30">
+            <div className="w-9 h-9 rounded-xl bg-[#F6DFE7] text-[#8C3A4F] dark:bg-[#8C3A4F]/20 dark:text-[#EAC9D1] flex items-center justify-center mb-3 border border-[#EAC9D1] dark:border-[#8C3A4F]/30">
               <LineChart className="w-4 h-4" />
             </div>
-            <h3 className="text-sm font-bold text-[#2D1B1B] group-hover:text-[#8C3A4F] dark:text-white dark:group-hover:text-emerald-300 transition-colors flex items-center justify-between">
+            <h3 className="text-sm font-bold text-[#2D1B1B] group-hover:text-[#8C3A4F] dark:text-white dark:group-hover:text-[#EAC9D1] transition-colors flex items-center justify-between">
               Analytics &amp; Forecasting
               <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
             </h3>

@@ -180,7 +180,7 @@ export default function AdminRefundsPage() {
                     {r.status === 'PENDING' && (
                       <button
                         onClick={() => handleApproveRefund(r.id)}
-                        className="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold cursor-pointer"
+                        className="px-3.5 py-1.5 bg-[#8C3A4F] hover:bg-[#722E3F] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
                       >
                         Approve (OWNER)
                       </button>

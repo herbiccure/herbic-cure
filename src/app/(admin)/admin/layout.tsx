@@ -40,7 +40,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </p>
             <Link
               href="/"
-              className="mt-6 px-6 py-2.5 bg-emerald-800 text-white rounded-xl text-xs font-bold hover:bg-emerald-900 transition-all"
+              className="mt-6 px-6 py-2.5 bg-[#8C3A4F] hover:bg-[#722E3F] text-white rounded-xl text-xs font-bold transition-all shadow-md"
             >
               Return to Customer Storefront
             </Link>

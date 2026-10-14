@@ -251,7 +251,7 @@ export default function ProductForm({ isEdit = false, initialData }: ProductForm
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="px-5 py-2.5 bg-[#A84358] hover:bg-[#8C374A] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="px-5 py-2.5 bg-[#8C3A4F] hover:bg-[#722E3F] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{submitting ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Product'}</span>
@@ -836,7 +836,7 @@ export default function ProductForm({ isEdit = false, initialData }: ProductForm
           <button
             type="submit"
             disabled={submitting}
-            className="px-6 py-2.5 bg-[#A84358] hover:bg-[#8C374A] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="px-6 py-2.5 bg-[#8C3A4F] hover:bg-[#722E3F] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{submitting ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Product'}</span>

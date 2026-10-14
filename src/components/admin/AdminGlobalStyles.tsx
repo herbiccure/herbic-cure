@@ -110,10 +110,10 @@ export function AdminGlobalStyles() {
     .admin-theme-light [class*="bg-slate-800"] h3,
     [data-admin-theme="light"] [class*="bg-slate-800"] h4,
     .admin-theme-light [class*="bg-slate-800"] h4,
-    [data-admin-theme="light"] [class*="bg-slate-800"] .text-white,
-    .admin-theme-light [class*="bg-slate-800"] .text-white,
-    [data-admin-theme="light"] [class*="bg-slate-900"] .text-white,
-    .admin-theme-light [class*="bg-slate-900"] .text-white,
+    [data-admin-theme="light"] [class*="bg-slate-800"] .text-white:not(button):not(button *):not(a):not(a *),
+    .admin-theme-light [class*="bg-slate-800"] .text-white:not(button):not(button *):not(a):not(a *),
+    [data-admin-theme="light"] [class*="bg-slate-900"] .text-white:not(button):not(button *):not(a):not(a *),
+    .admin-theme-light [class*="bg-slate-900"] .text-white:not(button):not(button *):not(a):not(a *),
     [data-admin-theme="light"] .text-slate-100,
     .admin-theme-light .text-slate-100,
     [data-admin-theme="light"] .text-slate-200,
@@ -171,6 +171,157 @@ export function AdminGlobalStyles() {
     [data-admin-theme="light"] [class*="divide-slate-800"] > * + *,
     .admin-theme-light [class*="divide-slate-800"] > * + * {
       border-color: #F1DFE5 !important;
+    }
+
+
+    /* Universal Action Button Contrast Guarantee Across Admin Panel */
+    [data-admin-theme="light"] button[type="submit"],
+    .admin-theme-light button[type="submit"],
+    [data-admin-theme="light"] button[class*="bg-[#8C3A4F]"],
+    [data-admin-theme="light"] button[class*="bg-[#A84358]"],
+    [data-admin-theme="light"] a[class*="bg-[#8C3A4F]"],
+    [data-admin-theme="light"] a[class*="bg-[#A84358]"],
+    .admin-theme-light button[class*="bg-[#8C3A4F]"],
+    .admin-theme-light button[class*="bg-[#A84358]"],
+    .admin-theme-light a[class*="bg-[#8C3A4F]"],
+    .admin-theme-light a[class*="bg-[#A84358]"] {
+      background-color: #8C3A4F !important;
+      color: #ffffff !important;
+    }
+
+    [data-admin-theme="light"] button[type="submit"] *,
+    .admin-theme-light button[type="submit"] *,
+    [data-admin-theme="light"] button[class*="bg-[#8C3A4F]"] *,
+    [data-admin-theme="light"] button[class*="bg-[#A84358]"] *,
+    [data-admin-theme="light"] a[class*="bg-[#8C3A4F]"] *,
+    [data-admin-theme="light"] a[class*="bg-[#A84358]"] *,
+    .admin-theme-light button[class*="bg-[#8C3A4F]"] *,
+    .admin-theme-light button[class*="bg-[#A84358]"] *,
+    .admin-theme-light a[class*="bg-[#8C3A4F]"] *,
+    .admin-theme-light a[class*="bg-[#A84358]"] * {
+      color: #ffffff !important;
+    }
+
+    [data-admin-theme="light"] button[type="submit"]:hover,
+    .admin-theme-light button[type="submit"]:hover,
+    [data-admin-theme="light"] button[class*="bg-[#8C3A4F]"]:hover,
+    [data-admin-theme="light"] button[class*="bg-[#A84358]"]:hover,
+    [data-admin-theme="light"] a[class*="bg-[#8C3A4F]"]:hover,
+    [data-admin-theme="light"] a[class*="bg-[#A84358]"]:hover,
+    .admin-theme-light button[class*="bg-[#8C3A4F]"]:hover,
+    .admin-theme-light button[class*="bg-[#A84358]"]:hover,
+    .admin-theme-light a[class*="bg-[#8C3A4F]"]:hover,
+    .admin-theme-light a[class*="bg-[#A84358]"]:hover {
+      background-color: #722E3F !important;
+      color: #ffffff !important;
+    }
+
+    
+    /* ==========================================================================
+       HERBIC CURE PALETTE 1 UNIVERSAL ACTION BUTTON CONTRAST GUARANTEE
+       Guarantees crisp white text (#ffffff) on all Velvet Rose & Action buttons
+       ========================================================================== */
+    .text-white-force,
+    .text-white-force * {
+      color: #ffffff !important;
+      stroke: #ffffff !important;
+    }
+
+    /* All buttons & action links with Velvet Rose or primary styling */
+    [data-admin-theme="light"] button[class*="bg-[#8C3A4F]"],
+    [data-admin-theme="light"] button[class*="bg-[#A84358]"],
+    [data-admin-theme="light"] button[class*="bg-emerald-"],
+    [data-admin-theme="light"] button[class*="bg-rose-700"],
+    [data-admin-theme="light"] button.admin-btn-primary,
+    [data-admin-theme="light"] a[class*="bg-[#8C3A4F]"],
+    [data-admin-theme="light"] a[class*="bg-[#A84358]"],
+    [data-admin-theme="light"] a[class*="bg-emerald-"],
+    [data-admin-theme="light"] a[class*="bg-rose-700"],
+    [data-admin-theme="light"] a.admin-btn-primary,
+    .admin-theme-light button[class*="bg-[#8C3A4F]"],
+    .admin-theme-light button[class*="bg-[#A84358]"],
+    .admin-theme-light button[class*="bg-emerald-"],
+    .admin-theme-light button[class*="bg-rose-700"],
+    .admin-theme-light button.admin-btn-primary,
+    .admin-theme-light a[class*="bg-[#8C3A4F]"],
+    .admin-theme-light a[class*="bg-[#A84358]"],
+    .admin-theme-light a[class*="bg-emerald-"],
+    .admin-theme-light a[class*="bg-rose-700"],
+    .admin-theme-light a.admin-btn-primary {
+      background-color: #8C3A4F !important;
+      color: #ffffff !important;
+    }
+
+    [data-admin-theme="light"] button[class*="bg-[#8C3A4F]"] *,
+    [data-admin-theme="light"] button[class*="bg-[#A84358]"] *,
+    [data-admin-theme="light"] button[class*="bg-emerald-"] *,
+    [data-admin-theme="light"] button[class*="bg-rose-700"] *,
+    [data-admin-theme="light"] button.admin-btn-primary *,
+    [data-admin-theme="light"] a[class*="bg-[#8C3A4F]"] *,
+    [data-admin-theme="light"] a[class*="bg-[#A84358]"] *,
+    [data-admin-theme="light"] a[class*="bg-emerald-"] *,
+    [data-admin-theme="light"] a[class*="bg-rose-700"] *,
+    [data-admin-theme="light"] a.admin-btn-primary *,
+    .admin-theme-light button[class*="bg-[#8C3A4F]"] *,
+    .admin-theme-light button[class*="bg-[#A84358]"] *,
+    .admin-theme-light button[class*="bg-emerald-"] *,
+    .admin-theme-light button[class*="bg-rose-700"] *,
+    .admin-theme-light button.admin-btn-primary *,
+    .admin-theme-light a[class*="bg-[#8C3A4F]"] *,
+    .admin-theme-light a[class*="bg-[#A84358]"] *,
+    .admin-theme-light a[class*="bg-emerald-"] *,
+    .admin-theme-light a[class*="bg-rose-700"] *,
+    .admin-theme-light a.admin-btn-primary * {
+      color: #ffffff !important;
+      stroke: #ffffff !important;
+    }
+
+    [data-admin-theme="light"] button[class*="bg-[#8C3A4F]"]:hover,
+    [data-admin-theme="light"] button[class*="bg-[#A84358]"]:hover,
+    [data-admin-theme="light"] button[class*="bg-emerald-"]:hover,
+    [data-admin-theme="light"] button[class*="bg-rose-700"]:hover,
+    [data-admin-theme="light"] button.admin-btn-primary:hover,
+    [data-admin-theme="light"] a[class*="bg-[#8C3A4F]"]:hover,
+    [data-admin-theme="light"] a[class*="bg-[#A84358]"]:hover,
+    [data-admin-theme="light"] a[class*="bg-emerald-"]:hover,
+    [data-admin-theme="light"] a[class*="bg-rose-700"]:hover,
+    [data-admin-theme="light"] a.admin-btn-primary:hover,
+    .admin-theme-light button[class*="bg-[#8C3A4F]"]:hover,
+    .admin-theme-light button[class*="bg-[#A84358]"]:hover,
+    .admin-theme-light button[class*="bg-emerald-"]:hover,
+    .admin-theme-light button[class*="bg-rose-700"]:hover,
+    .admin-theme-light button.admin-btn-primary:hover,
+    .admin-theme-light a[class*="bg-[#8C3A4F]"]:hover,
+    .admin-theme-light a[class*="bg-[#A84358]"]:hover,
+    .admin-theme-light a[class*="bg-emerald-"]:hover,
+    .admin-theme-light a[class*="bg-rose-700"]:hover,
+    .admin-theme-light a.admin-btn-primary:hover {
+      background-color: #722E3F !important;
+      color: #ffffff !important;
+    }
+
+    /* Any button with class text-white must NEVER have text overridden to black */
+    [data-admin-theme="light"] button.text-white,
+    [data-admin-theme="light"] button[class*="text-white"],
+    [data-admin-theme="light"] a.text-white,
+    [data-admin-theme="light"] a[class*="text-white"],
+    .admin-theme-light button.text-white,
+    .admin-theme-light button[class*="text-white"],
+    .admin-theme-light a.text-white,
+    .admin-theme-light a[class*="text-white"] {
+      color: #ffffff !important;
+    }
+
+    [data-admin-theme="light"] button.text-white *,
+    [data-admin-theme="light"] button[class*="text-white"] *,
+    [data-admin-theme="light"] a.text-white *,
+    [data-admin-theme="light"] a[class*="text-white"] *,
+    .admin-theme-light button.text-white *,
+    .admin-theme-light button[class*="text-white"] *,
+    .admin-theme-light a.text-white *,
+    .admin-theme-light a[class*="text-white"] * {
+      color: #ffffff !important;
+      stroke: #ffffff !important;
     }
 
     /* 6. Primary Action Buttons (Add, Save, Submit) */
@@ -377,16 +528,16 @@ export function AdminGlobalStyles() {
       color: #45363B !important;
     }
 
-    [data-admin-theme="light"] td span.text-white,
-    .admin-theme-light td span.text-white,
-    [data-admin-theme="light"] td p.text-white,
-    .admin-theme-light td p.text-white,
-    [data-admin-theme="light"] td div.text-white,
-    .admin-theme-light td div.text-white,
-    [data-admin-theme="light"] table span.text-white,
-    .admin-theme-light table span.text-white,
-    [data-admin-theme="light"] table p.text-white,
-    .admin-theme-light table p.text-white,
+    [data-admin-theme="light"] td span.text-white:not(button *):not(a *),
+    .admin-theme-light td span.text-white:not(button *):not(a *),
+    [data-admin-theme="light"] td p.text-white:not(button *):not(a *),
+    .admin-theme-light td p.text-white:not(button *):not(a *),
+    [data-admin-theme="light"] td div.text-white:not(button *):not(a *),
+    .admin-theme-light td div.text-white:not(button *):not(a *),
+    [data-admin-theme="light"] table span.text-white:not(button *):not(a *),
+    .admin-theme-light table span.text-white:not(button *):not(a *),
+    [data-admin-theme="light"] table p.text-white:not(button *):not(a *),
+    .admin-theme-light table p.text-white:not(button *):not(a *),
     [data-admin-theme="light"] table .text-white:not(button):not(button *):not(a):not(a *),
     .admin-theme-light table .text-white:not(button):not(button *):not(a):not(a *) {
       color: #2D1B1B !important;

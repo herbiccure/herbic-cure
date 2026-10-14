@@ -135,10 +135,10 @@ export default function AdminSocialContentPage() {
             <button
               type="submit"
               disabled={creating}
-              className="w-full py-3 bg-[#A84358] hover:bg-[#45363B] text-white rounded-xl font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all disabled:opacity-50"
+              className="w-full py-3 bg-[#8C3A4F] hover:bg-[#722E3F] text-white rounded-xl font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all disabled:opacity-50"
             >
-              <Plus className="w-4 h-4" />
-              <span>{creating ? 'Saving...' : 'Add Video Card'}</span>
+              <Plus className="w-4 h-4 text-white" />
+              <span className="text-white">{creating ? 'Saving...' : 'Add Video Card'}</span>
             </button>
           </form>
         </div>
