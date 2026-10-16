@@ -3,8 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import {
-  ShoppingBag,
+import { ShoppingBag,
   Trash2,
   Plus,
   Minus,
@@ -12,8 +11,7 @@ import {
   ShieldCheck,
   Tag,
   Check,
-  Truck,
-} from 'lucide-react';
+  Truck, Sparkles } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 export default function CartPage() {
@@ -123,7 +121,7 @@ export default function CartPage() {
               {neededForFreeShipping > 0 ? (
                 <>Add ₹{neededForFreeShipping} more to qualify for FREE Express Shipping!</>
               ) : (
-                <>🎉 Congratulations! You have unlocked FREE Express Delivery across India!</>
+                <><Sparkles className="w-4 h-4 text-emerald-600 inline shrink-0 mr-1" /> Congratulations! You have unlocked FREE Express Delivery across India!</>
               )}
             </span>
             <span>{progressPercent}%</span>

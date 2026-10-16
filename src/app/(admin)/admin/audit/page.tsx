@@ -41,13 +41,13 @@ export default function AdminAuditPage() {
           placeholder="Filter by action (e.g. REFUND, STAFF)..."
           value={filterAction}
           onChange={(e) => setFilterAction(e.target.value)}
-          className="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs w-64"
+          className="p-2.5 bg-white border border-[#EAC9D1] rounded-xl text-xs w-64 text-[#2D1B1B] font-medium placeholder:text-[#9C7A84] focus:outline-none focus:ring-2 focus:ring-[#8C3A4F] shadow-2xs"
         />
         <input
           placeholder="Filter by resource (e.g. User, Order)..."
           value={filterResource}
           onChange={(e) => setFilterResource(e.target.value)}
-          className="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs w-64"
+          className="p-2.5 bg-white border border-[#EAC9D1] rounded-xl text-xs w-64 text-[#2D1B1B] font-medium placeholder:text-[#9C7A84] focus:outline-none focus:ring-2 focus:ring-[#8C3A4F] shadow-2xs"
         />
       </div>
 
@@ -56,35 +56,34 @@ export default function AdminAuditPage() {
           <Loader2 className="w-6 h-6 animate-spin text-rose-700" />
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider font-semibold">
+        <div className="bg-white rounded-3xl border border-[#EAC9D1] overflow-hidden shadow-2xs">
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full min-w-[850px] text-left text-xs">
+            <thead className="bg-[#FCF4F7] border-b border-[#EAC9D1] text-[#45363B] uppercase tracking-wider font-bold text-[11px]">
               <tr>
-                <th className="p-4">Timestamp</th>
-                <th className="p-4">Actor</th>
-                <th className="p-4">Role</th>
-                <th className="p-4">Action</th>
-                <th className="p-4">Resource</th>
-                <th className="p-4">IP</th>
-                <th className="p-4">Status</th>
+                <th className="p-4 whitespace-nowrap">Timestamp</th>
+                <th className="p-4 whitespace-nowrap">Actor</th>
+                <th className="p-4 whitespace-nowrap">Role</th>
+                <th className="p-4 whitespace-nowrap">Action</th>
+                <th className="p-4 whitespace-nowrap">Resource</th>
+                <th className="p-4 whitespace-nowrap">IP</th>
+                <th className="p-4 whitespace-nowrap">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {logs.map((log) => (
                 <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                  <td className="p-4 text-slate-500 whitespace-nowrap">
+                  <td className="p-4 text-[#7A5B64] font-medium whitespace-nowrap">
                     {new Date(log.timestamp).toLocaleString('en-IN')}
                   </td>
-                  <td className="p-4 font-medium text-slate-900 dark:text-slate-100">{log.actorEmail}</td>
-                  <td className="p-4">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                      {log.actorRole}
-                    </span>
+                  <td className="p-4 font-bold text-[#2D1B1B] whitespace-nowrap">{log.actorEmail}</td>
+                  <td className="p-4 whitespace-nowrap">
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#F6DFE7] text-[#8C3A4F] border border-[#EAC9D1]">{log.actorRole}</span>
                   </td>
-                  <td className="p-4 font-mono font-bold text-slate-800 dark:text-slate-200">{log.action}</td>
-                  <td className="p-4 text-slate-600 dark:text-slate-400">{log.resource}</td>
-                  <td className="p-4 text-slate-400 font-mono text-[11px]">{log.ipAddress}</td>
-                  <td className="p-4">
+                  <td className="p-4 font-mono font-black text-[#8C3A4F] whitespace-nowrap">{log.action}</td>
+                  <td className="p-4 font-semibold text-[#45363B] whitespace-nowrap">{log.resource}</td>
+                  <td className="p-4 text-[#7A5B64] font-mono text-xs whitespace-nowrap">{log.ipAddress}</td>
+                  <td className="p-4 whitespace-nowrap">
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
                       {log.status}
                     </span>
@@ -93,6 +92,7 @@ export default function AdminAuditPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

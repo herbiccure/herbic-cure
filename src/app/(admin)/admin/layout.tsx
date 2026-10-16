@@ -1,3 +1,4 @@
+import { ShieldAlert } from 'lucide-react';
 import React from 'react';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
@@ -22,18 +23,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const role = (session?.user as { role?: string })?.role || 'CUSTOMER';
 
-  const cookieStore = await cookies();
-  const themeCookie = cookieStore.get('herbic_admin_theme')?.value as AdminTheme | undefined;
-  const initialTheme: AdminTheme = themeCookie === 'dark' ? 'dark' : 'light';
+  
 
   return (
-    <AdminThemeProvider initialTheme={initialTheme}>
-      <AdminShell userRole={role}>
+    <AdminThemeProvider>
+      <AdminShell userRole={role} isAuthenticated={Boolean(session?.user)}>
         {session?.user && !isAdminRole(role) ? (
           <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center">
-            <div className="w-16 h-16 rounded-3xl bg-rose-100 text-rose-700 flex items-center justify-center text-2xl font-bold mb-4 shadow-sm">
-              🛡️
-            </div>
+            <div className="w-16 h-16 rounded-3xl bg-rose-100 text-rose-700 flex items-center justify-center mb-4 shadow-sm"><ShieldAlert className="w-8 h-8" /></div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-serif">403 - Access Forbidden</h1>
             <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mt-2">
               Your account ({session.user.email}) does not possess staff or administrative authorization for this console.

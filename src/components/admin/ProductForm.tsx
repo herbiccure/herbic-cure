@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import {
-  Save,
+import { Save,
   ArrowLeft,
   Flame,
   Tag,
@@ -16,8 +15,7 @@ import {
   Package,
   Eye,
   Percent,
-  Clock,
-} from 'lucide-react';
+  Clock, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminTheme } from '@/components/admin/AdminThemeProvider';
 import { cn } from '@/lib/utils';
@@ -653,7 +651,7 @@ export default function ProductForm({ isEdit = false, initialData }: ProductForm
           {/* Quick Preset Deal Buttons */}
           <div className="pt-2">
             <span className="block text-[11px] font-bold text-slate-500 mb-2">
-              ⚡ Quick Deal Presets (Calculates Deal Price automatically):
+              <Zap className="w-3.5 h-3.5 text-amber-500 inline mr-1" /> Quick Deal Presets (Calculates Deal Price automatically):
             </span>
             <div className="flex flex-wrap gap-2">
               {[10, 15, 20, 25, 30, 40, 50].map((pct) => (
@@ -683,7 +681,7 @@ export default function ProductForm({ isEdit = false, initialData }: ProductForm
                   }}
                   className="px-2.5 py-1 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-500/10 border border-rose-500/30 transition-all cursor-pointer"
                 >
-                  ✕ Clear Deal
+                  Clear Deal
                 </button>
               )}
             </div>

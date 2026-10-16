@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authClient } from '@/lib/auth/auth-client';
-import { ArrowRight, Lock, Mail, AlertCircle, Loader2, Sparkles, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Lock, Mail, AlertCircle, Loader2, Sparkles, ShieldCheck, Sprout } from 'lucide-react';
 import { toast } from 'sonner';
 
 function LoginContent() {
@@ -35,8 +35,18 @@ function LoginContent() {
       }
 
       toast.success('Signed in successfully!');
-      router.push(callbackUrl);
-      router.refresh();
+      // Check if user is staff/admin, or if callbackUrl was /admin
+      try {
+        const sessionRes = await authClient.getSession();
+        const role = (sessionRes?.data?.user as any)?.role;
+        if (role && ['SUPER_ADMIN', 'ADMIN', 'STORE_MANAGER', 'STAFF'].includes(role) && (!callbackUrl || callbackUrl === '/account')) {
+          window.location.href = '/admin';
+          return;
+        }
+      } catch (e) {
+        // Fallback
+      }
+      window.location.href = callbackUrl;
     } catch {
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
@@ -47,11 +57,21 @@ function LoginContent() {
     <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-stone-50">
       <div className="max-w-md w-full space-y-8 bg-white p-8 sm:p-10 rounded-3xl border border-stone-200/80 shadow-xl shadow-stone-200/50">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 mb-4 shadow-sm">
-            <Sparkles className="w-6 h-6 text-emerald-700" />
+          <div className="inline-flex items-center justify-center gap-2.5 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-[#8C3A4F] text-white flex items-center justify-center shadow-md">
+              <Sprout className="w-5 h-5" />
+            </div>
+            <div className="text-left">
+              <span className="font-serif font-black text-xl tracking-wider text-[#2D1B1B] block leading-tight">
+                HERBIC CURE
+              </span>
+              <span className="text-[11px] text-[#7A5B64] font-semibold tracking-tight block">
+                Customer Account Portal
+              </span>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-stone-900 font-serif">Welcome Back</h1>
-          <p className="mt-2 text-sm text-stone-600">
+          <h1 className="text-xl font-bold tracking-tight text-stone-900 font-serif mt-2">Welcome Back</h1>
+          <p className="mt-1 text-xs text-stone-600">
             Sign in to access your Ayurvedic orders, consultations, and saved addresses.
           </p>
         </div>

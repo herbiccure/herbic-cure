@@ -42,6 +42,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  compress: true,
   /* Allow access and HMR websocket connections from local network devices (e.g. mobile testing) */
   allowedDevOrigins: [
     '192.168.1.9',
@@ -52,6 +53,9 @@ const nextConfig: NextConfig = {
     '127.0.0.1',
     '127.0.0.1:3000',
   ],
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'sonner', 'better-auth'],
+  },
   async headers() {
     return [
       {
@@ -61,6 +65,8 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 86400,
     remotePatterns: [
       {
         protocol: 'https',

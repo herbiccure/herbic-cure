@@ -28,9 +28,9 @@ export async function GET() {
     }
 
     let announcements: string[] = [
-      '♥ Experience the power of South India’s best natural Hair Oils',
-      '🌿 Handcrafted with 21 Himalayan Herbs & Authentic Kshirapak Vidhi – 100% Pure & Toxin-Free',
-      '🚚 Free Express Shipping & Cash on Delivery Available Across India on Orders Above ₹499',
+      "Experience the power of South India's best natural Hair Oils",
+      "Handcrafted with 21 Himalayan Herbs & Authentic Kshirapak Vidhi — 100% Pure & Toxin-Free",
+      "Free Express Shipping & Cash on Delivery Available Across India on Orders Above ₹499",
     ];
 
     if (map['announcements']) {

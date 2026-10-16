@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import Script from 'next/script';
 import { useRouter } from 'next/navigation';
 import {
   ShieldCheck,
@@ -29,6 +30,16 @@ export default function CheckoutPage() {
 
   const [loading, setLoading] = useState(false);
   const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
+
+  // Delhivery live pincode serviceability state
+  const [pincodeChecking, setPincodeChecking] = useState(false);
+  const [delhiveryStatus, setDelhiveryStatus] = useState<{
+    checked: boolean;
+    serviceable: boolean;
+    message: string;
+    expectedDeliveryDays?: number;
+  } | null>(null);
+
   const [formData, setFormData] = useState({
     name: customer?.name || '',
     phone: customer?.phone || '',
@@ -37,7 +48,7 @@ export default function CheckoutPage() {
     city: '',
     state: '',
     pincode: '',
-    paymentMethod: 'COD' as 'COD' | 'UPI' | 'CARD',
+    paymentMethod: 'COD' as 'COD' | 'CASHFREE' | 'ONLINE' | 'UPI' | 'CARD',
   });
 
   React.useEffect(() => {
@@ -51,6 +62,51 @@ export default function CheckoutPage() {
     }
   }, [customer]);
 
+  // Live Delhivery postal serviceability check
+  React.useEffect(() => {
+    const cleanPin = formData.pincode.trim();
+    if (cleanPin.length === 6 && /^\d{6}$/.test(cleanPin)) {
+      let cancelled = false;
+      setPincodeChecking(true);
+      fetch('/api/shipping/delhivery/serviceability?pincode=' + cleanPin)
+        .then((res) => res.json())
+        .then((data) => {
+          if (cancelled) return;
+          if (data.serviceable) {
+            setDelhiveryStatus({
+              checked: true,
+              serviceable: true,
+              message: 'Delhivery Express available to ' + (data.city || 'your area') + ' (Est. ' + (data.expectedDeliveryDays || '2-4') + ' days)',
+              expectedDeliveryDays: data.expectedDeliveryDays,
+            });
+          } else {
+            setDelhiveryStatus({
+              checked: true,
+              serviceable: false,
+              message: 'Standard Pan-India courier delivery active',
+            });
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setDelhiveryStatus({
+              checked: true,
+              serviceable: true,
+              message: 'Delhivery Express shipping available',
+            });
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setPincodeChecking(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    } else {
+      setDelhiveryStatus(null);
+    }
+  }, [formData.pincode]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customer) {
@@ -58,7 +114,83 @@ export default function CheckoutPage() {
       router.push('/account/login?callbackUrl=/checkout');
       return;
     }
-    if (isLoading) {
+
+    if (items.length === 0) {
+      toast.error('Your shopping bag is empty');
+      return;
+    }
+
+    const parsed = checkoutSchema.safeParse(formData);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || 'Please verify your delivery details');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/orders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...parsed.data,
+          items,
+          subtotal,
+          discount: discountAmount,
+          shippingFee,
+          total: finalTotal,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        clearCart();
+
+        // If Cashfree payment session returned
+        if (data.cashfreePaymentSessionId) {
+          toast.success('Order initiated! Opening secure Cashfree checkout...');
+          try {
+            if (typeof (window as any).Cashfree !== 'undefined') {
+              const cfMode =
+                process.env.NEXT_PUBLIC_CASHFREE_ENV === 'production' ? 'production' : 'sandbox';
+              const cashfree = (window as any).Cashfree({ mode: cfMode });
+              await cashfree.checkout({
+                paymentSessionId: data.cashfreePaymentSessionId,
+                redirectTarget: '_self',
+              });
+              return;
+            } else {
+              window.location.href = '/api/payment/cashfree/verify?order_id=' + data.orderId;
+              return;
+            }
+          } catch (sdkErr) {
+            console.error('Cashfree SDK invocation error:', sdkErr);
+            window.location.href = '/order-success?orderId=' + data.orderId;
+            return;
+          }
+        }
+
+        toast.success('Order confirmed successfully!');
+        router.push(
+          '/order-success?orderId=' + (data.orderId || ('HC-' + Date.now().toString().slice(-6)))
+        );
+      } else {
+        if (res.status === 401) {
+          toast.error('Please log in to complete your purchase');
+          router.push('/account/login?callbackUrl=/checkout');
+          return;
+        }
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to process order');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error creating order. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (isLoading) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center bg-[#FCF8F9]">
         <div className="w-10 h-10 border-2 border-[#8C3A4F] border-t-transparent rounded-full animate-spin mb-4" />
@@ -128,54 +260,6 @@ export default function CheckoutPage() {
   }
 
   if (items.length === 0) {
-      toast.error('Your shopping bag is empty');
-      return;
-    }
-
-    const parsed = checkoutSchema.safeParse(formData);
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message || 'Please verify your delivery details');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/orders/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...parsed.data,
-          items,
-          subtotal,
-          discount: discountAmount,
-          shippingFee,
-          total: finalTotal,
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        toast.success('Order confirmed successfully!');
-        clearCart();
-        router.push(`/order-success?orderId=${data.orderId || 'HC-' + Date.now().toString().slice(-6)}`);
-      } else {
-        if (res.status === 401) {
-          toast.error('Please log in to complete your purchase');
-          router.push('/account/login?callbackUrl=/checkout');
-          return;
-        }
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Failed to process order');
-      }
-    } catch (err: any) {
-      toast.error(err.message || 'Error creating order. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (items.length === 0) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center bg-[#FCF8F9]">
         <div className="w-16 h-16 rounded-3xl bg-[#F6DFE7] text-[#8C3A4F] flex items-center justify-center mb-5 border border-[#EAC9D1]">
@@ -198,6 +282,9 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-[#FCF8F9] py-8 sm:py-12">
+      {/* Load Cashfree Web SDK */}
+      <Script src="https://sdk.cashfree.com/js/v3/cashfree.js" strategy="lazyOnload" />
+
       <div className="w-full max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top Header & Breadcrumb */}
         <div className="mb-6 sm:mb-8">
@@ -279,7 +366,7 @@ export default function CheckoutPage() {
                 <div className="flex justify-between">
                   <span>Shipping</span>
                   <span className="font-semibold text-emerald-700">
-                    {shippingFee === 0 ? 'FREE' : `₹${shippingFee}`}
+                    {shippingFee === 0 ? 'FREE' : ('₹' + shippingFee)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-extrabold text-[#2D1B1B] pt-2 border-t border-[#F2DFE4]">
@@ -372,11 +459,11 @@ export default function CheckoutPage() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="For invoice & order confirmation"
-                    className={`w-full bg-[#FAF5F7] border border-[#E2CBD2] rounded-xl px-4 py-3 text-xs text-[#2D1B1B] placeholder:text-[#9E828A] outline-none transition-all ${
+                    className={'w-full bg-[#FAF5F7] border border-[#E2CBD2] rounded-xl px-4 py-3 text-xs text-[#2D1B1B] placeholder:text-[#9E828A] outline-none transition-all ' + (
                       customer?.email
                         ? 'cursor-not-allowed bg-stone-100/70 text-stone-600'
                         : 'focus:border-[#8C3A4F] focus:ring-2 focus:ring-[#8C3A4F]/20 hover:bg-white focus:bg-white'
-                    }`}
+                    )}
                   />
                   {customer?.email && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
@@ -441,6 +528,22 @@ export default function CheckoutPage() {
                     placeholder="6-digit PIN"
                     className="w-full bg-[#FAF5F7] hover:bg-white focus:bg-white border border-[#E2CBD2] rounded-xl px-4 py-3 text-xs text-[#2D1B1B] placeholder:text-[#9E828A] focus:border-[#8C3A4F] focus:ring-2 focus:ring-[#8C3A4F]/20 outline-none transition-all"
                   />
+                  {/* Delhivery Live Pincode Serviceability Indicator */}
+                  {pincodeChecking && (
+                    <p className="text-[10px] text-[#8C3A4F] mt-1.5 flex items-center gap-1 font-medium animate-pulse">
+                      <Truck className="w-3 h-3 animate-bounce" /> Checking Delhivery logistics...
+                    </p>
+                  )}
+                  {!pincodeChecking && delhiveryStatus && (
+                    <p
+                      className={'text-[10px] mt-1.5 flex items-center gap-1 font-medium ' + (
+                        delhiveryStatus.serviceable ? 'text-emerald-700' : 'text-amber-800'
+                      )}
+                    >
+                      <Truck className="w-3 h-3 shrink-0" />
+                      <span>{delhiveryStatus.message}</span>
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -457,11 +560,11 @@ export default function CheckoutPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <label
-                    className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${
+                    className={'flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ' + (
                       formData.paymentMethod === 'COD'
                         ? 'border-[#8C3A4F] bg-[#FCF4F7] ring-2 ring-[#8C3A4F]/20 shadow-xs'
                         : 'border-[#EAC9D1] bg-white hover:bg-[#FCF8F9]'
-                    }`}
+                    )}
                   >
                     <input
                       type="radio"
@@ -485,18 +588,24 @@ export default function CheckoutPage() {
                   </label>
 
                   <label
-                    className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${
-                      formData.paymentMethod === 'UPI' || formData.paymentMethod === 'CARD'
+                    className={'flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ' + (
+                      formData.paymentMethod === 'CASHFREE' ||
+                      formData.paymentMethod === 'UPI' ||
+                      formData.paymentMethod === 'CARD'
                         ? 'border-[#8C3A4F] bg-[#FCF4F7] ring-2 ring-[#8C3A4F]/20 shadow-xs'
                         : 'border-[#EAC9D1] bg-white hover:bg-[#FCF8F9]'
-                    }`}
+                    )}
                   >
                     <input
                       type="radio"
                       name="paymentMethod"
-                      value="UPI"
-                      checked={formData.paymentMethod === 'UPI' || formData.paymentMethod === 'CARD'}
-                      onChange={() => setFormData({ ...formData, paymentMethod: 'UPI' })}
+                      value="CASHFREE"
+                      checked={
+                        formData.paymentMethod === 'CASHFREE' ||
+                        formData.paymentMethod === 'UPI' ||
+                        formData.paymentMethod === 'CARD'
+                      }
+                      onChange={() => setFormData({ ...formData, paymentMethod: 'CASHFREE' })}
                       className="accent-[#8C3A4F] mt-0.5"
                     />
                     <div className="flex-1">
@@ -507,7 +616,7 @@ export default function CheckoutPage() {
                         </span>
                       </div>
                       <span className="block text-[11px] text-[#7A5B64] mt-1 leading-snug">
-                        Fast 100% Secure Checkout with instant dispatch
+                        Instant UPI, Credit/Debit Card &amp; NetBanking via Cashfree Payments
                       </span>
                     </div>
                   </label>
@@ -523,13 +632,13 @@ export default function CheckoutPage() {
                 >
                   <Lock className="w-4 h-4" />
                   <span>
-                    {loading ? 'Confirming Ayurvedic Order...' : `PLACE ORDER • ₹${finalTotal}`}
+                    {loading ? 'Confirming Ayurvedic Order...' : ('PLACE ORDER • ₹' + finalTotal)}
                   </span>
                 </button>
                 <div className="mt-3 flex items-center justify-center gap-4 text-[11px] text-[#7A5B64]">
                   <span className="flex items-center gap-1">
                     <Truck className="w-3.5 h-3.5 text-[#8C3A4F]" />
-                    Pan-India Express Delivery
+                    Delhivery Express Delivery
                   </span>
                   <span>•</span>
                   <span>Zero Hidden Charges</span>
@@ -585,7 +694,7 @@ export default function CheckoutPage() {
                 <div className="flex justify-between items-center">
                   <span>Shipping Fee</span>
                   <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px]">
-                    {shippingFee === 0 ? 'FREE' : `₹${shippingFee}`}
+                    {shippingFee === 0 ? 'FREE' : ('₹' + shippingFee)}
                   </span>
                 </div>
                 <div className="flex justify-between text-base font-extrabold text-[#2D1B1B] pt-3 border-t border-[#F2DFE4]">

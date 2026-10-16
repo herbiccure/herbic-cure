@@ -19,9 +19,9 @@ import {
 import { useAdminTheme } from '@/components/admin/AdminThemeProvider';
 
 const DEFAULT_LINES = [
-  '♥ Experience the power of South India’s best natural Hair Oils',
-  '🌿 Handcrafted with 21 Himalayan Herbs & Authentic Kshirapak Vidhi – 100% Pure & Toxin-Free',
-  '🚚 Free Express Shipping & Cash on Delivery Available Across India on Orders Above ₹499',
+  "Experience the power of South India's best natural Hair Oils",
+  "Handcrafted with 21 Himalayan Herbs & Authentic Kshirapak Vidhi — 100% Pure & Toxin-Free",
+  "Free Express Shipping & Cash on Delivery Available Across India on Orders Above ₹499",
 ];
 
 const PRESET_BG_COLORS = [
@@ -285,7 +285,7 @@ export default function AdminAnnouncementsPage() {
                         <span className="text-[11px] sm:text-xs font-semibold tracking-wider px-6 sm:px-8 inline-block whitespace-nowrap">
                           {text}
                         </span>
-                        <span className="text-amber-400/90 text-xs shrink-0 select-none">✦</span>
+                        <Sparkles className="w-3 h-3 text-amber-400/90 inline shrink-0 select-none" />
                       </div>
                     ))}
                   </div>
@@ -295,7 +295,7 @@ export default function AdminAnnouncementsPage() {
                         <span className="text-[11px] sm:text-xs font-semibold tracking-wider px-6 sm:px-8 inline-block whitespace-nowrap">
                           {text}
                         </span>
-                        <span className="text-amber-400/90 text-xs shrink-0 select-none">✦</span>
+                        <Sparkles className="w-3 h-3 text-amber-400/90 inline shrink-0 select-none" />
                       </div>
                     ))}
                   </div>
@@ -346,7 +346,7 @@ export default function AdminAnnouncementsPage() {
           <form onSubmit={handleAddLine} className="flex gap-2">
             <input
               type="text"
-              placeholder="e.g. ♥ Experience the power of South India's best natural Hair Oils"
+              placeholder="e.g. Experience the power of South India's best natural Hair Oils"
               value={newLineText}
               onChange={(e) => setNewLineText(e.target.value)}
               className={`flex-1 rounded-xl px-3.5 py-2.5 text-xs outline-none border transition-colors ${
@@ -372,11 +372,11 @@ export default function AdminAnnouncementsPage() {
             </p>
             <div className="flex flex-wrap gap-1.5">
               {[
-                '♥ Experience the power of South India’s best natural Hair Oils',
-                '🌿 Handcrafted with 21 Himalayan Herbs & Authentic Kshirapak Vidhi',
-                '🚚 Free Express Shipping & Cash on Delivery Available Across India',
-                '💬 Instant Ayurvedic Expert Guidance on WhatsApp: +91 8121961219',
-                '✨ Flat 10% Off on your first order with coupon code HERBIC10',
+                'Experience the power of South India’s best natural Hair Oils',
+                'Handcrafted with 21 Himalayan Herbs & Authentic Kshirapak Vidhi',
+                'Free Express Shipping & Cash on Delivery Available Across India',
+                'Instant Ayurvedic Expert Guidance on WhatsApp: +91 8121961219',
+                'Flat 10% Off on your first order with coupon code HERBIC10',
               ].map((suggestion, sIdx) => (
                 <button
                   key={sIdx}

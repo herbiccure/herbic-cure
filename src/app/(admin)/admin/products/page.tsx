@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
@@ -23,6 +23,7 @@ import {
   ArrowRight,
   TrendingUp,
   Clock,
+  X,
 } from 'lucide-react';
 import { fetcher } from '@/lib/fetcher';
 import { AdminDataTable, Column } from '@/components/admin/AdminDataTable';
@@ -102,7 +103,7 @@ export default function AdminProductsPage() {
       p.id,
       { isBestSeller: nextVal },
       nextVal
-        ? `🔥 "${p.name}" added to Home Best Sellers!`
+        ? `"${p.name}" added to Home Best Sellers!`
         : `"${p.name}" removed from Best Sellers`
     );
   };
@@ -131,8 +132,8 @@ export default function AdminProductsPage() {
       p.id,
       { hasTimer: nextVal },
       nextVal
-        ? `⏱️ Urgency countdown timer activated on "${p.name}"!`
-        : `⏱️ Urgency countdown timer removed from "${p.name}"`
+        ? ` Urgency countdown timer activated on "${p.name}"!`
+        : ` Urgency countdown timer removed from "${p.name}"`
     );
   };
 
@@ -140,7 +141,7 @@ export default function AdminProductsPage() {
     await handleFastUpdate(
       p.id,
       { hasTimer: false },
-      `⏱️ Urgency countdown timer stopped on "${p.name}"`
+      ` Urgency countdown timer stopped on "${p.name}"`
     );
   };
 
@@ -191,7 +192,7 @@ export default function AdminProductsPage() {
 
       toast.success(
         dealEnabled
-          ? `🏷️ Deal applied: ₹${saleNum} (${Math.round(
+          ? `Deal applied: ₹${saleNum} (${Math.round(
               ((dealModalProduct.regularPrice - saleNum) / dealModalProduct.regularPrice) * 100
             )}% OFF)!`
           : 'Promotional deal removed'
@@ -429,7 +430,7 @@ export default function AdminProductsPage() {
               className="px-2 py-1 rounded-xl text-[10px] font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 border border-rose-500/30 transition-all cursor-pointer shrink-0"
               title="Stop & remove urgency timer from this product"
             >
-              ✕ Stop
+              Stop
             </button>
           )}
         </div>
@@ -751,7 +752,7 @@ export default function AdminProductsPage() {
           )}
         >
           <Clock className="w-3.5 h-3.5" />
-          <span>⏱️ With Timer ({timerCount})</span>
+          <span> With Timer ({timerCount})</span>
         </button>
         <button
           type="button"
@@ -846,9 +847,7 @@ export default function AdminProductsPage() {
                 type="button"
                 onClick={() => setDealModalProduct(null)}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold p-1 cursor-pointer"
-              >
-                ✕
-              </button>
+              ><X className="w-3.5 h-3.5" /></button>
             </div>
 
             {/* Product Summary */}
@@ -939,7 +938,7 @@ export default function AdminProductsPage() {
                 {/* Preset Discount Chips */}
                 <div>
                   <span className="block text-[11px] font-bold text-slate-500 mb-1.5">
-                    ⚡ Quick Preset Discounts:
+                    Quick Preset Discounts:
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {[10, 15, 20, 25, 30, 40, 50].map((pct) => {
@@ -1078,3 +1077,4 @@ export default function AdminProductsPage() {
     </div>
   );
 }
+

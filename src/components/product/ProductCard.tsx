@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import LazyImage from '@/components/ui/LazyImage';
 import { Star, ShoppingBag, Check } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
@@ -90,12 +91,13 @@ export default function ProductCard({
           </div>
         )}
 
-        <Image
+        <LazyImage
           src={image}
           alt={name}
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
+          wrapperClassName="w-full h-full"
         />
       </Link>
 

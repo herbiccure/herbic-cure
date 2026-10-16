@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import {
+import { LayoutDashboard,
   ShoppingCart,
   Package,
   Boxes,
@@ -17,27 +17,27 @@ import {
   BookOpen,
   Share2,
   LayoutGrid,
-  Image as ImageIcon,
   MessageSquare,
   Mail,
   Megaphone,
-  Settings,
-  Menu,
-  X,
-  ExternalLink,
-  LogOut,
+  Percent,
+  RotateCcw,
   ShieldCheck,
   FileText,
-  RotateCcw,
-  TrendingUp,
-} from 'lucide-react';
-import { AdminThemeToggle } from './AdminThemeToggle';
+  Settings,
+  HelpCircle,
+  ExternalLink,
+  LogOut,
+  ChevronRight,
+  Menu,
+  X,
+  TrendingUp, Sprout } from 'lucide-react';
 import { useAdminTheme } from './AdminThemeProvider';
-import { Toaster } from 'sonner';
 
-interface AdminShellProps {
+export interface AdminShellProps {
   children: React.ReactNode;
   userRole?: string;
+  isAuthenticated?: boolean;
 }
 
 interface NavSection {
@@ -50,6 +50,13 @@ interface NavSection {
 }
 
 const NAV_SECTIONS: NavSection[] = [
+  {
+    title: 'Overview',
+    items: [
+      { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+      { label: 'Homepage CMS', href: '/admin/homepage', icon: LayoutGrid },
+    ],
+  },
   {
     title: 'Intelligence & Growth',
     items: [
@@ -66,31 +73,29 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: 'Catalog',
+    title: 'Storefront CMS',
     items: [
       { label: 'Categories', href: '/admin/categories', icon: FolderTree },
       { label: 'Collections', href: '/admin/collections', icon: Layers },
-      { label: 'Ingredients', href: '/admin/ingredients', icon: Sparkles },
     ],
   },
   {
-    title: 'Customers & Growth',
+    title: 'Customer Experience',
     items: [
-      { label: 'Customers', href: '/admin/customers', icon: Users },
-      { label: 'Coupons', href: '/admin/coupons', icon: Tag },
-      { label: 'Reviews', href: '/admin/reviews', icon: Star },
-      { label: 'Results & UGC', href: '/admin/customer-results', icon: Camera },
+      { label: 'Customer Base', href: '/admin/customers', icon: Users },
+      { label: 'Reviews & UGC', href: '/admin/reviews', icon: Star },
+      { label: 'Hair Results', href: '/admin/customer-results', icon: Camera },
+      { label: 'Inquiries', href: '/admin/contact-submissions', icon: MessageSquare },
+      { label: 'FAQ Database', href: '/admin/faqs', icon: HelpCircle },
     ],
   },
   {
-    title: 'Content & Media',
+    title: 'Marketing & Retention',
     items: [
-      { label: 'How to Use & Blog', href: '/admin/blog', icon: BookOpen },
+      { label: 'Discounts & Coupons', href: '/admin/coupons', icon: Percent },
+      { label: 'Banner & Deals', href: '/admin/announcements', icon: Megaphone },
+      { label: 'Ayurvedic Blog', href: '/admin/blog', icon: BookOpen },
       { label: 'Social Content', href: '/admin/social-content', icon: Share2 },
-      { label: 'Homepage CMS', href: '/admin/homepage', icon: LayoutGrid },
-      { label: 'Media Library', href: '/admin/media', icon: ImageIcon },
-      { label: 'Contact Inquiries', href: '/admin/contact-submissions', icon: MessageSquare },
-      { label: 'Announcement Bar', href: '/admin/announcements', icon: Megaphone },
       { label: 'Legal Policies', href: '/admin/policies', icon: FileText },
       { label: 'Subscribers', href: '/admin/subscribers', icon: Mail },
     ],
@@ -105,7 +110,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
-export function AdminShell({ children, userRole }: AdminShellProps) {
+export function AdminShell({ children, userRole, isAuthenticated = true }: AdminShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { theme } = useAdminTheme();
@@ -118,131 +123,133 @@ export function AdminShell({ children, userRole }: AdminShellProps) {
     return <main className="min-h-screen">{children}</main>;
   }
 
+  // If unauthenticated on a protected admin page, show loading state while redirecting
+  useEffect(() => {
+    if (!isAuthenticated && pathname !== '/admin/login') {
+      window.location.href = '/admin/login';
+    }
+  }, [isAuthenticated, pathname]);
+
+  if (!isAuthenticated) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-[#FCF8F9]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-[#8C3A4F] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs font-semibold text-[#7A5B64]">Redirecting to admin sign in...</p>
+        </div>
+      </main>
+    );
+  }
+
   const handleLogout = async () => {
     try {
       setLoggingOut(true);
       await fetch('/api/admin/logout', { method: 'POST' });
-      router.push('/admin/login');
-      router.refresh();
+      window.location.href = '/admin/login';
     } catch (e) {
       console.error('Logout error', e);
-      router.push('/admin/login');
-    } finally {
-      setLoggingOut(false);
+      window.location.href = '/admin/login';
     }
   };
 
   // Find current active item title for breadcrumb
-  let activeTitle = 'Admin Console';
-  for (const sec of NAV_SECTIONS) {
-    const found = sec.items.find(
-      (it) => pathname === it.href || (it.href !== '/admin' && pathname.startsWith(it.href))
-    );
-    if (found) {
-      activeTitle = found.label;
-      break;
+  let activeTitle = 'Dashboard';
+  if (pathname === '/admin') {
+    activeTitle = 'Dashboard';
+  } else {
+    for (const sec of NAV_SECTIONS) {
+      const found = sec.items.find(
+        (it) => it.href !== '/admin' && (pathname === it.href || pathname.startsWith(it.href + '/'))
+      );
+      if (found) {
+        activeTitle = found.label;
+        break;
+      }
     }
   }
 
   const renderNavList = () => (
-    <div className="space-y-6 py-4">
-      {NAV_SECTIONS.map((section) => (
-        <div key={section.title} className="px-3">
-          <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+    <nav className="p-3 space-y-6">
+      {NAV_SECTIONS.map((section, sIdx) => (
+        <div key={sIdx} className="space-y-1">
+          <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
             {section.title}
           </p>
           <div className="space-y-0.5">
             {section.items.map((item) => {
               const Icon = item.icon;
               const isActive =
-                pathname === item.href ||
-                (item.href !== '/admin' && pathname.startsWith(item.href));
+                item.href === '/admin'
+                  ? pathname === '/admin'
+                  : pathname === item.href || pathname.startsWith(item.href + '/');
 
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`group flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
                     isActive
-                      ? isLight
-                        ? 'admin-sidebar-nav-active bg-rose-50 text-rose-950 font-bold shadow-xs border-l-4 border-rose-600 pl-2'
-                        : 'bg-rose-950/60 text-rose-300 font-bold shadow-xs border-l-4 border-rose-500 pl-2'
+                      ? 'bg-[#8C3A4F] text-white shadow-xs font-bold'
                       : isLight
                       ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                   }`}
                 >
-                  <Icon
-                    className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
-                      isActive
-                        ? isLight
-                          ? 'text-rose-700'
-                          : 'text-rose-400'
-                        : isLight
-                        ? 'text-slate-500 group-hover:text-slate-800'
-                        : 'text-slate-400 group-hover:text-white'
-                    }`}
-                  />
-                  <span className={`truncate ${isActive && isLight ? 'text-rose-950 font-bold' : ''}`}>
-                    {item.label}
-                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <span>{item.label}</span>
+                  </div>
+                  {isActive && <ChevronRight className="w-3.5 h-3.5 opacity-80" />}
                 </Link>
               );
             })}
           </div>
         </div>
       ))}
-    </div>
+    </nav>
   );
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row admin-shell-container">
+    <div className="min-h-screen bg-[#FCF8F9] text-[#2D1B1B] admin-shell-container flex flex-col md:flex-row">
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex flex-col w-64 fixed inset-y-0 left-0 z-40 border-r transition-colors duration-200 ${
-          isLight
-            ? 'bg-white border-slate-200 text-slate-900'
-            : 'bg-slate-900 border-slate-800 text-slate-100'
-        }`}
+        className="hidden md:flex flex-col w-64 fixed inset-y-0 left-0 z-40 bg-white border-r border-[#EAC9D1] admin-sidebar-desktop"
       >
         {/* Brand Header */}
         <div
-          className={`h-16 px-5 flex items-center justify-between border-b ${
+          className={`h-16 px-6 flex items-center justify-between border-b transition-colors duration-200 ${
             isLight ? 'border-slate-200 bg-white' : 'border-slate-800 bg-slate-900/90'
           }`}
         >
-          <Link href="/admin/orders" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-xl bg-rose-700 text-white flex items-center justify-center font-bold text-sm shadow-md group-hover:bg-rose-800 transition-colors">
-              🌿
-            </div>
+          <Link href="/admin" className="flex items-center gap-2.5 group" title="Admin Dashboard Overview">
+            <div className="w-8 h-8 rounded-xl bg-rose-700 text-white flex items-center justify-center shadow-md group-hover:bg-rose-800 transition-colors"><Sprout className="w-4 h-4" /></div>
             <div>
-              <span className="font-serif font-black tracking-wide text-sm block leading-none">
-                HERBIC CURE
-              </span>
-              <span className={`text-[10px] font-semibold tracking-wider uppercase ${
-                isLight ? 'text-rose-700' : 'text-rose-400'
-              }`}>
-                Admin Panel
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="font-serif font-black text-sm tracking-wide"
+                  style={{ color: isLight ? '#2D1B1B' : '#FFFFFF' }}
+                >
+                  HERBIC CURE
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-400 font-medium tracking-tight">Admin Console</p>
             </div>
           </Link>
         </div>
 
-        {/* Navigation Items (Scrollable) */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin">
-          {renderNavList()}
-        </div>
+        {/* Navigation Links */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar">{renderNavList()}</div>
 
-        {/* Sidebar Footer User / Logout */}
+        {/* User Footer Profile & Actions */}
         <div
-          className={`p-3 border-t space-y-2 ${
-            isLight ? 'border-slate-200 bg-slate-50/70' : 'border-slate-800 bg-slate-950/40'
+          className={`p-4 border-t space-y-2.5 transition-colors duration-200 ${
+            isLight ? 'border-slate-200 bg-slate-50/60' : 'border-slate-800 bg-slate-900/40'
           }`}
         >
-          <div className="flex items-center justify-between px-2 py-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
                 isLight
                   ? 'bg-rose-100 text-rose-800'
                   : 'bg-rose-700/20 text-rose-400'
@@ -254,7 +261,6 @@ export function AdminShell({ children, userRole }: AdminShellProps) {
                 <p className="text-[10px] text-slate-500 truncate">SUPER_ADMIN</p>
               </div>
             </div>
-            <AdminThemeToggle variant="compact" />
           </div>
 
           <div className="grid grid-cols-2 gap-1.5 pt-1">
@@ -310,10 +316,16 @@ export function AdminShell({ children, userRole }: AdminShellProps) {
                 isLight ? 'border-slate-200' : 'border-slate-800'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🌿</span>
-                <span className="font-serif font-black text-sm">HERBIC CURE</span>
-              </div>
+              <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 group">
+                <div className="w-6 h-6 rounded-md bg-rose-700 text-white flex items-center justify-center"><Sprout className="w-3.5 h-3.5" /></div>
+                <span
+                  className="font-serif font-black text-sm"
+                  style={{ color: isLight ? '#2D1B1B' : '#FFFFFF' }}
+                >
+                  HERBIC CURE
+                </span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400">ADMIN</span>
+              </Link>
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
@@ -324,10 +336,6 @@ export function AdminShell({ children, userRole }: AdminShellProps) {
             </div>
             <div className="flex-1 overflow-y-auto">{renderNavList()}</div>
             <div className="p-4 border-t border-slate-800/50 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Appearance</span>
-                <AdminThemeToggle variant="segmented" />
-              </div>
               <button
                 type="button"
                 onClick={handleLogout}
@@ -342,14 +350,10 @@ export function AdminShell({ children, userRole }: AdminShellProps) {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 md:ml-64 flex flex-col min-w-0 min-h-screen">
+      <div className="admin-main-wrapper flex-1 flex flex-col min-w-0 min-h-screen md:ml-64 bg-[#FCF8F9]">
         {/* Top Navbar */}
         <header
-          className={`sticky top-0 z-30 h-16 border-b backdrop-blur-md transition-colors duration-200 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 ${
-            isLight
-              ? 'bg-white/90 border-slate-200 text-slate-900 shadow-xs'
-              : 'bg-slate-900/90 border-slate-800 text-slate-100 shadow-sm'
-          }`}
+          className="sticky top-0 z-30 h-16 border-b border-[#EAC9D1] bg-white/95 backdrop-blur-md px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 shadow-2xs"
         >
           {/* Mobile hamburger + Breadcrumb */}
           <div className="flex items-center gap-3 min-w-0">
@@ -367,20 +371,25 @@ export function AdminShell({ children, userRole }: AdminShellProps) {
             </button>
 
             <div>
-              <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                <span>Admin</span>
-                <span>/</span>
-                <span className={`font-semibold truncate ${isLight ? 'text-rose-700' : 'text-rose-400'}`}>
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                <Link
+                  href="/admin"
+                  className="font-medium hover:text-[#8C3A4F] dark:hover:text-rose-300 transition-colors flex items-center gap-1"
+                  title="Return to Admin Dashboard"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5 text-[#8C3A4F] dark:text-rose-400" />
+                  <span>Admin</span>
+                </Link>
+                <span className="text-slate-400 dark:text-slate-600">/</span>
+                <span className={`font-bold truncate ${isLight ? 'text-[#8C3A4F]' : 'text-rose-400'}`}>
                   {activeTitle}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Top Actions: Theme toggle, Store preview, Logout */}
+          {/* Top Actions: Store preview & Logout */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <AdminThemeToggle variant="segmented" />
-
             <Link
               href="/"
               target="_blank"
@@ -412,8 +421,7 @@ export function AdminShell({ children, userRole }: AdminShellProps) {
         </header>
 
         {/* Main View Wrapper with Consistent Padding & Margins */}
-        <Toaster richColors position="top-right" theme={theme === 'light' ? 'light' : 'dark'} closeButton />
-        <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 transition-colors duration-200">
+        <main className="flex-1 w-full max-w-6xl mx-auto px-6 sm:px-10 lg:px-12 py-8 flex flex-col justify-start">
           {children}
         </main>
       </div>

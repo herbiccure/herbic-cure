@@ -14,8 +14,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import ProductCard from '@/components/product/ProductCard';
 import ProductSortSelect from '@/components/product/ProductSortSelect';
-import { Filter, SlidersHorizontal, ArrowUpDown, X } from 'lucide-react';
-
+import { ArrowUpDown, X } from 'lucide-react';
 
 interface ProductsPageProps {
   searchParams: Promise<{
@@ -25,13 +24,28 @@ interface ProductsPageProps {
   }>;
 }
 
+const SYNONYMS: Record<string, string[]> = {
+  trio: ['kit', 'complete', 'comb', 'shampoo'],
+  massager: ['comb', 'wooden', 'scalp'],
+  biotin: ['oil', 'shampoo'],
+  dandruff: ['neem', 'oil', 'shampoo'],
+  growth: ['oil', 'hair oil', '21 herbs'],
+  regrowth: ['oil', 'hair oil'],
+  fall: ['anti hair fall', 'hair oil'],
+  hairfall: ['anti hair fall', 'hair oil'],
+  combo: ['combos', 'kit', 'pack'],
+  combos: ['combo', 'kit', 'pack'],
+  kit: ['combos', 'complete', 'combo'],
+  kits: ['combos', 'complete', 'combo'],
+};
+
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const resolvedParams = await searchParams;
   const categoryFilter = resolvedParams.category;
-  const searchQuery = resolvedParams.search;
+  const searchQuery = resolvedParams.search?.trim();
   const sortBy = resolvedParams.sort || 'featured';
 
-  // Build Prisma where query
+  // Build Prisma where query with case-insensitive matching
   const whereClause: any = { active: true };
 
   if (categoryFilter) {
@@ -39,11 +53,37 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   }
 
   if (searchQuery) {
-    whereClause.OR = [
-      { name: { contains: searchQuery } },
-      { shortDescription: { contains: searchQuery } },
-      { sku: { contains: searchQuery } },
+    const q = searchQuery.toLowerCase();
+    const rawWords = q.split(/\s+/).filter((w) => w.length > 0);
+
+    const searchTerms = new Set<string>([q, ...rawWords]);
+    for (const w of rawWords) {
+      if (SYNONYMS[w]) {
+        SYNONYMS[w].forEach((syn) => searchTerms.add(syn));
+      }
+    }
+    const termsList = Array.from(searchTerms);
+
+    const orConditions: any[] = [
+      { name: { contains: q, mode: 'insensitive' } },
+      { slug: { contains: q, mode: 'insensitive' } },
+      { sku: { contains: q, mode: 'insensitive' } },
+      { shortDescription: { contains: q, mode: 'insensitive' } },
+      { fullDescription: { contains: q, mode: 'insensitive' } },
+      { benefits: { contains: q, mode: 'insensitive' } },
+      { category: { name: { contains: q, mode: 'insensitive' } } },
+      { category: { slug: { contains: q, mode: 'insensitive' } } },
     ];
+
+    for (const term of termsList) {
+      orConditions.push(
+        { name: { contains: term, mode: 'insensitive' } },
+        { shortDescription: { contains: term, mode: 'insensitive' } },
+        { category: { name: { contains: term, mode: 'insensitive' } } }
+      );
+    }
+
+    whereClause.OR = orConditions;
   }
 
   // Sorting
@@ -103,7 +143,6 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     <div className="bg-[#FCF8F9] min-h-screen py-10 sm:py-14">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header Breadcrumbs & Title */}
-        {/* Header Breadcrumbs & Title */}
         <div className="mb-6 sm:mb-8">
           <nav className="text-xs text-stone-500 mb-2 flex items-center gap-1.5 flex-wrap">
             <Link href="/" className="hover:text-[#A84358] transition-colors">Home</Link>
@@ -123,7 +162,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             All Ayurvedic Formulations
           </h1>
           <p className="text-xs sm:text-sm text-stone-600 mt-1 max-w-2xl leading-relaxed">
-            Explore South India’s premier 21 Ayurvedic herbs hair oils, pure neem wood massage tools, and complete hair regrowth kits.
+            Explore authentic Vedic 21 Ayurvedic herbs hair oils, pure neem wood massage tools, and complete hair regrowth therapy kits.
           </p>
         </div>
 
@@ -225,15 +264,15 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         {/* Product Grid */}
         {products.length === 0 ? (
           <div className="bg-white rounded-3xl p-16 text-center border border-stone-200/80 my-8">
-            <h3 className="text-lg font-bold text-stone-800">No products match your criteria</h3>
+            <h3 className="text-lg font-bold text-stone-800">No products match &ldquo;{searchQuery}&rdquo;</h3>
             <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
-              Try adjusting your search keywords or removing selected filters.
+              Try searching for &quot;hair oil&quot;, &quot;neem comb&quot;, &quot;shampoo&quot;, or &quot;combos&quot;.
             </p>
             <Link
               href="/products"
               className="mt-5 inline-block px-6 py-2.5 bg-[#A84358] text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#45363B] transition-all"
             >
-              Reset All Filters
+              View All Products
             </Link>
           </div>
         ) : (

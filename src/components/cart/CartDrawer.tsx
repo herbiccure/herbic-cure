@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, ShieldCheck, Tag, Check } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, ShieldCheck, Tag, Check, Sparkles } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 
@@ -115,7 +115,7 @@ export default function CartDrawer() {
             ) : (
               <p className="text-xs text-[#A84358] font-bold flex items-center gap-1.5 mb-1.5">
                 <Check className="w-4 h-4 text-rose-600 stroke-[3]" />
-                🎉 You have unlocked FREE Express Delivery!
+                <Sparkles className="w-4 h-4 text-emerald-600 inline shrink-0" /> You have unlocked FREE Express Delivery!
               </p>
             )}
             <div className="w-full bg-rose-200/50 h-2 rounded-full overflow-hidden">

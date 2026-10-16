@@ -197,6 +197,34 @@ export default function AccountPortalPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-[80vh]">
+
+      {/* Administrator Quick Launch Banner */}
+      {['ADMIN', 'SUPER_ADMIN', 'STORE_MANAGER', 'STAFF'].includes(customer.role) && (
+        <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#FAF0F4] via-white to-[#F6DFE7] border border-[#EAC9D1] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-[#8C3A4F] text-white flex items-center justify-center font-bold shadow-xs shrink-0">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-bold text-[#2D1B1B]">Administrative Access Privileges Active</p>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#8C3A4F] text-white">
+                  {customer.role}
+                </span>
+              </div>
+              <p className="text-xs text-[#7A5B64] mt-0.5">Manage store operations, orders, inventory, catalog products, and predictive intelligence.</p>
+            </div>
+          </div>
+          <Link
+            href="/admin"
+            className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-[#8C3A4F] hover:bg-[#722E3F] text-white text-xs font-bold rounded-xl transition-all shadow-xs shrink-0 cursor-pointer"
+          >
+            <span>Open Admin Console</span>
+            <ExternalLink className="w-3.5 h-3.5 text-white" />
+          </Link>
+        </div>
+      )}
+
       {/* Top Banner */}
       <div className="bg-emerald-900 text-white rounded-3xl p-6 sm:p-8 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xl shadow-emerald-950/10">
         <div>

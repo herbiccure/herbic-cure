@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     if (authCheck instanceof NextResponse) return authCheck;
 
     const body = await request.json().catch(() => ({}));
-    const { question, answer, category = 'GENERAL', placement = 'HOMEPAGE' } = body;
+    const { question, answer, category = 'GENERAL', placement = 'HOMEPAGE', active = true, displayOrder = 0 } = body;
     if (!question || !answer) {
       return NextResponse.json({ error: 'Question and answer required' }, { status: 400 });
     }
@@ -33,12 +33,44 @@ export async function POST(request: NextRequest) {
         answer: String(answer).trim(),
         category: String(category).trim(),
         placement: String(placement).trim(),
+        active: Boolean(active),
+        displayOrder: Number(displayOrder) || 0,
       },
     });
 
     return NextResponse.json({ success: true, faq: created });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create faq' }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const authCheck = await requireAdminAuth(request);
+    if (authCheck instanceof NextResponse) return authCheck;
+
+    const body = await request.json().catch(() => ({}));
+    const { id, question, answer, category, placement, active, displayOrder } = body;
+    if (!id) {
+      return NextResponse.json({ error: 'FAQ ID is required' }, { status: 400 });
+    }
+
+    const updateData: any = {};
+    if (question !== undefined) updateData.question = String(question).trim();
+    if (answer !== undefined) updateData.answer = String(answer).trim();
+    if (category !== undefined) updateData.category = String(category).trim();
+    if (placement !== undefined) updateData.placement = String(placement).trim();
+    if (active !== undefined) updateData.active = Boolean(active);
+    if (displayOrder !== undefined) updateData.displayOrder = Number(displayOrder);
+
+    const updated = await prisma.fAQ.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return NextResponse.json({ success: true, faq: updated });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to update faq' }, { status: 500 });
   }
 }
 

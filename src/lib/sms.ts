@@ -86,7 +86,7 @@ export async function sendSmsOtp(phone: string, otp: string): Promise<SendSmsRes
 
   // 3. Simulated Demo / Development Fallback Mode
   console.log(`\n========================================`);
-  console.log(`📱 [HERBIC CURE SMS GATEWAY]`);
+  console.log(`[HERBIC CURE SMS GATEWAY]`);
   console.log(`To: +91 ${normalizedPhone}`);
   console.log(`Code: ${otp}`);
   console.log(`Text: ${messageText}`);

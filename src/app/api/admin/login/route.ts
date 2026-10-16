@@ -4,6 +4,7 @@ import * as argon2 from '@node-rs/argon2';
 import { auth } from '@/lib/auth/auth';
 import { isAdminRole } from '@/lib/permissions/guard';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { signSessionToken } from '@/lib/auth/session';
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,7 +72,29 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return sessionRes;
+    // Set admin_session cookie for direct API route authorization
+    const adminToken = signSessionToken({
+      id: user.id,
+      email: user.email,
+      name: user.name || 'Admin User',
+      role: user.role,
+    });
+
+    const nextRes = new NextResponse(sessionRes.body, {
+      status: sessionRes.status,
+      statusText: sessionRes.statusText,
+      headers: sessionRes.headers,
+    });
+
+    nextRes.cookies.set('admin_session', adminToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
+    });
+
+    return nextRes;
   } catch (error) {
     console.error('Admin login error:', error);
     return NextResponse.json({ error: 'Internal authentication error' }, { status: 500 });

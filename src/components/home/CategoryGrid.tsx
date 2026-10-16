@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import LazyImage from '@/components/ui/LazyImage';
 import { ArrowRight } from 'lucide-react';
 
 interface CategoryItem {
@@ -40,12 +41,13 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
               className="w-[140px] sm:w-[220px] lg:w-auto shrink-0 lg:shrink snap-start group relative bg-white rounded-xl sm:rounded-2xl overflow-hidden border border-rose-950/10 hover:border-rose-600/40 hover:shadow-xl hover:shadow-rose-950/10 transition-all duration-300 flex flex-col"
             >
               <div className="relative aspect-4/3 sm:aspect-square overflow-hidden bg-stone-100">
-                <Image
+                <LazyImage
                   src={cat.image || '/images/banners/banner-1.png'}
                   alt={cat.name}
                   fill
                   sizes="(max-width: 640px) 140px, (max-width: 1024px) 220px, 25vw"
                   className="object-cover group-hover:scale-108 transition-transform duration-500"
+                  wrapperClassName="w-full h-full"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
                 <div className="absolute bottom-2.5 left-2.5 right-2.5 text-white">

@@ -26,6 +26,78 @@ export async function GET() {
   }
 }
 
+export async function POST(request: NextRequest) {
+  try {
+    const authCheck = await requireAdminAuth(request);
+    if (authCheck instanceof NextResponse) return authCheck;
+
+    const body = await request.json();
+    const { sectionType, title, subtitle, contentJson, active = true } = body;
+
+    if (!sectionType) {
+      return NextResponse.json({ error: 'Section type is required' }, { status: 400 });
+    }
+
+    // Determine default order
+    const maxOrderSection = await prisma.homepageSection.findFirst({
+      orderBy: { displayOrder: 'desc' },
+      select: { displayOrder: true },
+    });
+    const nextOrder = (maxOrderSection?.displayOrder ?? -1) + 1;
+
+    // Default contentJson based on type if not supplied
+    let finalContentJson = contentJson;
+    if (!finalContentJson) {
+      if (sectionType === 'HERO' || sectionType === 'HERO_SLIDER') {
+        finalContentJson = JSON.stringify({
+          slides: [
+            {
+              desktopImage: '/images/banners/herbic-hero-banner-1.jpg',
+              mobileImage: '/images/banners/herbic-hero-banner-1.jpg',
+              badge: 'Authentic Ayurvedic Kshirapak Vidhi',
+              heading: 'Herbic Cure - 21 Herbs Fusion Hair Oil',
+              subheading: 'Ancient Ayurveda for Modern Strength. Nature In Every Drop: 100% Herbal infusion of 21 roots and botanical extracts to stop hair fall.',
+              ctaText: 'SHOP INTRODUCTORY OFFER (33% OFF)',
+              ctaUrl: '/products/herbic-cure-21-herbs-fusion-hair-oil-q1',
+              secondaryCtaText: 'VIEW 21 HERBS',
+              secondaryCtaUrl: '/ingredients',
+            },
+            {
+              desktopImage: '/images/banners/herbic-hero-banner-2.jpg',
+              mobileImage: '/images/banners/herbic-hero-banner-2.jpg',
+              badge: 'Authentic Ayurvedic Kshirapak Vidhi',
+              heading: 'Complete Hair Therapy Ritual Kits',
+              subheading: 'Stop hair fall, cleanse gently, and detangle with 21 Herbs Hair Oil, Shampoo with Conditioner & Handcrafted Neem Wood Comb.',
+              ctaText: 'EXPLORE KITS & COMBOS',
+              ctaUrl: '/collections/combos',
+              secondaryCtaText: 'ORDER ON WHATSAPP',
+              secondaryCtaUrl: 'https://wa.me/918121961219',
+            },
+          ],
+        });
+      } else {
+        finalContentJson = JSON.stringify({});
+      }
+    }
+
+    const created = await prisma.homepageSection.create({
+      data: {
+        sectionType,
+        title: title || sectionType.replace(/_/g, ' '),
+        subtitle: subtitle || null,
+        contentJson: finalContentJson,
+        displayOrder: nextOrder,
+        active: Boolean(active),
+      },
+    });
+
+    return NextResponse.json({ success: true, section: created });
+  } catch (error: any) {
+    console.error('Failed to create section:', error);
+    return NextResponse.json({ error: error?.message || 'Failed to create section' }, { status: 500 });
+  }
+}
+
 export async function PUT(request: NextRequest) {
   try {
     const authCheck = await requireAdminAuth(request);
@@ -91,5 +163,28 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update section' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const authCheck = await requireAdminAuth(request);
+    if (authCheck instanceof NextResponse) return authCheck;
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Section ID is required' }, { status: 400 });
+    }
+
+    await prisma.homepageSection.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true, deletedId: id });
+  } catch (error: any) {
+    console.error('Failed to delete section:', error);
+    return NextResponse.json({ error: error?.message || 'Failed to delete section' }, { status: 500 });
   }
 }

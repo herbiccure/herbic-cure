@@ -3,10 +3,17 @@ import { auth } from '@/lib/auth/auth';
 
 export async function POST(req: NextRequest) {
   try {
-    return await auth.api.signOut({
+    const res = await auth.api.signOut({
       headers: req.headers,
       asResponse: true,
     });
+    const nextRes = new NextResponse(res.body, {
+      status: res.status,
+      statusText: res.statusText,
+      headers: res.headers,
+    });
+    nextRes.cookies.delete('admin_session');
+    return nextRes;
   } catch {
     const res = NextResponse.json({ success: true });
     res.cookies.delete('better-auth.session_token');

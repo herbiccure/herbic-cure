@@ -1,4 +1,4 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 
 export const checkoutSchema = z.object({
   name: z.string().min(2, 'Please enter your full name'),
@@ -8,7 +8,8 @@ export const checkoutSchema = z.object({
   city: z.string().min(2, 'Please enter your city'),
   state: z.string().min(2, 'Please enter your state'),
   pincode: z.string().min(6, 'Please enter a 6-digit postal PIN code'),
-  paymentMethod: z.enum(['COD', 'UPI', 'CARD']).default('COD'),
+  paymentMethod: z.enum(['COD', 'CASHFREE', 'ONLINE', 'UPI', 'CARD', 'RAZORPAY']).default('COD'),
 });
 
 export type CheckoutFormValues = z.infer<typeof checkoutSchema>;
+

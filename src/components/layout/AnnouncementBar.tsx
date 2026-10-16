@@ -1,18 +1,45 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Sparkles, Truck, Leaf, MessageSquare } from 'lucide-react';
 
 const DEFAULT_ANNOUNCEMENTS = [
-  '♥ Experience the power of South India’s best natural Hair Oils',
-  '🌿 Handcrafted with 21 Himalayan Herbs & Authentic Kshirapak Vidhi – 100% Pure & Toxin-Free',
-  '🚚 Free Express Shipping & Cash on Delivery Available Across India on Orders Above ₹499',
+  "Experience the power of South India's best natural Hair Oils",
+  "Handcrafted with 21 Himalayan Herbs & Authentic Kshirapak Vidhi — 100% Pure & Toxin-Free",
+  "Free Express Shipping & Cash on Delivery Available Across India on Orders Above ₹499",
 ];
 
 interface AnnouncementBarProps {
   initialAnnouncements?: string[];
 }
 
-export default function AnnouncementBar({ initialAnnouncements = DEFAULT_ANNOUNCEMENTS }: AnnouncementBarProps) {
+function renderAnnouncementItem(rawText: string) {
+  // Strip raw and legacy emojis from text to maintain high-end editorial typography
+  const text = rawText
+    .replace(/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E0}-\u{1F1FF}♥]\s*/u, '')
+    .trim();
+  const lower = text.toLowerCase();
+
+  let icon = <Sparkles className="w-3 h-3 text-amber-300 inline shrink-0 mr-1.5 opacity-90" />;
+  if (lower.includes('shipping') || lower.includes('delivery')) {
+    icon = <Truck className="w-3.5 h-3.5 text-amber-200 inline shrink-0 mr-1.5 opacity-90" />;
+  } else if (lower.includes('herb') || lower.includes('oil') || lower.includes('vidhi')) {
+    icon = <Leaf className="w-3 h-3 text-emerald-200 inline shrink-0 mr-1.5 opacity-90" />;
+  } else if (lower.includes('whatsapp') || lower.includes('guidance')) {
+    icon = <MessageSquare className="w-3 h-3 text-emerald-300 inline shrink-0 mr-1.5 opacity-90" />;
+  }
+
+  return (
+    <span className="inline-flex items-center text-[11px] sm:text-xs font-semibold tracking-wider px-6 sm:px-8 whitespace-nowrap">
+      {icon}
+      <span>{text}</span>
+    </span>
+  );
+}
+
+export default function AnnouncementBar({
+  initialAnnouncements = DEFAULT_ANNOUNCEMENTS,
+}: AnnouncementBarProps) {
   const [announcements, setAnnouncements] = useState<string[]>(initialAnnouncements);
   const [enabled, setEnabled] = useState(true);
   const [speed, setSpeed] = useState<'slow' | 'normal' | 'fast'>('normal');
@@ -28,7 +55,11 @@ export default function AnnouncementBar({ initialAnnouncements = DEFAULT_ANNOUNC
       .then((res) => res.json())
       .then((data) => {
         if (!isMounted) return;
-        if (data.announcements && Array.isArray(data.announcements) && data.announcements.length > 0) {
+        if (
+          data.announcements &&
+          Array.isArray(data.announcements) &&
+          data.announcements.length > 0
+        ) {
           setAnnouncements(data.announcements);
         }
         if (typeof data.enabled === 'boolean') setEnabled(data.enabled);
@@ -60,7 +91,7 @@ export default function AnnouncementBar({ initialAnnouncements = DEFAULT_ANNOUNC
     return null;
   }
 
-  // Animation duration mapping for continuous marquee (slower, gentle, luxurious speed)
+  // Animation duration mapping for continuous marquee (gentle, luxurious speed)
   const durationSec = speed === 'fast' ? '45s' : speed === 'slow' ? '95s' : '65s';
 
   // In running mode: repeat lines to ensure wide screen coverage before seamless wrap
@@ -83,12 +114,8 @@ export default function AnnouncementBar({ initialAnnouncements = DEFAULT_ANNOUNC
           <div className="flex items-center shrink-0">
             {repeatedItems.map((text, idx) => (
               <div key={`track-a-${idx}`} className="flex items-center shrink-0">
-                <span className="text-[11px] sm:text-xs font-semibold tracking-wider px-6 sm:px-8 inline-block whitespace-nowrap">
-                  {text}
-                </span>
-                <span className="text-amber-400/90 text-[10px] sm:text-xs shrink-0 select-none opacity-80">
-                  ✦
-                </span>
+                {renderAnnouncementItem(text)}
+                <Sparkles className="w-2.5 h-2.5 text-amber-300/80 shrink-0 inline select-none" />
               </div>
             ))}
           </div>
@@ -97,12 +124,8 @@ export default function AnnouncementBar({ initialAnnouncements = DEFAULT_ANNOUNC
           <div className="flex items-center shrink-0" aria-hidden="true">
             {repeatedItems.map((text, idx) => (
               <div key={`track-b-${idx}`} className="flex items-center shrink-0">
-                <span className="text-[11px] sm:text-xs font-semibold tracking-wider px-6 sm:px-8 inline-block whitespace-nowrap">
-                  {text}
-                </span>
-                <span className="text-amber-400/90 text-[10px] sm:text-xs shrink-0 select-none opacity-80">
-                  ✦
-                </span>
+                {renderAnnouncementItem(text)}
+                <Sparkles className="w-2.5 h-2.5 text-amber-300/80 shrink-0 inline select-none" />
               </div>
             ))}
           </div>
@@ -110,12 +133,12 @@ export default function AnnouncementBar({ initialAnnouncements = DEFAULT_ANNOUNC
       ) : (
         /* Rotating Ticker Mode */
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-center min-h-[22px] text-center">
-          <span
+          <div
             key={currentIndex}
-            className="inline-block transition-all duration-500 transform animate-fadeIn font-semibold tracking-wide text-[11px] sm:text-xs"
+            className="inline-block transition-all duration-500 transform animate-fadeIn"
           >
-            {announcements[currentIndex] || announcements[0]}
-          </span>
+            {renderAnnouncementItem(announcements[currentIndex] || announcements[0])}
+          </div>
         </div>
       )}
     </div>

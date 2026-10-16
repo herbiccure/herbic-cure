@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { verifySessionToken, AdminSessionPayload } from './session';
+import { auth } from '@/lib/auth/auth';
+import { isAdminRole } from '@/lib/permissions/guard';
 
 /**
- * Extracts and verifies the admin session from request cookies or Next.js cookies()
+ * Extracts and verifies the admin session from request cookies, Next.js cookies(),
+ * or Better-Auth session fallback.
  */
 export async function getAdminSession(request?: NextRequest): Promise<AdminSessionPayload | null> {
   let token: string | undefined;
@@ -21,15 +24,42 @@ export async function getAdminSession(request?: NextRequest): Promise<AdminSessi
     }
   }
 
-  if (!token) return null;
+  if (token) {
+    const verified = verifySessionToken<AdminSessionPayload>(token);
+    if (verified) return verified;
+  }
 
-  return verifySessionToken<AdminSessionPayload>(token);
+  // Fallback to Better Auth session
+  try {
+    const reqHeaders = request ? request.headers : await headers();
+    const betterSession = await auth.api.getSession({
+      headers: reqHeaders,
+    });
+    if (betterSession?.user) {
+      const u = betterSession.user as any;
+      if (isAdminRole(u.role)) {
+        return {
+          id: u.id,
+          email: u.email,
+          name: u.name,
+          role: u.role,
+        };
+      }
+    }
+  } catch {
+    // Better auth check failed
+  }
+
+  return null;
 }
 
 /**
  * In-route authorization guard. Returns null if authorized, or a 401/403 NextResponse if not.
  */
-export async function requireAdminAuth(request?: NextRequest, allowedRoles: string[] = ['OWNER', 'SUPER_ADMIN', 'ADMIN', 'STAFF']): Promise<{ session: AdminSessionPayload } | NextResponse> {
+export async function requireAdminAuth(
+  request?: NextRequest,
+  allowedRoles: string[] = ['OWNER', 'SUPER_ADMIN', 'ADMIN', 'STAFF']
+): Promise<{ session: AdminSessionPayload } | NextResponse> {
   const session = await getAdminSession(request);
 
   if (!session) {

@@ -1,25 +1,54 @@
-import React from 'react';
+import React, { cache } from 'react';
 import { notFound } from 'next/navigation';
+import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import ProductDetailClient from '@/components/product/ProductDetailClient';
 import ProductReviewsSection from '@/components/product/ProductReviewsSection';
 import type { Metadata } from 'next';
 
+export const revalidate = 120;
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
+// Request-memoized and in-memory cached product fetcher
+const getProduct = cache(async (slug: string) => {
+  return unstable_cache(
+    async () => {
+      return prisma.product.findUnique({
+        where: { slug },
+        include: {
+          images: {
+            orderBy: { displayOrder: 'asc' },
+          },
+        },
+      });
+    },
+    [`product-${slug}`],
+    { revalidate: 120, tags: ['products', `product-${slug}`] }
+  )();
+});
+
+const getReviews = cache(async (productId: string) => {
+  return unstable_cache(
+    async () => {
+      return prisma.review.findMany({
+        where: {
+          productId,
+          isApproved: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
+    [`reviews-${productId}`],
+    { revalidate: 120, tags: ['reviews', `product-${productId}-reviews`] }
+  )();
+});
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    include: {
-      images: {
-        orderBy: { displayOrder: 'asc' },
-        take: 1,
-      },
-    },
-  });
+  const product = await getProduct(slug);
 
   if (!product) {
     return {
@@ -58,27 +87,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    include: {
-      images: {
-        orderBy: { displayOrder: 'asc' },
-      },
-    },
-  });
+  const product = await getProduct(slug);
 
   if (!product) {
     notFound();
   }
 
-  const reviews = await prisma.review.findMany({
-    where: {
-      productId: product.id,
-      isApproved: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  const reviews = await getReviews(product.id);
 
   return (
     <main className="min-h-screen bg-[#FCF8F9]">

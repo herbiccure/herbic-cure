@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { prisma } from '@/lib/prisma';
@@ -105,7 +105,7 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
                 Payment Status
               </span>
               <p className="text-xs font-bold text-rose-800 bg-rose-100 px-2.5 py-0.5 rounded-full mt-0.5">
-                {order.paymentMethod} • {order.paymentStatus}
+                {order.paymentMethod} â€¢ {order.paymentStatus}
               </p>
             </div>
           </div>
@@ -123,8 +123,8 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
 
             <div>
               <span className="font-bold text-stone-900 block mb-1">Carrier & Shipping:</span>
-              <p className="text-stone-800 font-semibold">{order.carrier || 'Shiprocket Express'}</p>
-              <p className="text-rose-700 font-medium">Estimated Delivery: 2–4 Business Days</p>
+              <p className="text-stone-800 font-semibold">{order.carrier || 'Delhivery Express'}</p>
+              <p className="text-rose-700 font-medium">Estimated Delivery: 2â€“4 Business Days</p>
               <p className="text-stone-400 text-[11px] mt-2">
                 Live AWB tracking number will be sent via SMS and WhatsApp once picked up.
               </p>
@@ -149,10 +149,10 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
                     </div>
                     <div>
                       <h4 className="font-bold text-stone-800">{item.productName}</h4>
-                      <p className="text-stone-500">Qty: {item.quantity} × ₹{item.price}</p>
+                      <p className="text-stone-500">Qty: {item.quantity} Ã— â‚¹{item.price}</p>
                     </div>
                   </div>
-                  <span className="font-bold text-stone-900">₹{item.total}</span>
+                  <span className="font-bold text-stone-900">â‚¹{item.total}</span>
                 </div>
               ))}
             </div>
@@ -160,21 +160,21 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
             <div className="mt-4 pt-4 border-t border-stone-200 space-y-1.5 text-xs text-stone-600">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>₹{order.subtotal}</span>
+                <span>â‚¹{order.subtotal}</span>
               </div>
               {order.discount > 0 && (
                 <div className="flex justify-between text-rose-700 font-bold">
                   <span>Discount</span>
-                  <span>-₹{order.discount}</span>
+                  <span>-â‚¹{order.discount}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span>Shipping</span>
-                <span>{order.shippingFee === 0 ? 'FREE' : `₹${order.shippingFee}`}</span>
+                <span>{order.shippingFee === 0 ? 'FREE' : `â‚¹${order.shippingFee}`}</span>
               </div>
               <div className="flex justify-between text-base font-extrabold text-stone-900 pt-2 border-t border-stone-100">
                 <span>Total Paid / Payable</span>
-                <span className="text-[#A84358]">₹{order.total}</span>
+                <span className="text-[#A84358]">â‚¹{order.total}</span>
               </div>
             </div>
           </div>
@@ -183,3 +183,4 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
     </div>
   );
 }
+

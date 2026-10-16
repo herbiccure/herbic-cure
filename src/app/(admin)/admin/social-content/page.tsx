@@ -127,7 +127,7 @@ export default function AdminSocialContentPage() {
                 rows={3}
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
-                placeholder="Night oiling routine with 21 herbs ✨ #HerbicCureRegrowth"
+                placeholder="Night oiling routine with 21 herbs #HerbicCureRegrowth"
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-hidden focus:border-rose-500"
               />
             </div>

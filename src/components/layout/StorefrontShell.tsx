@@ -7,7 +7,6 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CartDrawer from '@/components/cart/CartDrawer';
 import WhatsAppFloating from '@/components/layout/WhatsAppFloating';
-import { Toaster } from 'sonner';
 
 export default function StorefrontShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -43,7 +42,6 @@ export default function StorefrontShell({ children }: { children: React.ReactNod
       <Footer logoUrl={logoUrl} brandName={brandName} />
       <CartDrawer />
       <WhatsAppFloating />
-      <Toaster richColors position="top-right" closeButton />
     </div>
   );
 }

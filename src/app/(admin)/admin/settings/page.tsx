@@ -1,10 +1,12 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
   Settings,
+  Search,
+  Phone,
   Save,
   ShieldCheck,
   Truck,
@@ -223,7 +225,7 @@ export default function AdminSettingsPage() {
             isLight ? 'bg-white border-stone-200' : 'bg-slate-900 border-slate-800'
           }`}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-200/60 dark:border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-200/60 ">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-[#A84358]/10 text-[#A84358] flex items-center justify-center">
                 <ImageIcon className="w-5 h-5" />
@@ -239,7 +241,7 @@ export default function AdminSettingsPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600  border border-emerald-500/20">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 Active on Storefront
               </span>
@@ -259,10 +261,10 @@ export default function AdminSettingsPage() {
             </div>
 
             {/* Mock Header Banner matching the user's header */}
-            <div className="rounded-2xl border border-stone-200/90 dark:border-slate-700 bg-[#FFFFFF] shadow-sm overflow-hidden p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="rounded-2xl border border-stone-200/90  bg-[#FFFFFF] shadow-sm overflow-hidden p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4">
               {/* Simulated Left Search bar */}
               <div className="w-full md:w-72 bg-stone-100 rounded-full px-4 py-2 flex items-center gap-2 text-stone-400 text-xs shrink-0 select-none">
-                <span className="text-stone-400">🔍</span>
+                <Search className="w-3.5 h-3.5 text-stone-400" />
                 <span className="truncate">Search hair oils, combos, 21 herbs...</span>
               </div>
 
@@ -285,7 +287,7 @@ export default function AdminSettingsPage() {
               {/* Simulated Right utilities */}
               <div className="hidden sm:flex items-center gap-3 shrink-0 select-none">
                 <span className="text-xs font-medium text-rose-700 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200">
-                  📞 Ayurvedic Expert
+                  Ayurvedic Specialist
                 </span>
                 <span className="text-xs font-bold text-stone-700 bg-stone-100 px-3 py-1.5 rounded-full">
                   Bag (0)
@@ -294,44 +296,24 @@ export default function AdminSettingsPage() {
             </div>
           </div>
 
-          {/* Dual Background Contrast Checks */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Light Canvas */}
-            <div className="p-4 rounded-2xl bg-white border border-stone-200/90 flex flex-col items-center justify-center text-center gap-2">
-              <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">
-                Light Background (Header View)
-              </span>
-              <div className="relative h-16 w-48 flex items-center justify-center bg-stone-50 rounded-xl p-2 border border-stone-100">
-                {logoUrl && (
-                  <Image
-                    src={logoUrl}
-                    alt="Light Preview"
-                    width={180}
-                    height={50}
-                    className="object-contain max-h-14"
-                    unoptimized
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Dark Canvas (Footer / Dark Mode) */}
-            <div className="p-4 rounded-2xl bg-[#2D1B1B] border border-rose-950 flex flex-col items-center justify-center text-center gap-2 text-white">
-              <span className="text-[11px] font-bold text-rose-200/80 uppercase tracking-wider">
-                Dark Background (Footer View)
-              </span>
-              <div className="relative h-16 w-48 flex items-center justify-center bg-black/20 rounded-xl p-2 border border-white/10">
-                {logoUrl && (
-                  <Image
-                    src={logoUrl}
-                    alt="Dark Preview"
-                    width={180}
-                    height={50}
-                    className="object-contain max-h-14"
-                    unoptimized
-                  />
-                )}
-              </div>
+          {/* Logo Canvas Preview */}
+          <div className="p-4 rounded-2xl bg-[#FBF5F6] border border-[#EAC9D1] flex flex-col items-center justify-center text-center gap-2">
+            <span className="text-[11px] font-bold text-[#7A5B64] uppercase tracking-wider">
+              Logo Canvas Preview (Light Background)
+            </span>
+            <div className="relative h-16 w-56 flex items-center justify-center bg-white rounded-xl p-2 border border-[#EAC9D1] shadow-2xs">
+              {logoUrl ? (
+                <Image
+                  src={logoUrl}
+                  alt="Storefront Logo Preview"
+                  width={180}
+                  height={50}
+                  className="object-contain max-h-14"
+                  unoptimized
+                />
+              ) : (
+                <span className="text-xs text-stone-400 italic">No logo selected</span>
+              )}
             </div>
           </div>
 
@@ -505,7 +487,7 @@ export default function AdminSettingsPage() {
           <div className="space-y-3 text-xs">
             <div>
               <label className={`block font-semibold mb-1 ${isLight ? 'text-stone-600' : 'text-slate-400'}`}>
-                Standard Shipping Fee (₹)
+                Standard Shipping Fee (â‚¹)
               </label>
               <input
                 type="number"
@@ -521,7 +503,7 @@ export default function AdminSettingsPage() {
 
             <div>
               <label className={`block font-semibold mb-1 ${isLight ? 'text-stone-600' : 'text-slate-400'}`}>
-                Free Delivery Min Order Value (₹)
+                Free Delivery Min Order Value (â‚¹)
               </label>
               <input
                 type="number"
@@ -570,3 +552,4 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
+

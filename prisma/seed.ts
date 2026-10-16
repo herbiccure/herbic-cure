@@ -969,6 +969,76 @@ Step 4: Wash with mild shampoo. Repeat 2 to 3 times per week for optimal results
     ],
   });
 
+  console.log('--- Seeding Homepage Content Sections (8 Locked Sections) ---');
+  await prisma.homepageSection.createMany({
+    data: [
+      {
+        sectionType: 'HERO_SLIDER',
+        title: 'Hero Banner Slider',
+        subtitle: 'Discover Authentic Ayurvedic Hair Rituals',
+        displayOrder: 0,
+        contentJson: '{}',
+        active: true,
+      },
+      {
+        sectionType: 'BEST_SELLERS',
+        title: 'Best Selling Hair Rituals',
+        subtitle: 'Handcrafted with 21 potent herbs for visible restoration',
+        displayOrder: 1,
+        contentJson: '{}',
+        active: true,
+      },
+      {
+        sectionType: 'CATEGORIES',
+        title: 'Explore Ayurvedic Categories',
+        subtitle: 'Targeted wellness collections for every hair need',
+        displayOrder: 2,
+        contentJson: '{}',
+        active: true,
+      },
+      {
+        sectionType: 'DISCOVER',
+        title: 'Combo',
+        subtitle: 'Rooted in Kshirapak Vidhi and nature purity',
+        displayOrder: 3,
+        contentJson: '{}',
+        active: true,
+      },
+      {
+        sectionType: 'REVIEWS',
+        title: 'Loved by Over 50,000+ Customers',
+        subtitle: 'Verified feedback from genuine daily users',
+        displayOrder: 4,
+        contentJson: '{}',
+        active: true,
+      },
+      {
+        sectionType: 'REELS',
+        title: 'Trending on Social',
+        subtitle: 'Watch genuine creator hair journeys and unboxings',
+        displayOrder: 5,
+        contentJson: '{}',
+        active: true,
+      },
+      {
+        sectionType: 'WHY_US',
+        title: 'The Herbic Cure Promise',
+        subtitle: 'Clean, transparent, authentic ayurveda guaranteed',
+        displayOrder: 6,
+        contentJson: '{}',
+        active: true,
+      },
+      {
+        sectionType: 'FAQ',
+        title: 'Frequently Asked Questions',
+        subtitle: 'Everything you need to know about our oils and rituals',
+        displayOrder: 7,
+        contentJson: '{}',
+        active: true,
+      },
+    ],
+  });
+
   console.log('--- Seeding Sample Orders ---');
   const sampleOrder = await prisma.order.create({
     data: {

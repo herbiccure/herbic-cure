@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   Search,
+  ShieldCheck,
   ShoppingBag,
   User,
   Menu,
@@ -470,6 +471,22 @@ export default function Header({
                             <p className="text-xs font-bold text-stone-900 truncate">{customer.name}</p>
                             <p className="text-[11px] text-stone-500 truncate">{customer.email}</p>
                           </div>
+
+                          {['ADMIN', 'SUPER_ADMIN', 'STORE_MANAGER', 'STAFF'].includes(customer.role) && (
+                            <Link
+                              href="/admin"
+                              onClick={() => setAccountDropdownOpen(false)}
+                              className="flex items-center justify-between px-4 py-2.5 text-xs font-bold text-[#8C3A4F] bg-[#FAF0F4] hover:bg-[#F6DFE7] transition-colors border-b border-[#EAC9D1]"
+                            >
+                              <div className="flex items-center gap-2">
+                                <ShieldCheck className="w-4 h-4 text-[#8C3A4F]" />
+                                <span>Admin Console</span>
+                              </div>
+                              <span className="text-[10px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-[#8C3A4F] text-white">
+                                CMS
+                              </span>
+                            </Link>
+                          )}
                           <Link
                             href="/account"
                             onClick={() => setAccountDropdownOpen(false)}
@@ -728,6 +745,75 @@ export default function Header({
                   Search
                 </button>
               </form>
+
+              {/* Live Mobile Search Results */}
+              {searchQuery.trim().length >= 1 && (
+                <div className="mt-3 max-h-[50vh] overflow-y-auto divide-y divide-stone-100 bg-white rounded-xl border border-stone-200 p-2 shadow-lg">
+                  {isSearching ? (
+                    <div className="py-6 text-center text-xs text-stone-500 flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-stone-300 border-t-[#A84358] rounded-full animate-spin" />
+                      <span>Searching catalog...</span>
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    <>
+                      <div className="flex items-center justify-between px-2 py-1.5 text-[11px] font-bold text-stone-500 uppercase tracking-wider">
+                        <span>Matching Products</span>
+                        <span className="text-[#A84358]">{searchResults.length} found</span>
+                      </div>
+                      {searchResults.map((prod) => (
+                        <Link
+                          key={prod.id}
+                          href={`/products/${prod.slug}`}
+                          onClick={() => setSearchOpen(false)}
+                          className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-stone-50 transition-colors"
+                        >
+                          {prod.images?.[0]?.url ? (
+                            <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-stone-100 shrink-0">
+                              <Image
+                                src={prod.images[0].url}
+                                alt={prod.name}
+                                fill
+                                sizes="48px"
+                                className="object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-rose-50 flex items-center justify-center text-rose-800 shrink-0">
+                              <Package className="w-5 h-5" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-stone-800 truncate">
+                              {prod.name}
+                            </p>
+                            <p className="text-[11px] font-bold text-[#A84358] mt-0.5">
+                              ₹{prod.salePrice}{' '}
+                              {prod.regularPrice > prod.salePrice && (
+                                <span className="text-stone-400 line-through font-normal ml-1">
+                                  ₹{prod.regularPrice}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <ArrowRight className="w-4 h-4 text-stone-400" />
+                        </Link>
+                      ))}
+                      <Link
+                        href={`/products?search=${encodeURIComponent(searchQuery)}`}
+                        onClick={() => setSearchOpen(false)}
+                        className="block text-center py-2.5 text-xs font-bold text-[#A84358] bg-rose-50 hover:bg-rose-100 rounded-lg mt-1"
+                      >
+                        View all results for &ldquo;{searchQuery}&rdquo; →
+                      </Link>
+                    </>
+                  ) : (
+                    <div className="py-6 text-center text-xs text-stone-500">
+                      No products found matching &ldquo;{searchQuery}&rdquo;.
+                    </div>
+                  )}
+                </div>
+              )}
+
 
               {/* Suggestions */}
               <div className="mt-4">

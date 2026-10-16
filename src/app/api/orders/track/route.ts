@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { verifyGuestAccessToken } from '@/lib/auth/guest-token';
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
         customerName: maskedName,
         customerEmail: maskedEmail,
         orderStatus: order.orderStatus,
-        carrier: order.carrier || 'Shiprocket Express',
+        carrier: order.carrier || 'Delhivery Express',
         trackingNumber: order.trackingNumber || `SR${order.orderNumber.replace(/[^0-9]/g, '') || '918237'}IN`,
         total: order.total,
         paymentStatus: order.paymentStatus,
@@ -101,3 +101,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to look up shipment' }, { status: 500 });
   }
 }
+

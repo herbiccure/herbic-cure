@@ -4,6 +4,8 @@ import './globals.css';
 import { CartProvider } from '@/context/CartContext';
 import { AuthProvider } from '@/context/AuthContext';
 import StorefrontShell from '@/components/layout/StorefrontShell';
+import NextTopLoader from 'nextjs-toploader';
+import { Toaster } from 'sonner';
 
 const sansFont = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -95,9 +97,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${sansFont.variable} ${serifFont.variable}`}>
       <body className="min-h-full flex flex-col font-sans bg-[#FCF8F9] text-[#2D1B1B] antialiased selection:bg-[#F6DFE7] selection:text-[#6B2E3D]">
+        <NextTopLoader color="#8C3A4F" initialPosition={0.12} crawlSpeed={200} height={3} crawl={true} showSpinner={false} easing="ease" speed={200} shadow="0 0 14px #8C3A4F, 0 0 7px #e8b159" zIndex={99999} />
         <AuthProvider>
           <CartProvider>
             <StorefrontShell>{children}</StorefrontShell>
+            <Toaster richColors position="top-right" closeButton />
           </CartProvider>
         </AuthProvider>
       </body>

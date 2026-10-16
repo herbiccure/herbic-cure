@@ -5,8 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import useSWR from 'swr';
 import { toast } from 'sonner';
-import {
-  FolderTree,
+import { FolderTree,
   Plus,
   Edit,
   Trash2,
@@ -19,8 +18,7 @@ import {
   Sparkles,
   Layers,
   AlertTriangle,
-  Image as ImageIcon,
-} from 'lucide-react';
+  Image as ImageIcon, X } from 'lucide-react';
 import { fetcher } from '@/lib/fetcher';
 import { AdminDataTable, Column } from '@/components/admin/AdminDataTable';
 import { useAdminTheme } from '@/components/admin/AdminThemeProvider';
@@ -546,9 +544,7 @@ export default function AdminCategoriesPage() {
                 type="button"
                 onClick={() => setModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold p-1 cursor-pointer"
-              >
-                ✕
-              </button>
+              ><X className="w-3.5 h-3.5" /></button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">

@@ -11,6 +11,72 @@ import React from 'react';
  */
 export function AdminGlobalStyles() {
   const css = `
+    
+    
+    /* Sidebar Brand Typography Contrast Guarantee */
+    [data-admin-theme="light"] aside a span.font-serif,
+    .admin-theme-light aside a span.font-serif,
+    [data-admin-theme="light"] .admin-sidebar-desktop span.font-serif,
+    .admin-theme-light .admin-sidebar-desktop span.font-serif {
+      color: #2D1B1B !important;
+    }
+
+    [data-admin-theme="dark"] aside a span.font-serif,
+    .admin-theme-dark aside a span.font-serif,
+    [data-admin-theme="dark"] .admin-sidebar-desktop span.font-serif,
+    .admin-theme-dark .admin-sidebar-desktop span.font-serif {
+      color: #FFFFFF !important;
+    }
+
+    /* Table Typography Contrast Guarantee */
+    table td {
+      color: #2D1B1B !important;
+    }
+    table th {
+      color: #45363B !important;
+      font-weight: 700 !important;
+    }
+    table tbody tr {
+      background-color: #ffffff !important;
+      color: #2D1B1B !important;
+    }
+    table tbody tr:hover {
+      background-color: #FCF4F7 !important;
+    }
+    table font-mono, table td.font-mono {
+      color: #8C3A4F !important;
+      font-weight: 700 !important;
+    }
+
+    /* Universal Rose Border & Divider Guarantee (Eliminates ALL Black Lines) */
+    [data-admin-theme="light"] .admin-card,
+    .admin-theme-light .admin-card {
+      background-color: #ffffff !important;
+      border: 1px solid #EAC9D1 !important;
+      box-shadow: 0 1px 3px rgba(140, 58, 79, 0.04) !important;
+    }
+
+    [data-admin-theme="light"] .admin-subdivider-t,
+    .admin-theme-light .admin-subdivider-t,
+    [data-admin-theme="light"] [class*="border-t"],
+    .admin-theme-light [class*="border-t"] {
+      border-top-color: #F1DFE5 !important;
+    }
+
+    [data-admin-theme="light"] .admin-subdivider-b,
+    .admin-theme-light .admin-subdivider-b,
+    [data-admin-theme="light"] [class*="border-b"],
+    .admin-theme-light [class*="border-b"] {
+      border-bottom-color: #F1DFE5 !important;
+    }
+
+    [data-admin-theme="light"] .border,
+    .admin-theme-light .border,
+    [data-admin-theme="light"] [class*="border-[#"],
+    .admin-theme-light [class*="border-[#"] {
+      border-color: #EAC9D1 !important;
+    }
+
     /* ============================================================
        GLOBAL ADMIN LIGHT THEME OVERRIDES (APPLIES TO ALL ADMIN PAGES)
        ============================================================ */
@@ -543,6 +609,73 @@ export function AdminGlobalStyles() {
       color: #2D1B1B !important;
     }
 
+    
+    /* High-contrast KPI Numbers & Dashboard Cards */
+    [data-admin-theme="light"] .admin-stat-number,
+    .admin-theme-light .admin-stat-number {
+      color: #2D1B1B !important;
+    }
+
+    /* Universal Sleek Scrollbars */
+    .scrollbar-thin {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(140, 58, 79, 0.25) transparent;
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: rgba(140, 58, 79, 0.25);
+      border-radius: 9999px;
+    }
+    /* ---- Dark Mode Module Card Protection ---- */
+    /* ---- Light Mode Module Card Protection ---- */
+    [data-admin-theme="light"] .admin-module-card,
+    .admin-theme-light .admin-module-card {
+      background-color: #ffffff !important;
+      border-color: #E8CAD2 !important;
+      color: #2D1B1B !important;
+    }
+
+    [data-admin-theme="light"] .admin-module-card h3,
+    .admin-theme-light .admin-module-card h3 {
+      color: #2D1B1B !important;
+    }
+
+    [data-admin-theme="light"] .admin-module-card p,
+    .admin-theme-light .admin-module-card p {
+      color: #7A5B64 !important;
+    }
+
+    [data-admin-theme="light"] .admin-icon-box,
+    .admin-theme-light .admin-icon-box {
+      background-color: #F6DFE7 !important;
+      border-color: #EAC9D1 !important;
+      color: #8C3A4F !important;
+    }
+
+    [data-admin-theme="light"] .admin-kpi-card,
+    .admin-theme-light .admin-kpi-card {
+      background-color: #ffffff !important;
+      border-color: #E8CAD2 !important;
+    }
+
+    [data-admin-theme="light"] .admin-cockpit-card,
+    .admin-theme-light .admin-cockpit-card {
+      background-color: #ffffff !important;
+      border-color: #E8CAD2 !important;
+      color: #2D1B1B !important;
+    }
+
+    [data-admin-theme="light"] .admin-stat-number,
+    .admin-theme-light .admin-stat-number {
+      color: #2D1B1B !important;
+    }
+
     /* 12. Protection for Admin Theme Toggle (Preserve dedicated pill styling) */
     [data-admin-theme="light"] .admin-theme-toggle-root button,
     .admin-theme-light .admin-theme-toggle-root button {
@@ -566,5 +699,5 @@ export function AdminGlobalStyles() {
     }
   `;
 
-  return <style id="admin-global-theme-styles" dangerouslySetInnerHTML={{ __html: css }} />;
+  return <style id="admin-global-theme-styles" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: css }} />;
 }

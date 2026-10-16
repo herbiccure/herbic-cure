@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
-export async function GET() {
-  try {
+const getNavigationSettings = unstable_cache(
+  async () => {
     const [setting, offerSection, logoSetting, brandSetting] = await Promise.all([
       prisma.siteSetting.findUnique({
         where: { key: 'navbar_offers_enabled' },
@@ -26,19 +27,41 @@ export async function GET() {
     const logoUrl = logoSetting?.value?.trim() || '/images/banners/herbic-cure-logo.png';
     const brandName = brandSetting?.value?.trim() || 'Herbic Cure';
 
-    return NextResponse.json({
+    return {
       navbarOffersEnabled,
       offerBannerActive,
       logoUrl,
       brandName,
+    };
+  },
+  ['navigation-settings-cache'],
+  {
+    revalidate: 300,
+    tags: ['settings', 'navigation'],
+  }
+);
+
+export async function GET() {
+  try {
+    const data = await getNavigationSettings();
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      },
     });
   } catch (error) {
-    // Graceful fallback: default to false (OFF) and standard brand logo
-    return NextResponse.json({
-      navbarOffersEnabled: false,
-      offerBannerActive: false,
-      logoUrl: '/images/banners/herbic-cure-logo.png',
-      brandName: 'Herbic Cure',
-    });
+    return NextResponse.json(
+      {
+        navbarOffersEnabled: false,
+        offerBannerActive: false,
+        logoUrl: '/images/banners/herbic-cure-logo.png',
+        brandName: 'Herbic Cure',
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60',
+        },
+      }
+    );
   }
 }

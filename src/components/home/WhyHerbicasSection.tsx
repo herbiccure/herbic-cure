@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Check, X, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { Check, X, Sparkles, ChevronDown, ChevronUp, Leaf } from 'lucide-react';
 
 export default function WhyHerbicasSection() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -78,7 +78,7 @@ export default function WhyHerbicasSection() {
             <div className="grid grid-cols-12 bg-stone-900 text-white p-3 sm:p-5 font-bold text-xs sm:text-sm">
               <div className="col-span-4 sm:col-span-3">Feature</div>
               <div className="col-span-4 sm:col-span-5 text-[#EAC9D1] flex items-center gap-1">
-                <span>🌿 Herbic Cure</span>
+                <Leaf className="w-3.5 h-3.5 text-[#EAC9D1] inline shrink-0 mr-1" /><span>Herbic Cure</span>
               </div>
               <div className="col-span-4 sm:col-span-4 text-stone-400">Local Brand Oil</div>
             </div>

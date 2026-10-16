@@ -21,7 +21,7 @@ export default function WhatsAppFloating({
     >
       {/* Tooltip on hover */}
       <span className="hidden sm:inline-block mr-3 px-3.5 py-1.5 rounded-full bg-stone-900/90 text-white text-xs font-semibold shadow-lg opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 pointer-events-none">
-        Chat with Ayurvedic Doctor 🌿
+        Chat with Ayurvedic Specialist
       </span>
 
       <a

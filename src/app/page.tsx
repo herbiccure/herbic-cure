@@ -1,18 +1,7 @@
 import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Herbic Cure | 100% Ayurvedic Hair Oil & Natural Hair Care Solutions',
-  description:
-    'Experience the ancient science of 21 Himalayan Herbs fusion prepared via 72-hour Kshirapak Vidhi. 100% mineral-oil-free Ayurvedic hair oils, neem combs, and herbal cleansers.',
-  alternates: {
-    canonical: '/',
-  },
-};
-
-export const revalidate = 60;
-
 import React from 'react';
 import Link from 'next/link';
+import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import HeroSlider from '@/components/home/HeroSlider';
 import ProductCard from '@/components/product/ProductCard';
@@ -33,69 +22,92 @@ import {
   Star,
 } from 'lucide-react';
 
+export const metadata: Metadata = {
+  title: 'Herbic Cure | 100% Ayurvedic Hair Oil & Natural Hair Care Solutions',
+  description:
+    'Experience the ancient science of 21 Himalayan Herbs fusion prepared via 72-hour Kshirapak Vidhi. 100% mineral-oil-free Ayurvedic hair oils, neem combs, and herbal cleansers.',
+  alternates: {
+    canonical: '/',
+  },
+};
+
+export const revalidate = 120;
+
+// High-speed cached data layer: runs in parallel and caches in server memory
+const getCachedHomePageData = unstable_cache(
+  async () => {
+    const [
+      products,
+      categories,
+      results,
+      socialPosts,
+      faqs,
+      homepageSections,
+      reviews,
+    ] = await Promise.all([
+      prisma.product.findMany({
+        where: { active: true },
+        include: {
+          images: {
+            orderBy: { displayOrder: 'asc' },
+          },
+        },
+        orderBy: { displayOrder: 'asc' },
+      }),
+      prisma.category.findMany({
+        where: { active: true },
+        orderBy: { displayOrder: 'asc' },
+      }),
+      prisma.customerResult.findMany({
+        where: { active: true },
+        orderBy: { displayOrder: 'asc' },
+      }),
+      prisma.socialPost.findMany({
+        where: { active: true },
+        orderBy: { displayOrder: 'asc' },
+      }),
+      prisma.fAQ.findMany({
+        where: { active: true },
+        orderBy: { displayOrder: 'asc' },
+      }),
+      prisma.homepageSection.findMany({
+        where: { active: true },
+        orderBy: { displayOrder: 'asc' },
+      }),
+      prisma.review.findMany({
+        where: { isApproved: true },
+        orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+        take: 6,
+      }),
+    ]);
+
+    return {
+      products,
+      categories,
+      results,
+      socialPosts,
+      faqs,
+      homepageSections,
+      reviews,
+    };
+  },
+  ['herbic-homepage-data-v3'],
+  {
+    revalidate: 120,
+    tags: ['homepage', 'products', 'categories', 'reviews', 'faqs'],
+  }
+);
+
 export default async function HomePage() {
-  // Database-driven fetching per PRD Section 51
-  const [
+  const {
     products,
     categories,
     results,
     socialPosts,
     faqs,
     homepageSections,
-  ] = await Promise.all([
-    prisma.product.findMany({
-      where: { active: true },
-      include: {
-        images: {
-          orderBy: { displayOrder: 'asc' },
-        },
-      },
-      orderBy: { displayOrder: 'asc' },
-    }),
-    prisma.category.findMany({
-      where: { active: true },
-      orderBy: { displayOrder: 'asc' },
-    }),
-    prisma.customerResult.findMany({
-      where: { active: true },
-      orderBy: { displayOrder: 'asc' },
-    }),
-    prisma.socialPost.findMany({
-      where: { active: true },
-      orderBy: { displayOrder: 'asc' },
-    }),
-    prisma.fAQ.findMany({
-      where: { active: true },
-      orderBy: { displayOrder: 'asc' },
-    }),
-    prisma.homepageSection.findMany({
-      where: { active: true },
-      orderBy: { displayOrder: 'asc' },
-    }),
-  ]);
-
-  // Fetch admin-selected featured reviews for the home page (up to 6)
-  const featuredReviews = await prisma.review.findMany({
-    where: { isApproved: true, isFeatured: true },
-    orderBy: { createdAt: 'desc' },
-    take: 6,
-  });
-
-  // If admin selected fewer than 6, backfill with most recent approved reviews
-  let reviews = featuredReviews;
-  if (reviews.length < 6) {
-    const featuredIds = featuredReviews.map((r) => r.id);
-    const remaining = 6 - reviews.length;
-    const backfill = await prisma.review.findMany({
-      where: {
-        isApproved: true,
-        id: { notIn: featuredIds },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: remaining,
-    });
-    reviews = [...reviews, ...backfill];
-  }
+    reviews,
+  } = await getCachedHomePageData();
 
   // Extract Hero configuration if present in CMS
   const heroSection = homepageSections.find(
@@ -135,7 +147,7 @@ export default async function HomePage() {
                 100% Ayurvedic
               </h4>
               <p className="text-[10px] sm:text-xs text-stone-500 leading-normal">
-                Zero mineral oil &amp; silicones
+                Zero mineral oil & silicones
               </p>
             </div>
           </div>
@@ -330,17 +342,24 @@ export default async function HomePage() {
       {homepageSections.length > 0 ? (
         homepageSections.map((sec) => renderSection(sec))
       ) : (
-        // Fallback default order if no CMS sections exist
+        // Locked default order matching Admin CMS configuration:
+        // 1. Hero Banner Slider (HERO_SLIDER)
+        // 2. Best Selling Hair Rituals (BEST_SELLERS)
+        // 3. Explore Ayurvedic Categories (CATEGORIES)
+        // 4. Combo (DISCOVER)
+        // 5. Loved by Over 50,000+ Customers (REVIEWS)
+        // 6. Trending on Social (REELS)
+        // 7. The Herbic Cure Promise (WHY_US)
+        // 8. Frequently Asked Questions (FAQ)
         <>
           <HeroSlider slides={heroSlides} />
           {renderTrustBadges()}
-          {renderBestSellers('default-best-sellers')}
+          {renderBestSellers('default-best-sellers', 'Best Selling Hair Rituals', 'Handcrafted with 21 potent herbs for visible restoration')}
           <CategoryGrid categories={categories} />
           <DiscoverHerbicas />
-          <CustomerResultsSection results={results} />
+          <ReviewsSection reviews={reviews} />
           <SocialReelsSection posts={socialPosts} />
           <WhyHerbicasSection />
-          <ReviewsSection reviews={reviews} />
           <FAQSection faqs={faqs} />
         </>
       )}

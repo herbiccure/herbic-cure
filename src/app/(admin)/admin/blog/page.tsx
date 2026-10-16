@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import {
-  BookOpen,
+import { BookOpen,
   Plus,
   Pencil,
   Trash2,
@@ -14,8 +13,7 @@ import {
   Check,
   AlertCircle,
   Search,
-  Sparkles,
-} from 'lucide-react';
+  Sparkles, X } from 'lucide-react';
 import { useAdminTheme } from '@/components/admin/AdminThemeProvider';
 
 interface BlogPost {
@@ -275,9 +273,7 @@ export default function AdminBlogPage() {
           <button
             onClick={() => setStatusMessage(null)}
             className="text-xs opacity-70 hover:opacity-100 ml-4 font-bold"
-          >
-            ✕
-          </button>
+          ><X className="w-3.5 h-3.5" /></button>
         </div>
       )}
 

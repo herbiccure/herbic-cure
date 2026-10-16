@@ -1,4 +1,4 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 
 export const checkoutSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100),
@@ -14,7 +14,7 @@ export const checkoutSchema = z.object({
     .string()
     .trim()
     .regex(/^\d{6}$/, 'Please enter a valid 6-digit PIN code'),
-  paymentMethod: z.enum(['COD', 'ONLINE', 'RAZORPAY']).default('COD'),
+  paymentMethod: z.enum(['COD', 'CASHFREE', 'ONLINE', 'UPI', 'CARD', 'RAZORPAY']).default('COD'),
   items: z
     .array(
       z.object({
@@ -68,3 +68,4 @@ export const adminOrderUpdateSchema = z.object({
   carrier: z.string().trim().max(100).optional(),
   notes: z.string().trim().max(500).optional(),
 });
+
