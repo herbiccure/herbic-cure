@@ -3,7 +3,8 @@ import React from 'react';
 import { prisma } from '@/lib/prisma';
 import { Leaf, Check, Sparkles } from 'lucide-react';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+
 
 export const metadata: Metadata = {
   title: 'The 21 Rare Himalayan Herbs | Herbic Cure Formulation',
@@ -14,10 +15,15 @@ export const metadata: Metadata = {
 };
 
 export default async function IngredientsPage() {
-  const ingredients = await prisma.ingredient.findMany({
-    where: { active: true },
-    orderBy: { displayOrder: 'asc' },
-  });
+  let ingredients: any[] = [];
+  try {
+    ingredients = await prisma.ingredient.findMany({
+      where: { active: true },
+      orderBy: { displayOrder: 'asc' },
+    });
+  } catch (err) {
+    console.warn('Could not fetch ingredients at build/render time:', err);
+  }
 
   return (
     <div className="min-h-screen bg-[#FCF8F9] py-12 sm:py-16">

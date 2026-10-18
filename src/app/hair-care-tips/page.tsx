@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { prisma } from '@/lib/prisma';
 import {
+
   Sparkles,
   CheckCircle2,
   Clock,
@@ -13,6 +14,8 @@ import {
   Flame,
   Lightbulb,
 } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'How to Use & Ayurvedic Hair Care Guides | Herbic Cure',

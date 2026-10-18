@@ -15,6 +15,9 @@ import Image from 'next/image';
 import { prisma } from '@/lib/prisma';
 import { ShieldCheck, Star, ArrowRight } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
+
 export default async function ResultsPage() {
   const results = await prisma.customerResult.findMany({
     where: { active: true },

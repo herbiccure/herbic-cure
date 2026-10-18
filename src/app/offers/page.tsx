@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma';
 import ProductCard from '@/components/product/ProductCard';
 import { Tag, Sparkles, ArrowRight } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
+
 export default async function OffersPage() {
   const [coupons, comboProducts] = await Promise.all([
     prisma.coupon.findMany({

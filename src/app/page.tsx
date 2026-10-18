@@ -22,6 +22,8 @@ import {
   Star,
 } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Herbic Cure | 100% Ayurvedic Hair Oil & Natural Hair Care Solutions',
   description:
@@ -31,7 +33,6 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 120;
 
 // High-speed cached data layer: runs in parallel and caches in server memory
 const getCachedHomePageData = unstable_cache(
