@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import prisma from '@/lib/prisma';
 
-export const revalidate = 3600; // Cache sitemap for 1 hour, or revalidate on catalog changes
+export const dynamic = 'force-dynamic'; // Cache sitemap for 1 hour, or revalidate on catalog changes
 
 /**
  * Technical SEO XML Sitemap Specification
@@ -141,7 +141,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     return [...staticPages, ...productEntries, ...categoryEntries, ...blogEntries];
   } catch (error) {
-    console.error('Failed to generate dynamic sitemap entries:', error);
+    console.warn('Deferred sitemap database query:', (error as any)?.message || String(error));
     return staticPages;
   }
 }

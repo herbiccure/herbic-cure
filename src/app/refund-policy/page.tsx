@@ -3,7 +3,7 @@ import React from 'react';
 import { getPolicyData } from '@/lib/policies';
 import PolicyRenderer from '@/components/ui/PolicyRenderer';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata() {
   const policy = await getPolicyData('refund-policy');

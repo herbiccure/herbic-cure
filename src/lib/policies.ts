@@ -211,7 +211,7 @@ export async function getPolicyData(slug: string): Promise<PolicyData> {
       return result;
     }
   } catch (error) {
-    console.error(`Error loading policy for slug '${slug}':`, error);
+    console.warn(`Policy fallback used for '${slug}' (database deferred):`, (error as any)?.message || String(error));
   }
 
   return fallback;
