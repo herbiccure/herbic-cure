@@ -12,11 +12,16 @@ import SocialReelsSection from '@/components/home/SocialReelsSection';
 import WhyHerbicasSection from '@/components/home/WhyHerbicasSection';
 import ReviewsSection from '@/components/home/ReviewsSection';
 import FAQSection from '@/components/home/FAQSection';
+import IngredientsShowcaseSection from '@/components/home/IngredientsShowcaseSection';
 import {
   ShieldCheck,
   Truck,
   Sparkles,
   HeartHandshake,
+  Leaf,
+  Award,
+  CheckCircle2,
+  Clock,
   ArrowRight,
   Flame,
   Star,
@@ -99,6 +104,44 @@ const getCachedHomePageData = unstable_cache(
   }
 );
 
+
+function getTrustBadgeIcon(iconName?: string) {
+  const norm = (iconName || '').toLowerCase().trim();
+  switch (norm) {
+    case 'truck':
+    case 'delivery':
+      return <Truck className="w-4 h-4 sm:w-5 sm:h-5" />;
+    case 'sparkles':
+    case 'herbs':
+      return <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />;
+    case 'heart':
+    case 'customers':
+    case 'rating':
+      return <HeartHandshake className="w-4 h-4 sm:w-5 sm:h-5" />;
+    case 'leaf':
+    case 'herbal':
+    case 'natural':
+      return <Leaf className="w-4 h-4 sm:w-5 sm:h-5" />;
+    case 'award':
+    case 'certified':
+    case 'quality':
+      return <Award className="w-4 h-4 sm:w-5 sm:h-5" />;
+    case 'check':
+    case 'verified':
+      return <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />;
+    case 'clock':
+    case 'fast':
+      return <Clock className="w-4 h-4 sm:w-5 sm:h-5" />;
+    case 'star':
+      return <Star className="w-4 h-4 sm:w-5 sm:h-5" />;
+    case 'flame':
+      return <Flame className="w-4 h-4 sm:w-5 sm:h-5" />;
+    case 'shield':
+    default:
+      return <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />;
+  }
+}
+
 export default async function HomePage() {
   const {
     products,
@@ -135,120 +178,160 @@ export default async function HomePage() {
   const featuredProducts = products.filter((p) => p.isFeatured).slice(0, 8);
 
   // Section Component Renderers
-  const renderTrustBadges = () => (
-    <section key="trust-badges" className="bg-white border-b border-stone-200/60 py-3 sm:py-5 shadow-xs">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-6">
-          <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3.5 rounded-xl bg-stone-50/70 border border-stone-100">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-rose-100/80 text-[#A84358] flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-xs sm:text-sm font-bold text-stone-900 leading-snug">
-                100% Ayurvedic
-              </h4>
-              <p className="text-[10px] sm:text-xs text-stone-500 leading-normal">
-                Zero mineral oil & silicones
-              </p>
-            </div>
-          </div>
+  const renderTrustBadges = () => {
+    let badges = [
+      {
+        icon: 'shield',
+        title: '100% Ayurvedic',
+        subtitle: 'Zero mineral oil & silicones',
+      },
+      {
+        icon: 'truck',
+        title: 'Free Express Delivery',
+        subtitle: 'On all orders above ₹499',
+      },
+      {
+        icon: 'sparkles',
+        title: '21 Potent Herbs',
+        subtitle: 'Kshirapak 72hr slow infusion',
+      },
+      {
+        icon: 'heart',
+        title: '2,50,000+ Customers',
+        subtitle: '4.9/5 rated hair growth results',
+      },
+    ];
 
-          <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3.5 rounded-xl bg-stone-50/70 border border-stone-100">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-rose-100/80 text-[#A84358] flex items-center justify-center shrink-0">
-              <Truck className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-xs sm:text-sm font-bold text-stone-900 leading-snug">
-                Free Express Delivery
-              </h4>
-              <p className="text-[10px] sm:text-xs text-stone-500 leading-normal">
-                On all orders above ₹499
-              </p>
-            </div>
-          </div>
+    if (heroSection?.contentJson) {
+      try {
+        const parsed = JSON.parse(heroSection.contentJson);
+        if (Array.isArray(parsed.trustBadges) && parsed.trustBadges.length > 0) {
+          badges = parsed.trustBadges;
+        }
+      } catch (e) {
+        // Fallback to default badges
+      }
+    }
 
-          <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3.5 rounded-xl bg-stone-50/70 border border-stone-100">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-rose-100/80 text-[#A84358] flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-xs sm:text-sm font-bold text-stone-900 leading-snug">
-                21 Potent Herbs
-              </h4>
-              <p className="text-[10px] sm:text-xs text-stone-500 leading-normal">
-                Kshirapak 72hr slow infusion
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3.5 rounded-xl bg-stone-50/70 border border-stone-100">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-rose-100/80 text-[#A84358] flex items-center justify-center shrink-0">
-              <HeartHandshake className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-xs sm:text-sm font-bold text-stone-900 leading-snug">
-                2,50,000+ Customers
-              </h4>
-              <p className="text-[10px] sm:text-xs text-stone-500 leading-normal">
-                4.9/5 rated hair growth results
-              </p>
-            </div>
+    return (
+      <section key="trust-badges" className="bg-white border-b border-stone-200/60 py-3 sm:py-5 shadow-xs">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-6">
+            {badges.map((badge: any, idx: number) => (
+              <div
+                key={badge.id || idx}
+                className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3.5 rounded-xl bg-stone-50/70 border border-stone-100 hover:border-rose-200/60 transition-colors"
+              >
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-rose-100/80 text-[#A84358] flex items-center justify-center shrink-0">
+                  {getTrustBadgeIcon(badge.icon)}
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-xs sm:text-sm font-bold text-stone-900 leading-snug truncate">
+                    {badge.title}
+                  </h4>
+                  <p className="text-[10px] sm:text-xs text-stone-500 leading-normal truncate">
+                    {badge.subtitle}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
-    </section>
-  );
+      </section>
+    );
+  };
 
-  const renderBestSellers = (key: string, title?: string, subtitle?: string) => (
-    <section key={key} className="py-7 sm:py-20 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-4 sm:mb-10">
-        <div>
-          <div className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[#A84358] bg-rose-100/70 px-3 py-1 rounded-full mb-2 sm:mb-3">
-            <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-            <span>Customer Favorites</span>
+  const renderBestSellers = (
+    key: string,
+    title?: string,
+    subtitle?: string,
+    contentJson?: string | null
+  ) => {
+    let config: {
+      badgeText?: string;
+      viewAllText?: string;
+      viewAllUrl?: string;
+      displayLimit?: number;
+      productIds?: string[];
+    } = {};
+
+    if (contentJson) {
+      try {
+        config = typeof contentJson === 'string' ? JSON.parse(contentJson) : contentJson;
+      } catch {}
+    }
+
+    const badgeText = config.badgeText || 'Customer Favorites';
+    const viewAllText = config.viewAllText || `View All Products (${products.length})`;
+    const viewAllUrl = config.viewAllUrl || '/collections/best-sellers';
+    const limit = Number(config.displayLimit) || 8;
+
+    let displayList = bestSellers;
+    if (Array.isArray(config.productIds) && config.productIds.length > 0) {
+      const productMap = new Map(products.map((p) => [p.id, p]));
+      const ordered = config.productIds
+        .map((id) => productMap.get(id))
+        .filter(Boolean) as typeof products;
+      if (ordered.length > 0) {
+        displayList = ordered;
+      }
+    }
+
+    if (limit > 0) {
+      displayList = displayList.slice(0, limit);
+    }
+
+    return (
+      <section key={key} className="py-7 sm:py-20 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-4 sm:mb-10">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[#A84358] bg-rose-100/70 px-3 py-1 rounded-full mb-2 sm:mb-3">
+              <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+              <span>{badgeText}</span>
+            </div>
+            <h2 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-stone-900 font-serif">
+              {title || 'BEST-SELLING FORMULATIONS'}
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-600 mt-1 sm:mt-2 max-w-xl">
+              {subtitle || 'Authentic cold-pressed 21 herbs oils and therapy kits designed to stop hair fall and stimulate deep root strength.'}
+            </p>
           </div>
-          <h2 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-stone-900 font-serif">
-            {title || 'BEST-SELLING FORMULATIONS'}
-          </h2>
-          <p className="text-xs sm:text-sm text-stone-600 mt-1 sm:mt-2 max-w-xl">
-            {subtitle || 'Authentic cold-pressed 21 herbs oils and therapy kits designed to stop hair fall and stimulate deep root strength.'}
-          </p>
-        </div>
 
-        <Link
-          href="/collections/best-sellers"
-          className="mt-3 md:mt-0 inline-flex items-center gap-1.5 text-xs font-bold text-[#A84358] hover:underline uppercase tracking-wider"
-        >
-          <span>View All Products ({products.length})</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-
-      <div className="flex lg:grid overflow-x-auto lg:overflow-visible snap-x snap-mandatory gap-3 sm:gap-5 lg:gap-8 pb-3 lg:pb-0 no-scrollbar lg:grid-cols-4">
-        {bestSellers.map((prod) => (
-          <div
-            key={prod.id}
-            className="w-[calc(50%-6px)] sm:w-[260px] lg:w-auto shrink-0 lg:shrink snap-start"
+          <Link
+            href={viewAllUrl}
+            className="mt-3 md:mt-0 inline-flex items-center gap-1.5 text-xs font-bold text-[#A84358] hover:underline uppercase tracking-wider"
           >
-            <ProductCard
-              id={prod.id}
-              name={prod.name}
-              slug={prod.slug}
-              regularPrice={prod.regularPrice}
-              salePrice={prod.salePrice}
-              image={prod.images[0]?.url || '/images/banners/banner-1.png'}
-              rating={prod.rating}
-              reviewCount={prod.reviewCount}
-              isBestSeller={prod.isBestSeller}
-              isOnSale={prod.isOnSale}
-              hasTimer={prod.hasTimer}
-              stockQuantity={prod.stockQuantity}
-            />
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+            <span>{viewAllText}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="flex lg:grid overflow-x-auto lg:overflow-visible snap-x snap-mandatory gap-3 sm:gap-5 lg:gap-8 pb-3 lg:pb-0 no-scrollbar lg:grid-cols-4">
+          {displayList.map((prod) => (
+            <div
+              key={prod.id}
+              className="w-[calc(50%-6px)] sm:w-[260px] lg:w-auto shrink-0 lg:shrink snap-start"
+            >
+              <ProductCard
+                id={prod.id}
+                name={prod.name}
+                slug={prod.slug}
+                regularPrice={prod.regularPrice}
+                salePrice={prod.salePrice}
+                image={prod.images[0]?.url || '/images/banners/banner-1.png'}
+                rating={prod.rating}
+                reviewCount={prod.reviewCount}
+                isBestSeller={prod.isBestSeller}
+                isOnSale={prod.isOnSale}
+                hasTimer={prod.hasTimer}
+                stockQuantity={prod.stockQuantity}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  };
 
   const renderFeaturedProducts = (key: string, title?: string, subtitle?: string) => {
     const displayList = featuredProducts.length > 0 ? featuredProducts : bestSellers.slice(0, 4);
@@ -305,7 +388,7 @@ export default async function HomePage() {
   };
 
   // Section dispatcher mapping sectionType to its rendered JSX
-  const renderSection = (sec: { id: string; sectionType: string; title?: string | null; subtitle?: string | null }) => {
+  const renderSection = (sec: { id: string; sectionType: string; title?: string | null; subtitle?: string | null; contentJson?: string | null }) => {
     switch (sec.sectionType) {
       case 'HERO':
       case 'HERO_SLIDER':
@@ -316,13 +399,13 @@ export default async function HomePage() {
           </React.Fragment>
         );
       case 'BEST_SELLERS':
-        return renderBestSellers(sec.id, sec.title || undefined, sec.subtitle || undefined);
+        return renderBestSellers(sec.id, sec.title || undefined, sec.subtitle || undefined, sec.contentJson);
       case 'CATEGORIES':
         return <CategoryGrid key={sec.id} categories={categories} />;
       case 'FEATURED_PRODUCTS':
         return renderFeaturedProducts(sec.id, sec.title || undefined, sec.subtitle || undefined);
       case 'DISCOVER':
-        return <DiscoverHerbicas key={sec.id} />;
+        return <DiscoverHerbicas key={sec.id} contentJson={sec.contentJson} />;
       case 'RESULTS':
         return <CustomerResultsSection key={sec.id} results={results} />;
       case 'REELS':
@@ -331,6 +414,15 @@ export default async function HomePage() {
         return <WhyHerbicasSection key={sec.id} />;
       case 'REVIEWS':
         return <ReviewsSection key={sec.id} reviews={reviews} />;
+      case 'INGREDIENTS':
+        return (
+          <IngredientsShowcaseSection
+            key={sec.id}
+            title={sec.title || undefined}
+            subtitle={sec.subtitle || undefined}
+            contentJson={sec.contentJson || undefined}
+          />
+        );
       case 'FAQ':
         return <FAQSection key={sec.id} faqs={faqs} />;
       default:
@@ -357,7 +449,7 @@ export default async function HomePage() {
           {renderTrustBadges()}
           {renderBestSellers('default-best-sellers', 'Best Selling Hair Rituals', 'Handcrafted with 21 potent herbs for visible restoration')}
           <CategoryGrid categories={categories} />
-          <DiscoverHerbicas />
+          <DiscoverHerbicas contentJson={homepageSections.find((s) => s.sectionType === 'DISCOVER')?.contentJson} />
           <ReviewsSection reviews={reviews} />
           <SocialReelsSection posts={socialPosts} />
           <WhyHerbicasSection />

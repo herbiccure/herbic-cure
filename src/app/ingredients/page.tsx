@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import React from 'react';
+import Image from 'next/image';
 import { prisma } from '@/lib/prisma';
 import { Leaf, Check, Sparkles } from 'lucide-react';
 
@@ -51,15 +52,24 @@ export default async function IngredientsPage() {
               <div>
                 {/* Herb Badge & Title */}
                 <div className="flex items-center gap-3.5 mb-3.5">
-                  <div className="w-11 h-11 rounded-2xl bg-rose-100/70 text-[#A84358] border border-rose-200/50 flex items-center justify-center shrink-0 shadow-xs">
-                    <Leaf className="w-5 h-5 text-[#A84358]" />
+                  <div className="relative w-12 h-12 rounded-2xl bg-rose-100/70 text-[#A84358] border border-rose-200/50 flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
+                    {herb.image ? (
+                      <Image
+                        src={herb.image}
+                        alt={herb.name}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <Leaf className="w-5 h-5 text-[#A84358]" />
+                    )}
                   </div>
                   <div>
                     <h3 className="font-serif font-bold text-lg text-stone-900 leading-tight">
                       {herb.name}
                     </h3>
                     <span className="inline-block bg-rose-50 text-rose-800 border border-rose-200/60 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider mt-0.5">
-                      Herb #{idx + 1}
+                      Herb #{herb.displayOrder || idx + 1}
                     </span>
                   </div>
                 </div>

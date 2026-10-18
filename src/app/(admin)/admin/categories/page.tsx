@@ -1,5 +1,7 @@
 'use client';
 
+import ImageUploadField from '@/components/admin/ImageUploadField';
+
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -605,44 +607,13 @@ export default function AdminCategoriesPage() {
                 />
               </div>
 
-              {/* Image Preview & URL */}
-              <div>
-                <label className="block text-xs font-bold mb-1">Category Image URL</label>
-                <div className="flex gap-3 items-center">
-                  <div
-                    className={cn(
-                      'relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border shadow-2xs',
-                      isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-800 border-slate-700'
-                    )}
-                  >
-                    {formData.image ? (
-                      <Image
-                        src={formData.image}
-                        alt="Category Preview"
-                        fill
-                        sizes="56px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400">
-                        <ImageIcon className="w-5 h-5" />
-                      </div>
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    placeholder="/images/products/herbic-cure/herbic-cure-oil-q1-main.jpg"
-                    className={cn(
-                      'flex-1 px-4 py-2.5 rounded-xl text-xs border transition-all focus:outline-hidden',
-                      isLight
-                        ? 'bg-slate-50 border-slate-200 text-slate-900'
-                        : 'bg-slate-800 border-slate-700 text-white'
-                    )}
-                  />
-                </div>
-              </div>
+              <ImageUploadField
+                value={formData.image || ''}
+                onChange={(url) => setFormData({ ...formData, image: url })}
+                label="Category Image"
+                helperText="Upload category thumbnail directly from your computer or phone"
+                placeholder="/images/products/herbic-cure/herbic-cure-oil-q1-main.jpg"
+              />
 
               {/* Live Toggle */}
               <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">

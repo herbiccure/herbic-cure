@@ -9,6 +9,7 @@ import {
   TrendingUp,
   ArrowRight,
   Sparkles,
+  Leaf,
   FileText,
   Megaphone,
 } from 'lucide-react';
@@ -51,11 +52,35 @@ export default async function AdminDashboardPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
           <Link
+            href="/admin/ingredients"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-[#FDF0F4] text-[#8C3A4F] border border-[#EAC9D1] text-xs font-bold rounded-xl shadow-2xs transition-all group shrink-0"
+          >
+            <Leaf className="w-4 h-4 text-[#8C3A4F] group-hover:rotate-12 transition-transform" />
+            <span>21 Sacred Herbs</span>
+            <ArrowRight className="w-3.5 h-3.5 text-[#8C3A4F] group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+          <Link
             href="/admin/homepage"
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-[#FDF0F4] text-[#8C3A4F] border border-[#EAC9D1] text-xs font-bold rounded-xl shadow-2xs transition-all group shrink-0"
           >
             <Sparkles className="w-4 h-4 text-[#8C3A4F] group-hover:rotate-12 transition-transform" />
             <span>Hero &amp; Homepage Studio</span>
+            <ArrowRight className="w-3.5 h-3.5 text-[#8C3A4F] group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+          <Link
+            href="/admin/about"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-[#FDF0F4] text-[#8C3A4F] border border-[#EAC9D1] text-xs font-bold rounded-xl shadow-2xs transition-all group shrink-0"
+          >
+            <Sparkles className="w-4 h-4 text-[#8C3A4F] group-hover:rotate-12 transition-transform" />
+            <span>About Us Studio</span>
+            <ArrowRight className="w-3.5 h-3.5 text-[#8C3A4F] group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+          <Link
+            href="/admin/footer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-[#FDF0F4] text-[#8C3A4F] border border-[#EAC9D1] text-xs font-bold rounded-xl shadow-2xs transition-all group shrink-0"
+          >
+            <Sparkles className="w-4 h-4 text-[#8C3A4F] group-hover:rotate-12 transition-transform" />
+            <span>Footer Studio</span>
             <ArrowRight className="w-3.5 h-3.5 text-[#8C3A4F] group-hover:translate-x-0.5 transition-transform" />
           </Link>
           <Link

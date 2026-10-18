@@ -1,5 +1,7 @@
 'use client';
 
+import ImageUploadField from '@/components/admin/ImageUploadField';
+
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Sparkles, Plus, Trash2 } from 'lucide-react';
@@ -113,26 +115,21 @@ export default function AdminCustomerResultsPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">Before Image URL</label>
-              <input
-                type="text"
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ImageUploadField
                 value={beforeImage}
-                onChange={(e) => setBeforeImage(e.target.value)}
+                onChange={(url) => setBeforeImage(url)}
+                label="Before Result Photo (Optional)"
+                helperText="Upload customer before photo from device"
                 placeholder="/images/banners/client-1.png"
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-hidden focus:border-rose-500 font-mono text-xs"
               />
-            </div>
-
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">After Image URL *</label>
-              <input
-                type="text"
-                required
+              <ImageUploadField
                 value={afterImage}
-                onChange={(e) => setAfterImage(e.target.value)}
+                onChange={(url) => setAfterImage(url)}
+                label="After Result Photo"
+                helperText="Upload customer after photo from device"
                 placeholder="/images/banners/client-2.png"
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-hidden focus:border-rose-500 font-mono text-xs"
+                required
               />
             </div>
 

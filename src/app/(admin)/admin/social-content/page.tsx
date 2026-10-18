@@ -1,5 +1,7 @@
 'use client';
 
+import ImageUploadField from '@/components/admin/ImageUploadField';
+
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Video, Plus, Trash2, ExternalLink } from 'lucide-react';
@@ -87,17 +89,15 @@ export default function AdminSocialContentPage() {
           </h3>
 
           <form onSubmit={handleCreate} className="space-y-4 text-xs">
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">Thumbnail Image URL *</label>
-              <input
-                type="text"
-                required
-                value={thumbnailUrl}
-                onChange={(e) => setThumbnailUrl(e.target.value)}
-                placeholder="/images/banners/client-1.png"
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-hidden focus:border-rose-500 font-mono text-xs"
-              />
-            </div>
+            <ImageUploadField
+              value={thumbnailUrl}
+              onChange={(url) => setThumbnailUrl(url)}
+              label="Reel / Video Thumbnail Cover"
+              helperText="Upload reel preview thumbnail directly from device (vertical/square)"
+              placeholder="/images/banners/client-1.png"
+              aspectRatio="video"
+              required
+            />
 
             <div>
               <label className="block text-slate-300 font-semibold mb-1">Instagram Post / Reel URL</label>

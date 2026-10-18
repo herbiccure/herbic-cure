@@ -1,5 +1,7 @@
 'use client';
 
+import ImageUploadField from '@/components/admin/ImageUploadField';
+
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -154,22 +156,14 @@ export default function AdminCollectionsPage() {
               />
             </div>
 
-            <div>
-              <label className={`block font-semibold mb-1 ${isLight ? 'text-[#2D1B1B]' : 'text-slate-300'}`}>
-                Banner Image URL
-              </label>
-              <input
-                type="text"
-                value={banner}
-                onChange={(e) => setBanner(e.target.value)}
-                placeholder="/images/banners/banner-1.png"
-                className={`w-full rounded-xl p-3 font-mono text-xs border focus:outline-hidden focus:border-[#A84358] ${
-                  isLight
-                    ? 'bg-[#FCF8F9] border-rose-200/90 text-[#2D1B1B] placeholder-stone-400'
-                    : 'bg-slate-800 border-slate-700 text-white placeholder-slate-500'
-                }`}
-              />
-            </div>
+            <ImageUploadField
+              value={banner}
+              onChange={(url) => setBanner(url)}
+              label="Collection Banner Image"
+              helperText="Upload banner image directly from your computer or phone"
+              placeholder="/images/banners/banner-1.png"
+              aspectRatio="banner"
+            />
 
             <button
               type="submit"

@@ -1,5 +1,7 @@
 'use client';
 
+import ImageUploadField from '@/components/admin/ImageUploadField';
+
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -449,28 +451,22 @@ export default function AdminBlogPage() {
 
             {/* Featured Image */}
             <div>
-              <label className={`block font-semibold mb-1 ${isLight ? 'text-[#2D1B1B]' : 'text-slate-300'}`}>
-                Featured Banner Image URL
-              </label>
-              <input
-                type="text"
+              <ImageUploadField
                 value={featuredImage}
-                onChange={(e) => setFeaturedImage(e.target.value)}
+                onChange={(url) => setFeaturedImage(url)}
+                label="Article Featured Banner Image"
+                helperText="Upload blog cover image directly from your device"
                 placeholder="/images/banners/banner-1.png"
-                className={`w-full rounded-xl p-3 font-mono text-[11px] border focus:outline-hidden focus:border-[#A84358] ${
-                  isLight
-                    ? 'bg-[#FCF8F9] border-rose-200/90 text-[#2D1B1B] placeholder-stone-400'
-                    : 'bg-slate-800 border-slate-700 text-white placeholder-slate-500'
-                }`}
+                aspectRatio="banner"
               />
               <div className="flex gap-2 mt-2 items-center">
-                <span className={`text-[10px] ${isLight ? 'text-[#6E555C]' : 'text-slate-400'}`}>Presets:</span>
+                <span className={`text-[10px] ${isLight ? 'text-[#6E555C]' : 'text-slate-400'}`}>Or Choose Preset:</span>
                 {IMAGE_PRESETS.map((img, idx) => (
                   <button
                     key={img}
                     type="button"
                     onClick={() => setFeaturedImage(img)}
-                    className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                    className={`text-[10px] px-2 py-0.5 rounded border transition-colors cursor-pointer ${
                       featuredImage === img
                         ? 'bg-[#A84358] text-white border-[#A84358]'
                         : isLight

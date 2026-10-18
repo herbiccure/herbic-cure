@@ -28,12 +28,28 @@ import {
   X,
   AlertCircle,
   HelpCircle,
+  Search,
+  Check,
   Video,
   ShieldCheck,
+  Truck,
+  HeartHandshake,
+  Leaf,
+  Award,
+  Clock,
+  Sliders,
   Package,
   BookOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+
+interface TrustBadge {
+  id?: string;
+  icon: string;
+  title: string;
+  subtitle: string;
+}
 
 interface Slide {
   desktopImage: string;
@@ -79,6 +95,14 @@ const SECTION_PRESETS = [
     icon: Star,
     defaultTitle: 'Featured Formulations',
     defaultSubtitle: 'Pure botanical infusions crafted according to ancient texts',
+  },
+  {
+    type: 'INGREDIENTS',
+    title: '21 Sacred Ayurvedic Herbs',
+    subtitle: 'Interactive botanical grid & formulation science',
+    icon: Leaf,
+    defaultTitle: 'THE 21 SACRED AYURVEDIC HERBS',
+    defaultSubtitle: 'Slow-infused via 72-hour Kshirapak Vidhi with zero mineral oil',
   },
   {
     type: 'DISCOVER',
@@ -152,6 +176,80 @@ export default function AdminHomepageBuilderPage() {
 
   // Hero Slider Visual Editor State
   const [heroSlides, setHeroSlides] = useState<Slide[]>([]);
+
+  // Trust Badges Visual Editor State
+  const [trustBadges, setTrustBadges] = useState<TrustBadge[]>([]);
+
+  // Best Sellers / Showcase Products Studio State
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [bsBadgeText, setBsBadgeText] = useState('Customer Favorites');
+  const [bsViewAllText, setBsViewAllText] = useState('View All Products');
+  const [bsViewAllUrl, setBsViewAllUrl] = useState('/collections/best-sellers');
+  const [bsDisplayLimit, setBsDisplayLimit] = useState(8);
+  const [bsSelectedProductIds, setBsSelectedProductIds] = useState<string[]>([]);
+  const [bsActiveTab, setBsActiveTab] = useState<'products' | 'header' | 'preview'>('products');
+  const [bsSearchTerm, setBsSearchTerm] = useState('');
+
+  // Combo Showcase Studio State (DISCOVER Section)
+  const [comboBadge, setComboBadge] = useState('THE ULTIMATE 3-IN-1 HAIR CARE COMBO');
+  const [comboHeading, setComboHeading] = useState('Complete Hair Therapy Kit');
+  const [comboSubtitle, setComboSubtitle] = useState('21 HERBS OIL (190ML) + HERBAL SHAMPOO (200ML) + NEEM WOOD COMB');
+  const [comboRatingScore, setComboRatingScore] = useState('4.9 / 5');
+  const [comboRatingText, setComboRatingText] = useState('1,480+ Verified Results');
+  const [comboRegularPrice, setComboRegularPrice] = useState(1448);
+  const [comboSalePrice, setComboSalePrice] = useState(1158);
+  const [comboSaveText, setComboSaveText] = useState('Save ₹290 (20% OFF)');
+  const [comboDeliveryBadge, setComboDeliveryBadge] = useState('Free Express Delivery');
+  const [comboImage, setComboImage] = useState('/images/products/herbic-cure/herbic-cure-oil-shampoo-comb-trio.jpg');
+  const [comboImageTag, setComboImageTag] = useState('SAVE 20% OFF COMBO');
+  const [comboOverlayTitle, setComboOverlayTitle] = useState('COMPLETE 3-STEP AYURVEDIC REGROWTH ROUTINE');
+  const [comboOverlaySubtitle, setComboOverlaySubtitle] = useState('21 Herbs Fusion Oil + Herbal Shampoo + Pure Neem Wood Comb');
+  const [comboFloatingCardTitle, setComboFloatingCardTitle] = useState('100% Ayurvedic Therapy');
+  const [comboFloatingCardSubtitle, setComboFloatingCardSubtitle] = useState('Paraben, Sulphate & Mineral Oil Free');
+  const [comboProductSlug, setComboProductSlug] = useState('herbic-cure-complete-hair-therapy-kit');
+  const [comboSteps, setComboSteps] = useState<Array<{ step: string; title: string; desc: string; tag: string }>>([
+    {
+      step: '01',
+      title: '21 Herbs Fusion Hair Oil (190ml)',
+      desc: 'Infused with 21 Ayurvedic herbs & roots. Nourishes dormant follicles and controls hair fall from root.',
+      tag: 'Pre-Wash Care',
+    },
+    {
+      step: '02',
+      title: 'Shampoo with Conditioner (200ml)',
+      desc: 'Enriched with Neem, Tulsi & Argan Oil. Gently cleanses buildup without stripping natural scalp moisture.',
+      tag: 'Gentle Wash',
+    },
+    {
+      step: '03',
+      title: 'Handcrafted Neem Wood Comb',
+      desc: 'Anti-static wide teeth comb. Stimulates scalp micro-circulation and prevents mechanical breakage.',
+      tag: 'Scalp Activation',
+    },
+  ]);
+  const [comboActiveTab, setComboActiveTab] = useState<'pricing' | 'content' | 'preview'>('pricing');
+
+  const fetchStoreProducts = async () => {
+    try {
+      setLoadingProducts(true);
+      const res = await fetch('/api/admin/products');
+      const data = await res.json();
+      if (Array.isArray(data.products)) {
+        setAllProducts(data.products);
+      }
+    } catch {
+      // Non-fatal
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStoreProducts();
+  }, []);
+  const [heroActiveTab, setHeroActiveTab] = useState<'slides' | 'badges'>('slides');
+
   const [selectedSlideIndex, setSelectedSlideIndex] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -186,7 +284,86 @@ export default function AdminHomepageBuilderPage() {
   // When opening a section for edit, parse its slides if it is a hero section
   const handleOpenEdit = (sec: any) => {
     setEditingSection({ ...sec });
+    if (sec.sectionType === 'DISCOVER') {
+      try {
+        const parsed = JSON.parse(sec.contentJson || '{}');
+        setComboBadge(parsed.badge || 'THE ULTIMATE 3-IN-1 HAIR CARE COMBO');
+        setComboHeading(parsed.heading || sec.title || 'Complete Hair Therapy Kit');
+        setComboSubtitle(parsed.subtitle || sec.subtitle || '21 HERBS OIL (190ML) + HERBAL SHAMPOO (200ML) + NEEM WOOD COMB');
+        setComboRatingScore(parsed.ratingScore || '4.9 / 5');
+        setComboRatingText(parsed.ratingText || '1,480+ Verified Results');
+        setComboRegularPrice(Number(parsed.regularPrice) || 1448);
+        setComboSalePrice(Number(parsed.salePrice) || 1158);
+        setComboSaveText(parsed.saveText || 'Save ₹290 (20% OFF)');
+        setComboDeliveryBadge(parsed.deliveryBadge || 'Free Express Delivery');
+        setComboImage(parsed.image || '/images/products/herbic-cure/herbic-cure-oil-shampoo-comb-trio.jpg');
+        setComboImageTag(parsed.imageTag || 'SAVE 20% OFF COMBO');
+        setComboOverlayTitle(parsed.overlayTitle || 'COMPLETE 3-STEP AYURVEDIC REGROWTH ROUTINE');
+        setComboOverlaySubtitle(parsed.overlaySubtitle || '21 Herbs Fusion Oil + Herbal Shampoo + Pure Neem Wood Comb');
+        setComboFloatingCardTitle(parsed.floatingCardTitle || '100% Ayurvedic Therapy');
+        setComboFloatingCardSubtitle(parsed.floatingCardSubtitle || 'Paraben, Sulphate & Mineral Oil Free');
+        setComboProductSlug(parsed.productSlug || 'herbic-cure-complete-hair-therapy-kit');
+        if (Array.isArray(parsed.steps) && parsed.steps.length > 0) {
+          setComboSteps(parsed.steps);
+        } else {
+          setComboSteps([
+            {
+              step: '01',
+              title: '21 Herbs Fusion Hair Oil (190ml)',
+              desc: 'Infused with 21 Ayurvedic herbs & roots. Nourishes dormant follicles and controls hair fall from root.',
+              tag: 'Pre-Wash Care',
+            },
+            {
+              step: '02',
+              title: 'Shampoo with Conditioner (200ml)',
+              desc: 'Enriched with Neem, Tulsi & Argan Oil. Gently cleanses buildup without stripping natural scalp moisture.',
+              tag: 'Gentle Wash',
+            },
+            {
+              step: '03',
+              title: 'Handcrafted Neem Wood Comb',
+              desc: 'Anti-static wide teeth comb. Stimulates scalp micro-circulation and prevents mechanical breakage.',
+              tag: 'Scalp Activation',
+            },
+          ]);
+        }
+      } catch {
+        // Fallback
+      }
+      setComboActiveTab('pricing');
+    }
+
+    if (sec.sectionType === 'BEST_SELLERS' || sec.sectionType === 'FEATURED_PRODUCTS') {
+      try {
+        const parsed = JSON.parse(sec.contentJson || '{}');
+        setBsBadgeText(parsed.badgeText || (sec.sectionType === 'BEST_SELLERS' ? 'Customer Favorites' : 'Curated Selection'));
+        setBsViewAllText(parsed.viewAllText || 'View All Products');
+        setBsViewAllUrl(parsed.viewAllUrl || (sec.sectionType === 'BEST_SELLERS' ? '/collections/best-sellers' : '/products'));
+        setBsDisplayLimit(Number(parsed.displayLimit) || 8);
+        if (Array.isArray(parsed.productIds) && parsed.productIds.length > 0) {
+          setBsSelectedProductIds(parsed.productIds);
+        } else {
+          // Preselect marked best sellers or first 8 products
+          const marked = allProducts.filter((p: any) => p.isBestSeller).map((p: any) => p.id);
+          setBsSelectedProductIds(marked.length > 0 ? marked : allProducts.slice(0, 8).map((p: any) => p.id));
+        }
+      } catch {
+        setBsBadgeText('Customer Favorites');
+        setBsViewAllText('View All Products');
+        setBsViewAllUrl('/collections/best-sellers');
+        setBsDisplayLimit(8);
+        setBsSelectedProductIds(allProducts.slice(0, 8).map((p: any) => p.id));
+      }
+      setBsActiveTab('products');
+    }
+
     if (sec.sectionType === 'HERO' || sec.sectionType === 'HERO_SLIDER') {
+      const defaultBadges: TrustBadge[] = [
+        { id: 'badge-1', icon: 'shield', title: '100% Ayurvedic', subtitle: 'Zero mineral oil & silicones' },
+        { id: 'badge-2', icon: 'truck', title: 'Free Express Delivery', subtitle: 'On all orders above ₹499' },
+        { id: 'badge-3', icon: 'sparkles', title: '21 Potent Herbs', subtitle: 'Kshirapak 72hr slow infusion' },
+        { id: 'badge-4', icon: 'heart', title: '2,50,000+ Customers', subtitle: '4.9/5 rated hair growth results' },
+      ];
       try {
         const parsed = JSON.parse(sec.contentJson || '{}');
         if (Array.isArray(parsed.slides) && parsed.slides.length > 0) {
@@ -207,9 +384,16 @@ export default function AdminHomepageBuilderPage() {
             },
           ]);
         }
+        if (Array.isArray(parsed.trustBadges) && parsed.trustBadges.length > 0) {
+          setTrustBadges(parsed.trustBadges);
+        } else {
+          setTrustBadges(defaultBadges);
+        }
       } catch {
         setHeroSlides([]);
+        setTrustBadges(defaultBadges);
       }
+      setHeroActiveTab('slides');
       setSelectedSlideIndex(0);
     }
   };
@@ -402,7 +586,41 @@ export default function AdminHomepageBuilderPage() {
 
     // If it's the hero section, serialize our visual slide state
     if (editingSection.sectionType === 'HERO' || editingSection.sectionType === 'HERO_SLIDER') {
-      finalContentJson = JSON.stringify({ slides: heroSlides }, null, 2);
+      finalContentJson = JSON.stringify({ slides: heroSlides, trustBadges }, null, 2);
+    }
+
+    // If it's Best Sellers or Featured Products section, serialize product IDs and headers
+    if (editingSection.sectionType === 'BEST_SELLERS' || editingSection.sectionType === 'FEATURED_PRODUCTS') {
+      finalContentJson = JSON.stringify({
+        badgeText: bsBadgeText,
+        viewAllText: bsViewAllText,
+        viewAllUrl: bsViewAllUrl,
+        displayLimit: bsDisplayLimit,
+        productIds: bsSelectedProductIds,
+      }, null, 2);
+    }
+
+    // If it's Combo Showcase (DISCOVER), serialize combo config
+    if (editingSection.sectionType === 'DISCOVER') {
+      finalContentJson = JSON.stringify({
+        badge: comboBadge,
+        heading: comboHeading,
+        subtitle: comboSubtitle,
+        ratingScore: comboRatingScore,
+        ratingText: comboRatingText,
+        regularPrice: Number(comboRegularPrice),
+        salePrice: Number(comboSalePrice),
+        saveText: comboSaveText,
+        deliveryBadge: comboDeliveryBadge,
+        image: comboImage,
+        imageTag: comboImageTag,
+        overlayTitle: comboOverlayTitle,
+        overlaySubtitle: comboOverlaySubtitle,
+        floatingCardTitle: comboFloatingCardTitle,
+        floatingCardSubtitle: comboFloatingCardSubtitle,
+        productSlug: comboProductSlug,
+        steps: comboSteps,
+      }, null, 2);
     }
 
     try {
@@ -469,7 +687,58 @@ export default function AdminHomepageBuilderPage() {
   const isHeroSection =
     editingSection?.sectionType === 'HERO' || editingSection?.sectionType === 'HERO_SLIDER';
 
+  const isBestSellersSection =
+    editingSection?.sectionType === 'BEST_SELLERS' || editingSection?.sectionType === 'FEATURED_PRODUCTS';
+
+  const isComboSection = editingSection?.sectionType === 'DISCOVER';
+
   const currentSlide = heroSlides[selectedSlideIndex];
+
+  
+  const handleUpdateBadge = (index: number, field: keyof TrustBadge, value: string) => {
+    setTrustBadges((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const handleResetBadgesToDefault = () => {
+    setTrustBadges([
+      { id: 'badge-1', icon: 'shield', title: '100% Ayurvedic', subtitle: 'Zero mineral oil & silicones' },
+      { id: 'badge-2', icon: 'truck', title: 'Free Express Delivery', subtitle: 'On all orders above ₹499' },
+      { id: 'badge-3', icon: 'sparkles', title: '21 Potent Herbs', subtitle: 'Kshirapak 72hr slow infusion' },
+      { id: 'badge-4', icon: 'heart', title: '2,50,000+ Customers', subtitle: '4.9/5 rated hair growth results' },
+    ]);
+    toast.success('Reset trust badges to default values');
+  };
+
+  const renderBadgeIconPreview = (iconName?: string) => {
+    const norm = (iconName || '').toLowerCase().trim();
+    switch (norm) {
+      case 'truck':
+        return <Truck className="w-4 h-4" />;
+      case 'sparkles':
+        return <Sparkles className="w-4 h-4" />;
+      case 'heart':
+        return <HeartHandshake className="w-4 h-4" />;
+      case 'leaf':
+        return <Leaf className="w-4 h-4" />;
+      case 'award':
+        return <Award className="w-4 h-4" />;
+      case 'check':
+        return <CheckCircle2 className="w-4 h-4" />;
+      case 'clock':
+        return <Clock className="w-4 h-4" />;
+      case 'star':
+        return <Star className="w-4 h-4" />;
+      case 'flame':
+        return <Flame className="w-4 h-4" />;
+      case 'shield':
+      default:
+        return <ShieldCheck className="w-4 h-4" />;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -635,13 +904,14 @@ export default function AdminHomepageBuilderPage() {
                         )}
 
                         {sec.sectionType === 'BEST_SELLERS' && (
-                          <Link
-                            href="/admin/products"
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-900 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full transition-all"
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(sec)}
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full transition-all cursor-pointer shadow-2xs"
                           >
                             <Flame className="w-3 h-3 text-amber-600" />
-                            <span>Manage Best Sellers</span>
-                          </Link>
+                            <span>Edit Showcase Products ({allProducts.length})</span>
+                          </button>
                         )}
                         {sec.sectionType === 'OFFER_BANNER' && (
                           <Link
@@ -750,11 +1020,21 @@ export default function AdminHomepageBuilderPage() {
                 </span>
                 <div>
                   <h3 className="text-lg font-bold text-[#2D1B1B] font-serif">
-                    {isHeroSection ? 'Hero Banner Studio & Slide Editor' : `Edit: ${editingSection.sectionType}`}
+                    {isHeroSection
+                      ? 'Hero Banner Studio & Slide Editor'
+                      : isBestSellersSection
+                      ? 'Best Selling Rituals & Showcase Products Studio'
+                      : isComboSection
+                      ? 'Combo Showcase & 3-in-1 Therapy Kit Studio'
+                      : `Edit: ${editingSection.sectionType}`}
                   </h3>
                   <p className="text-xs text-[#7A5B64]">
                     {isHeroSection
                       ? 'Upload desktop/mobile banner images, customize headings, badges, and CTA links.'
+                      : isBestSellersSection
+                      ? 'Select which products appear in this homepage section, reorder their cards, and customize badges & links.'
+                      : isComboSection
+                      ? 'Customize combo pricing, modern font, product images, discounts, and 3 ritual steps.'
                       : 'Customize section title, subtitle, and layout settings.'}
                   </p>
                 </div>
@@ -798,7 +1078,37 @@ export default function AdminHomepageBuilderPage() {
               {/* HERO SLIDER VISUAL BUILDER */}
               {isHeroSection ? (
                 <div className="space-y-6 pt-2">
-                  {/* Slide Tabs & Add Slide Button */}
+                  {/* Hero Sub-section Tabs */}
+                  <div className="flex border-b border-[#EAC9D1] gap-2 pb-1">
+                    <button
+                      type="button"
+                      onClick={() => setHeroActiveTab('slides')}
+                      className={`pb-2.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                        heroActiveTab === 'slides'
+                          ? 'border-[#8C3A4F] text-[#8C3A4F]'
+                          : 'border-transparent text-stone-500 hover:text-stone-800'
+                      }`}
+                    >
+                      <ImageIcon className="w-4 h-4" />
+                      Hero Banner Slides ({heroSlides.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHeroActiveTab('badges')}
+                      className={`pb-2.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                        heroActiveTab === 'badges'
+                          ? 'border-[#8C3A4F] text-[#8C3A4F]'
+                          : 'border-transparent text-stone-500 hover:text-stone-800'
+                      }`}
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      4 Trust Badges & Guarantee Strip ({trustBadges.length})
+                    </button>
+                  </div>
+
+                  {heroActiveTab === 'slides' ? (
+                    <div className="space-y-6">
+                      {/* Slide Tabs & Add Slide Button */}
                   <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-[#FCF8F9] border border-[#EAC9D1] rounded-2xl">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs font-bold text-[#45363B] mr-1">Slides ({heroSlides.length}):</span>
@@ -1090,9 +1400,1003 @@ export default function AdminHomepageBuilderPage() {
                       </div>
                     </div>
                   )}
+                  </div>
+                  ) : (
+                    /* TRUST BADGES & GUARANTEE STRIP VISUAL EDITOR */
+                    <div className="space-y-6">
+                      <div className="bg-[#FDF0F4] border border-[#EAC9D1] rounded-2xl p-4 flex items-start gap-3">
+                        <ShieldCheck className="w-5 h-5 text-[#8C3A4F] shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-bold text-[#2D1B1B] text-xs">Hero Trust Badges Strip (4 Feature Pillars)</h4>
+                            <button
+                              type="button"
+                              onClick={handleResetBadgesToDefault}
+                              className="text-[11px] text-[#8C3A4F] hover:underline font-semibold cursor-pointer"
+                            >
+                              Reset to Defaults
+                            </button>
+                          </div>
+                          <p className="text-[11px] text-[#7A5B64] mt-0.5 leading-relaxed">
+                            These 4 highlight cards appear directly underneath the main Hero Banner Slider on both desktop and mobile. You can customize the icon, main title, and sub-description for each badge card below.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 4 Badges Editor Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {trustBadges.map((badge, idx) => (
+                          <div
+                            key={badge.id || idx}
+                            className="bg-[#FCF8F9] border border-[#EAC9D1] rounded-2xl p-4 space-y-3 relative hover:border-[#8C3A4F]/40 transition-all shadow-xs"
+                          >
+                            <div className="flex items-center justify-between pb-2 border-b border-[#EAC9D1]/60">
+                              <span className="font-bold text-[#8C3A4F] text-xs flex items-center gap-2">
+                                <span className="w-5 h-5 rounded-full bg-rose-100 text-[#8C3A4F] flex items-center justify-center text-[10px] font-bold">
+                                  {idx + 1}
+                                </span>
+                                Badge #{idx + 1}
+                              </span>
+                              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white border border-[#EAC9D1] text-[10px] font-semibold text-stone-600">
+                                {renderBadgeIconPreview(badge.icon)}
+                                <span>{badge.icon.toUpperCase()}</span>
+                              </div>
+                            </div>
+
+                            {/* Icon Choice Dropdown */}
+                            <div>
+                              <label className="block text-[#45363B] font-semibold text-[11px] mb-1">Badge Icon</label>
+                              <select
+                                value={badge.icon || 'shield'}
+                                onChange={(e) => handleUpdateBadge(idx, 'icon', e.target.value)}
+                                className="w-full bg-white border border-[#EAC9D1] rounded-xl p-2.5 text-[#2D1B1B] text-xs focus:ring-2 focus:ring-[#8C3A4F]/30 outline-hidden font-medium"
+                              >
+                                <option value="shield">🛡️ ShieldCheck — 100% Ayurvedic / Zero Mineral Oil</option>
+                                <option value="truck">🚚 Truck — Free Express Delivery</option>
+                                <option value="sparkles">✨ Sparkles — 21 Potent Herbs / Infusion</option>
+                                <option value="heart">🤝 HeartHandshake — Satisfied Customers / Ratings</option>
+                                <option value="leaf">🌿 Leaf — Botanical / Natural Extracts</option>
+                                <option value="award">🏆 Award — Ayurvedic Certified / Guaranteed</option>
+                                <option value="check">✔ CheckCircle — Verified Formulation</option>
+                                <option value="clock">⏱️ Clock — 72hr Slow Cooking / Fast Dispatch</option>
+                                <option value="star">⭐ Star — 5-Star Reviews</option>
+                                <option value="flame">🔥 Flame — Bestselling Ritual</option>
+                              </select>
+                            </div>
+
+                            {/* Badge Title */}
+                            <div>
+                              <label className="block text-[#45363B] font-semibold text-[11px] mb-1">Badge Title</label>
+                              <input
+                                type="text"
+                                value={badge.title || ''}
+                                onChange={(e) => handleUpdateBadge(idx, 'title', e.target.value)}
+                                placeholder="e.g. 100% Ayurvedic"
+                                className="w-full bg-white border border-[#EAC9D1] rounded-xl p-2.5 text-[#2D1B1B] text-xs font-bold focus:ring-2 focus:ring-[#8C3A4F]/30 outline-hidden"
+                              />
+                            </div>
+
+                            {/* Badge Subtitle */}
+                            <div>
+                              <label className="block text-[#45363B] font-semibold text-[11px] mb-1">Subtitle / Sub-text</label>
+                              <input
+                                type="text"
+                                value={badge.subtitle || ''}
+                                onChange={(e) => handleUpdateBadge(idx, 'subtitle', e.target.value)}
+                                placeholder="e.g. Zero mineral oil & silicones"
+                                className="w-full bg-white border border-[#EAC9D1] rounded-xl p-2.5 text-[#2D1B1B] text-xs focus:ring-2 focus:ring-[#8C3A4F]/30 outline-hidden"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Live Visual Preview Section */}
+                      <div className="pt-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[#45363B] font-bold text-xs flex items-center gap-1.5">
+                            <Eye className="w-4 h-4 text-[#8C3A4F]" />
+                            Live Storefront Preview
+                          </span>
+                          <span className="text-[10px] text-stone-500">Updates live as you type</span>
+                        </div>
+
+                        <div className="bg-white border border-stone-200/80 rounded-2xl p-3 sm:p-4 shadow-xs">
+                          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+                            {trustBadges.map((badge, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center gap-2.5 p-2.5 rounded-xl bg-stone-50/70 border border-stone-100"
+                              >
+                                <div className="w-8 h-8 rounded-lg bg-rose-100/80 text-[#A84358] flex items-center justify-center shrink-0">
+                                  {renderBadgeIconPreview(badge.icon)}
+                                </div>
+                                <div className="min-w-0">
+                                  <h5 className="text-xs font-bold text-stone-900 leading-snug truncate">
+                                    {badge.title || 'Badge Title'}
+                                  </h5>
+                                  <p className="text-[10px] text-stone-500 leading-normal truncate">
+                                    {badge.subtitle || 'Badge Subtitle'}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : isBestSellersSection ? (
+                /* BEST SELLERS & SHOWCASE PRODUCTS STUDIO */
+                <div className="space-y-6 pt-1">
+                  {/* Studio Navigation Tabs */}
+                  <div className="flex border-b border-[#EAC9D1] gap-2 pb-1">
+                    <button
+                      type="button"
+                      onClick={() => setBsActiveTab('products')}
+                      className={`pb-2.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                        bsActiveTab === 'products'
+                          ? 'border-[#8C3A4F] text-[#8C3A4F]'
+                          : 'border-transparent text-stone-500 hover:text-stone-800'
+                      }`}
+                    >
+                      <Package className="w-4 h-4" />
+                      <span>Select &amp; Order Products</span>
+                      <span className="ml-1 text-[10px] bg-[#FDF0F4] text-[#8C3A4F] border border-[#EAC9D1] px-2 py-0.5 rounded-full font-mono">
+                        {bsSelectedProductIds.length}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBsActiveTab('header')}
+                      className={`pb-2.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                        bsActiveTab === 'header'
+                          ? 'border-[#8C3A4F] text-[#8C3A4F]'
+                          : 'border-transparent text-stone-500 hover:text-stone-800'
+                      }`}
+                    >
+                      <Flame className="w-4 h-4" />
+                      <span>Badges &amp; View All Link</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBsActiveTab('preview')}
+                      className={`pb-2.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                        bsActiveTab === 'preview'
+                          ? 'border-[#8C3A4F] text-[#8C3A4F]'
+                          : 'border-transparent text-stone-500 hover:text-stone-800'
+                      }`}
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>Live Storefront Preview</span>
+                    </button>
+                  </div>
+
+                  {/* TAB 1: PRODUCT PICKER & REORDERING */}
+                  {bsActiveTab === 'products' && (
+                    <div className="space-y-5">
+                      {/* Top Action Toolbar */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#FCF8F9] p-3 rounded-2xl border border-[#EAC9D1]">
+                        <div className="relative flex-1 max-w-xs">
+                          <input
+                            type="text"
+                            value={bsSearchTerm}
+                            onChange={(e) => setBsSearchTerm(e.target.value)}
+                            placeholder="Search store products..."
+                            className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30"
+                          />
+                          <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => setBsSelectedProductIds(allProducts.map((p) => p.id))}
+                            className="px-2.5 py-1.5 text-[11px] font-bold bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded-lg transition-all cursor-pointer"
+                          >
+                            Select All ({allProducts.length})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const bIds = allProducts.filter((p) => p.isBestSeller).map((p) => p.id);
+                              setBsSelectedProductIds(bIds.length > 0 ? bIds : allProducts.slice(0, 8).map((p) => p.id));
+                            }}
+                            className="px-2.5 py-1.5 text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                          >
+                            <Flame className="w-3 h-3 text-amber-600" />
+                            <span>Auto Best Sellers</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setBsSelectedProductIds([])}
+                            className="px-2.5 py-1.5 text-[11px] font-bold text-rose-700 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Section 1: Selected Products with Move Up/Down Ordering */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-bold text-xs text-[#2D1B1B] uppercase tracking-wider flex items-center gap-1.5">
+                            <CheckCircle2 className="w-4 h-4 text-[#8C3A4F]" />
+                            <span>Products In Homepage Section (In Exact Display Order)</span>
+                          </span>
+                          <span className="text-[11px] text-[#7A5B64]">
+                            Showing {Math.min(bsSelectedProductIds.length, bsDisplayLimit)} of {bsSelectedProductIds.length} active on homepage
+                          </span>
+                        </div>
+
+                        {bsSelectedProductIds.length === 0 ? (
+                          <div className="p-8 text-center bg-[#FCF8F9] rounded-2xl border border-dashed border-[#EAC9D1] text-[#7A5B64] text-xs">
+                            No products currently selected. Click &quot;+ Add&quot; below or click &quot;Auto Best Sellers&quot;.
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {bsSelectedProductIds.map((pId, idx) => {
+                              const prod = allProducts.find((p) => p.id === pId);
+                              if (!prod) return null;
+                              const isOverLimit = idx >= bsDisplayLimit;
+
+                              return (
+                                <div
+                                  key={pId}
+                                  className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                                    isOverLimit
+                                      ? 'bg-stone-50 border-stone-200 opacity-60'
+                                      : 'bg-white border-[#EAC9D1] shadow-2xs'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    {/* Order Badge */}
+                                    <span className="w-6 h-6 rounded-lg bg-[#FDF0F4] text-[#8C3A4F] font-bold text-[11px] flex items-center justify-center border border-[#EAC9D1] shrink-0">
+                                      #{idx + 1}
+                                    </span>
+
+                                    {/* Image */}
+                                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-stone-100 border border-stone-200 shrink-0 relative">
+                                      {prod.images?.[0]?.url ? (
+                                        <Image
+                                          src={prod.images[0].url}
+                                          alt={prod.name}
+                                          fill
+                                          className="object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-stone-400">
+                                          <Package className="w-4 h-4" />
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Name & Details */}
+                                    <div className="min-w-0">
+                                      <p className="font-bold text-xs text-[#2D1B1B] truncate">{prod.name}</p>
+                                      <div className="flex items-center gap-2 text-[11px] text-stone-500 mt-0.5">
+                                        <span className="font-semibold text-[#8C3A4F]">₹{prod.salePrice || prod.regularPrice}</span>
+                                        {prod.salePrice && (
+                                          <span className="line-through text-stone-400">₹{prod.regularPrice}</span>
+                                        )}
+                                        {prod.isBestSeller && (
+                                          <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded-sm border border-amber-300">
+                                            BEST SELLER
+                                          </span>
+                                        )}
+                                        {isOverLimit && (
+                                          <span className="text-[9px] text-stone-400 italic">
+                                            (Hidden by max {bsDisplayLimit} limit)
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Reorder and Remove Controls */}
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      disabled={idx === 0}
+                                      onClick={() => {
+                                        const next = [...bsSelectedProductIds];
+                                        const temp = next[idx];
+                                        next[idx] = next[idx - 1];
+                                        next[idx - 1] = temp;
+                                        setBsSelectedProductIds(next);
+                                      }}
+                                      className="p-1.5 hover:bg-[#FDF0F4] text-stone-500 hover:text-[#8C3A4F] rounded-lg transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                      title="Move Up"
+                                    >
+                                      <MoveUp className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={idx === bsSelectedProductIds.length - 1}
+                                      onClick={() => {
+                                        const next = [...bsSelectedProductIds];
+                                        const temp = next[idx];
+                                        next[idx] = next[idx + 1];
+                                        next[idx + 1] = temp;
+                                        setBsSelectedProductIds(next);
+                                      }}
+                                      className="p-1.5 hover:bg-[#FDF0F4] text-stone-500 hover:text-[#8C3A4F] rounded-lg transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                      title="Move Down"
+                                    >
+                                      <MoveDown className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setBsSelectedProductIds(bsSelectedProductIds.filter((id) => id !== pId));
+                                      }}
+                                      className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer ml-1"
+                                      title="Remove from Section"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Section 2: Other Available Products in Store */}
+                      {allProducts.some((p) => !bsSelectedProductIds.includes(p.id)) && (
+                        <div className="pt-2">
+                          <span className="font-bold text-xs text-[#45363B] uppercase tracking-wider block mb-2">
+                            Available Products In Store (Click To Add)
+                          </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {allProducts
+                              .filter(
+                                (p) =>
+                                  !bsSelectedProductIds.includes(p.id) &&
+                                  (bsSearchTerm === '' ||
+                                    p.name.toLowerCase().includes(bsSearchTerm.toLowerCase()))
+                              )
+                              .map((prod) => (
+                                <div
+                                  key={prod.id}
+                                  className="flex items-center justify-between p-2.5 rounded-xl border border-stone-200 bg-white hover:border-[#8C3A4F] transition-all"
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="w-9 h-9 rounded-lg overflow-hidden bg-stone-100 border border-stone-200 shrink-0 relative">
+                                      {prod.images?.[0]?.url ? (
+                                        <Image
+                                          src={prod.images[0].url}
+                                          alt={prod.name}
+                                          fill
+                                          className="object-cover"
+                                        />
+                                      ) : (
+                                        <Package className="w-4 h-4 text-stone-400 m-auto" />
+                                      )}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="font-bold text-xs text-[#2D1B1B] truncate">{prod.name}</p>
+                                      <p className="text-[11px] text-[#8C3A4F] font-semibold">₹{prod.salePrice || prod.regularPrice}</p>
+                                    </div>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setBsSelectedProductIds([...bsSelectedProductIds, prod.id])}
+                                    className="px-2.5 py-1 bg-[#8C3A4F] hover:bg-[#722E3F] text-white text-[11px] font-bold rounded-lg transition-all shrink-0 flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    <span>Add</span>
+                                  </button>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* TAB 2: HEADER, BADGES & VIEW ALL LINK */}
+                  {bsActiveTab === 'header' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[#45363B] font-semibold mb-1">
+                            Top Pill Badge Text
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={bsBadgeText}
+                              onChange={(e) => setBsBadgeText(e.target.value)}
+                              placeholder="e.g. Customer Favorites"
+                              className="w-full pl-8 pr-3 py-2 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white"
+                            />
+                            <Flame className="w-3.5 h-3.5 text-amber-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[#45363B] font-semibold mb-1">
+                            Display Limit on Homepage
+                          </label>
+                          <select
+                            value={bsDisplayLimit}
+                            onChange={(e) => setBsDisplayLimit(Number(e.target.value))}
+                            className="w-full px-3 py-2 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white"
+                          >
+                            <option value={4}>Show Top 4 Products</option>
+                            <option value={8}>Show Top 8 Products (Recommended)</option>
+                            <option value={12}>Show Top 12 Products</option>
+                            <option value={999}>Show All Selected Products</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[#45363B] font-semibold mb-1">
+                            &quot;View All&quot; Button Label
+                          </label>
+                          <input
+                            type="text"
+                            value={bsViewAllText}
+                            onChange={(e) => setBsViewAllText(e.target.value)}
+                            placeholder="e.g. View All Products (9)"
+                            className="w-full px-3 py-2 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[#45363B] font-semibold mb-1">
+                            &quot;View All&quot; Destination URL
+                          </label>
+                          <input
+                            type="text"
+                            value={bsViewAllUrl}
+                            onChange={(e) => setBsViewAllUrl(e.target.value)}
+                            placeholder="e.g. /collections/best-sellers or /products"
+                            className="w-full px-3 py-2 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 3: LIVE STOREFRONT PREVIEW */}
+                  {bsActiveTab === 'preview' && (
+                    <div className="p-4 sm:p-6 bg-[#FCF8F9] rounded-2xl border border-[#EAC9D1] space-y-5">
+                      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-[#EAC9D1]">
+                        <div>
+                          <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#A84358] bg-rose-100/70 px-2.5 py-0.5 rounded-full mb-1">
+                            <Flame className="w-3 h-3 text-amber-500 fill-amber-500" />
+                            <span>{bsBadgeText}</span>
+                          </div>
+                          <h4 className="text-lg font-extrabold text-stone-900 font-serif">
+                            {editingSection.title || 'Best Selling Hair Rituals'}
+                          </h4>
+                          <p className="text-xs text-stone-600 mt-0.5 max-w-lg">
+                            {editingSection.subtitle || 'Handcrafted with 21 potent herbs for visible restoration'}
+                          </p>
+                        </div>
+                        <span className="text-xs font-bold text-[#A84358] inline-flex items-center gap-1">
+                          <span>{bsViewAllText}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {bsSelectedProductIds.slice(0, bsDisplayLimit).map((pId) => {
+                          const prod = allProducts.find((p) => p.id === pId);
+                          if (!prod) return null;
+                          const discount = prod.salePrice
+                            ? Math.round(((prod.regularPrice - prod.salePrice) / prod.regularPrice) * 100)
+                            : 0;
+
+                          return (
+                            <div key={pId} className="bg-white rounded-2xl p-2 border border-stone-200 shadow-2xs space-y-2">
+                              <div className="aspect-square rounded-xl overflow-hidden bg-stone-100 relative">
+                                {prod.images?.[0]?.url ? (
+                                  <Image
+                                    src={prod.images[0].url}
+                                    alt={prod.name}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                ) : (
+                                  <Package className="w-6 h-6 text-stone-400 m-auto" />
+                                )}
+                                {discount > 0 && (
+                                  <span className="absolute top-1.5 left-1.5 bg-amber-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-md">
+                                    {discount}% OFF
+                                  </span>
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-bold text-[11px] text-stone-900 truncate">{prod.name}</p>
+                                <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#8C3A4F] mt-0.5">
+                                  <span>₹{prod.salePrice || prod.regularPrice}</span>
+                                  {prod.salePrice && (
+                                    <span className="line-through text-stone-400 font-normal text-[10px]">
+                                      ₹{prod.regularPrice}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="w-full py-1.5 bg-[#8C3A4F] text-white rounded-xl text-[10px] font-bold text-center">
+                                ADD TO BAG
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : isComboSection ? (
+                /* COMBO SHOWCASE & 3-IN-1 THERAPY KIT STUDIO */
+                <div className="space-y-6 pt-1">
+                  {/* Studio Navigation Tabs */}
+                  <div className="flex border-b border-[#EAC9D1] gap-2 pb-1">
+                    <button
+                      type="button"
+                      onClick={() => setComboActiveTab('pricing')}
+                      className={`pb-2.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                        comboActiveTab === 'pricing'
+                          ? 'border-[#8C3A4F] text-[#8C3A4F]'
+                          : 'border-transparent text-stone-500 hover:text-stone-800'
+                      }`}
+                    >
+                      <Tag className="w-4 h-4" />
+                      <span>Pricing &amp; Headings</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setComboActiveTab('content')}
+                      className={`pb-2.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                        comboActiveTab === 'content'
+                          ? 'border-[#8C3A4F] text-[#8C3A4F]'
+                          : 'border-transparent text-stone-500 hover:text-stone-800'
+                      }`}
+                    >
+                      <Layers className="w-4 h-4" />
+                      <span>Image &amp; 3 Ritual Steps</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setComboActiveTab('preview')}
+                      className={`pb-2.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                        comboActiveTab === 'preview'
+                          ? 'border-[#8C3A4F] text-[#8C3A4F]'
+                          : 'border-transparent text-stone-500 hover:text-stone-800'
+                      }`}
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>Live Storefront Preview</span>
+                    </button>
+                  </div>
+
+                  {/* TAB 1: PRICING & HEADINGS */}
+                  {comboActiveTab === 'pricing' && (
+                    <div className="space-y-5">
+                      {/* Price Highlight Banner */}
+                      <div className="p-4 rounded-2xl bg-gradient-to-r from-[#FDF0F4] to-amber-50/60 border border-[#EAC9D1] flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-[#8C3A4F] block">
+                            Combo Price Display (Clean Sans-Serif Tabular Font)
+                          </span>
+                          <div className="flex items-baseline gap-2.5 mt-1 font-sans">
+                            <span className="text-3xl font-extrabold text-[#2D1B1B] tabular-nums">
+                              ₹{Number(comboSalePrice).toLocaleString('en-IN')}
+                            </span>
+                            {Number(comboRegularPrice) > Number(comboSalePrice) && (
+                              <span className="text-sm font-bold text-stone-400 line-through tabular-nums">
+                                ₹{Number(comboRegularPrice).toLocaleString('en-IN')}
+                              </span>
+                            )}
+                            <span className="px-2 py-0.5 rounded-md bg-[#8C3A4F] text-white text-[11px] font-bold">
+                              {comboSaveText || `Save ₹${comboRegularPrice - comboSalePrice}`}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-100/80 px-3 py-1 rounded-full border border-emerald-300">
+                            <Truck className="w-3.5 h-3.5" />
+                            <span>{comboDeliveryBadge}</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Special Price */}
+                        <div>
+                          <label className="block text-[#45363B] font-semibold mb-1">
+                            Combo Special Price (₹)
+                          </label>
+                          <input
+                            type="number"
+                            value={comboSalePrice}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setComboSalePrice(val);
+                              if (comboRegularPrice > val) {
+                                const diff = comboRegularPrice - val;
+                                const pct = Math.round((diff / comboRegularPrice) * 100);
+                                setComboSaveText(`Save ₹${diff} (${pct}% OFF)`);
+                              }
+                            }}
+                            className="w-full px-3 py-2 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white font-bold text-[#8C3A4F]"
+                          />
+                        </div>
+
+                        {/* Regular Price */}
+                        <div>
+                          <label className="block text-[#45363B] font-semibold mb-1">
+                            Regular Strike-Through Price (₹)
+                          </label>
+                          <input
+                            type="number"
+                            value={comboRegularPrice}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setComboRegularPrice(val);
+                              if (val > comboSalePrice) {
+                                const diff = val - comboSalePrice;
+                                const pct = Math.round((diff / val) * 100);
+                                setComboSaveText(`Save ₹${diff} (${pct}% OFF)`);
+                              }
+                            }}
+                            className="w-full px-3 py-2 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white font-semibold"
+                          />
+                        </div>
+
+                        {/* Save Discount Text */}
+                        <div>
+                          <label className="block text-[#45363B] font-semibold mb-1">
+                            Discount Badge Text
+                          </label>
+                          <input
+                            type="text"
+                            value={comboSaveText}
+                            onChange={(e) => setComboSaveText(e.target.value)}
+                            placeholder="e.g. Save ₹290 (20% OFF)"
+                            className="w-full px-3 py-2 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white"
+                          />
+                        </div>
+
+                        {/* Delivery Badge */}
+                        <div>
+                          <label className="block text-[#45363B] font-semibold mb-1">
+                            Delivery Badge Label
+                          </label>
+                          <input
+                            type="text"
+                            value={comboDeliveryBadge}
+                            onChange={(e) => setComboDeliveryBadge(e.target.value)}
+                            placeholder="e.g. Free Express Delivery"
+                            className="w-full px-3 py-2 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white"
+                          />
+                        </div>
+
+                        {/* Top Badge */}
+                        <div>
+                          <label className="block text-[#45363B] font-semibold mb-1">
+                            Top Pill Tagline
+                          </label>
+                          <input
+                            type="text"
+                            value={comboBadge}
+                            onChange={(e) => setComboBadge(e.target.value)}
+                            placeholder="e.g. THE ULTIMATE 3-IN-1 HAIR CARE COMBO"
+                            className="w-full px-3 py-2 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white"
+                          />
+                        </div>
+
+                        {/* Heading */}
+                        <div>
+                          <label className="block text-[#45363B] font-semibold mb-1">
+                            Kit Main Heading
+                          </label>
+                          <input
+                            type="text"
+                            value={comboHeading}
+                            onChange={(e) => {
+                              setComboHeading(e.target.value);
+                              setEditingSection({ ...editingSection, title: e.target.value });
+                            }}
+                            placeholder="e.g. Complete Hair Therapy Kit"
+                            className="w-full px-3 py-2 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white font-bold"
+                          />
+                        </div>
+
+                        {/* Subtitle */}
+                        <div className="sm:col-span-2">
+                          <label className="block text-[#45363B] font-semibold mb-1">
+                            Kit Subheading / Included Products Description
+                          </label>
+                          <input
+                            type="text"
+                            value={comboSubtitle}
+                            onChange={(e) => {
+                              setComboSubtitle(e.target.value);
+                              setEditingSection({ ...editingSection, subtitle: e.target.value });
+                            }}
+                            placeholder="e.g. 21 HERBS OIL (190ML) + HERBAL SHAMPOO (200ML) + NEEM WOOD COMB"
+                            className="w-full px-3 py-2 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white"
+                          />
+                        </div>
+
+                        {/* Rating Score */}
+                        <div>
+                          <label className="block text-[#45363B] font-semibold mb-1">
+                            Rating Score
+                          </label>
+                          <input
+                            type="text"
+                            value={comboRatingScore}
+                            onChange={(e) => setComboRatingScore(e.target.value)}
+                            placeholder="e.g. 4.9 / 5"
+                            className="w-full px-3 py-2 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white"
+                          />
+                        </div>
+
+                        {/* Rating Verified Count */}
+                        <div>
+                          <label className="block text-[#45363B] font-semibold mb-1">
+                            Verified Results Text
+                          </label>
+                          <input
+                            type="text"
+                            value={comboRatingText}
+                            onChange={(e) => setComboRatingText(e.target.value)}
+                            placeholder="e.g. 1,480+ Verified Results"
+                            className="w-full px-3 py-2 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white"
+                          />
+                        </div>
+
+                        {/* Product Slug */}
+                        <div className="sm:col-span-2">
+                          <label className="block text-[#45363B] font-semibold mb-1">
+                            Destination Product Slug (For specs link &amp; cart checkout)
+                          </label>
+                          <input
+                            type="text"
+                            value={comboProductSlug}
+                            onChange={(e) => setComboProductSlug(e.target.value)}
+                            placeholder="e.g. herbic-cure-complete-hair-therapy-kit"
+                            className="w-full px-3 py-2 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 2: IMAGE & 3 RITUAL STEPS */}
+                  {comboActiveTab === 'content' && (
+                    <div className="space-y-5">
+                      {/* Product Image Settings */}
+                      <div className="p-4 rounded-2xl bg-[#FCF8F9] border border-[#EAC9D1] space-y-3">
+                        <label className="block text-[#45363B] font-bold text-xs uppercase tracking-wider">
+                          Combo Product Showcase Image
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={comboImage}
+                            onChange={(e) => setComboImage(e.target.value)}
+                            placeholder="/images/products/herbic-cure/combo.jpg or https://..."
+                            className="flex-1 bg-white border border-[#EAC9D1] rounded-xl p-2.5 text-[#2D1B1B] text-xs focus:ring-2 focus:ring-[#8C3A4F]/30 outline-hidden font-mono"
+                          />
+                          <button
+                            type="button"
+                            disabled={uploadingImage}
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-3.5 py-2 bg-[#8C3A4F] hover:bg-[#722E3F] text-white rounded-xl font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0 disabled:opacity-50"
+                          >
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>Upload Image</span>
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                          <div>
+                            <label className="block text-[#45363B] font-semibold mb-1">
+                              Corner Tag on Image
+                            </label>
+                            <input
+                              type="text"
+                              value={comboImageTag}
+                              onChange={(e) => setComboImageTag(e.target.value)}
+                              placeholder="e.g. SAVE 20% OFF COMBO"
+                              className="w-full px-3 py-1.5 text-xs bg-white border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[#45363B] font-semibold mb-1">
+                              Floating Trust Card Title
+                            </label>
+                            <input
+                              type="text"
+                              value={comboFloatingCardTitle}
+                              onChange={(e) => setComboFloatingCardTitle(e.target.value)}
+                              placeholder="e.g. 100% Ayurvedic Therapy"
+                              className="w-full px-3 py-1.5 text-xs bg-white border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[#45363B] font-semibold mb-1">
+                              Image Overlay Title
+                            </label>
+                            <input
+                              type="text"
+                              value={comboOverlayTitle}
+                              onChange={(e) => setComboOverlayTitle(e.target.value)}
+                              placeholder="e.g. COMPLETE 3-STEP AYURVEDIC REGROWTH ROUTINE"
+                              className="w-full px-3 py-1.5 text-xs bg-white border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[#45363B] font-semibold mb-1">
+                              Image Overlay Subtitle
+                            </label>
+                            <input
+                              type="text"
+                              value={comboOverlaySubtitle}
+                              onChange={(e) => setComboOverlaySubtitle(e.target.value)}
+                              placeholder="e.g. 21 Herbs Fusion Oil + Herbal Shampoo + Pure Neem Wood Comb"
+                              className="w-full px-3 py-1.5 text-xs bg-white border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3 Ritual Steps Editor */}
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="font-bold text-xs text-[#2D1B1B] uppercase tracking-wider flex items-center gap-1.5">
+                            <Layers className="w-4 h-4 text-[#8C3A4F]" />
+                            <span>The 3 Ritual Steps (Routine Breakdown)</span>
+                          </span>
+                        </div>
+
+                        <div className="space-y-3">
+                          {comboSteps.map((stepItem, sIdx) => (
+                            <div
+                              key={sIdx}
+                              className="p-3.5 bg-white border border-[#EAC9D1] rounded-2xl shadow-2xs space-y-2.5"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="w-7 h-7 rounded-lg bg-[#FDF0F4] text-[#8C3A4F] font-bold text-xs flex items-center justify-center border border-[#EAC9D1] font-mono shrink-0">
+                                  {stepItem.step || `0${sIdx + 1}`}
+                                </span>
+                                <input
+                                  type="text"
+                                  value={stepItem.title}
+                                  onChange={(e) => {
+                                    const next = [...comboSteps];
+                                    next[sIdx].title = e.target.value;
+                                    setComboSteps(next);
+                                  }}
+                                  placeholder="Step Title (e.g. 21 Herbs Fusion Hair Oil)"
+                                  className="flex-1 px-3 py-1.5 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30 font-bold"
+                                />
+                                <input
+                                  type="text"
+                                  value={stepItem.tag}
+                                  onChange={(e) => {
+                                    const next = [...comboSteps];
+                                    next[sIdx].tag = e.target.value;
+                                    setComboSteps(next);
+                                  }}
+                                  placeholder="Tag (e.g. Pre-Wash Care)"
+                                  className="w-28 px-2.5 py-1.5 text-[11px] bg-rose-50 text-[#8C3A4F] border border-[#EAC9D1] rounded-xl outline-hidden font-semibold"
+                                />
+                              </div>
+                              <textarea
+                                rows={2}
+                                value={stepItem.desc}
+                                onChange={(e) => {
+                                  const next = [...comboSteps];
+                                  next[sIdx].desc = e.target.value;
+                                  setComboSteps(next);
+                                }}
+                                placeholder="Describe the benefit or action of this step..."
+                                className="w-full px-3 py-1.5 text-xs bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl outline-hidden focus:ring-2 focus:ring-[#8C3A4F]/30"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 3: LIVE PREVIEW */}
+                  {comboActiveTab === 'preview' && (
+                    <div className="p-4 sm:p-6 bg-[#FCF8F9] rounded-2xl border border-[#EAC9D1] space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                        {/* Image Preview */}
+                        <div className="md:col-span-5 relative aspect-4/3 rounded-2xl overflow-hidden border border-stone-300 shadow-md">
+                          <Image
+                            src={comboImage}
+                            alt={comboHeading}
+                            fill
+                            className="object-cover"
+                          />
+                          {comboImageTag && (
+                            <div className="absolute top-2 left-2 bg-[#8C3A4F] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs">
+                              {comboImageTag}
+                            </div>
+                          )}
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2.5 text-white">
+                            <p className="text-[10px] font-bold text-amber-300 uppercase">{comboOverlayTitle}</p>
+                            <p className="text-[9px] text-rose-100">{comboOverlaySubtitle}</p>
+                          </div>
+                        </div>
+
+                        {/* Content Preview */}
+                        <div className="md:col-span-7 space-y-2.5">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-[#8C3A4F] bg-rose-100 px-2 py-0.5 rounded-full inline-block">
+                            {comboBadge}
+                          </span>
+                          <h4 className="text-lg font-extrabold text-stone-900 font-serif leading-tight">
+                            {comboHeading}
+                          </h4>
+                          <p className="text-[10px] font-bold text-[#8C3A4F] uppercase">{comboSubtitle}</p>
+
+                          {/* Price Box Preview */}
+                          <div className="p-2.5 rounded-xl bg-white border border-stone-200 flex items-center justify-between">
+                            <div>
+                              <span className="text-[9px] text-stone-500 uppercase block font-semibold">
+                                Combo Special Price
+                              </span>
+                              <div className="flex items-baseline gap-1.5 font-sans">
+                                <span className="text-xl font-extrabold text-stone-900 tabular-nums">
+                                  ₹{Number(comboSalePrice).toLocaleString('en-IN')}
+                                </span>
+                                {Number(comboRegularPrice) > Number(comboSalePrice) && (
+                                  <span className="text-xs font-semibold text-stone-400 line-through tabular-nums">
+                                    ₹{Number(comboRegularPrice).toLocaleString('en-IN')}
+                                  </span>
+                                )}
+                                <span className="text-[9px] font-bold text-[#8C3A4F] bg-rose-100 px-1.5 py-0.5 rounded-xs">
+                                  {comboSaveText}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                              {comboDeliveryBadge}
+                            </span>
+                          </div>
+
+                          {/* 3 Steps summary */}
+                          <div className="space-y-1.5">
+                            {comboSteps.map((st, i) => (
+                              <div key={i} className="flex items-center gap-2 p-1.5 bg-white rounded-lg border border-stone-100 text-[10px]">
+                                <span className="w-5 h-5 rounded-sm bg-rose-100 text-[#8C3A4F] font-bold flex items-center justify-center font-mono">
+                                  {st.step}
+                                </span>
+                                <span className="font-bold text-stone-800 truncate flex-1">{st.title}</span>
+                                <span className="text-[9px] bg-rose-50 text-[#8C3A4F] px-1 rounded-xs">{st.tag}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 pt-1 font-sans">
+                            <div className="py-2 bg-[#8C3A4F] text-white rounded-xl text-center text-[10px] font-bold">
+                              BUY NOW • ₹{Number(comboSalePrice).toLocaleString('en-IN')}
+                            </div>
+                            <div className="py-2 bg-rose-50 text-[#8C3A4F] border border-[#EAC9D1] rounded-xl text-center text-[10px] font-bold">
+                              ADD TO BAG
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
-                /* Non-Hero Sections: Standard Content Configuration */
+                /* Non-Hero Generic Raw JSON Editor */
                 <div>
                   <label className="block text-[#45363B] font-semibold mb-1.5">
                     Section Content & Settings (JSON)

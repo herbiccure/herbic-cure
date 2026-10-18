@@ -12,6 +12,9 @@ import { Save,
   Sparkles,
   Plus,
   Trash2,
+  Upload,
+  Loader2,
+  Image as ImageIcon,
   Package,
   Eye,
   Percent,
@@ -81,6 +84,52 @@ export default function ProductForm({ isEdit = false, initialData }: ProductForm
     initialImages.length > 0 ? initialImages : ['/images/banners/banner-1.png']
   );
   const [newImageUrl, setNewImageUrl] = useState('');
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [uploadProgressText, setUploadProgressText] = useState('');
+  const [isDragOverImages, setIsDragOverImages] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleMultipleFilesUpload = async (files: FileList | File[]) => {
+    const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (validFiles.length === 0) {
+      toast.error('Please select valid image files');
+      return;
+    }
+
+    setIsUploadingImages(true);
+    const uploadedUrls: string[] = [];
+
+    for (let i = 0; i < validFiles.length; i++) {
+      const file = validFiles[i];
+      setUploadProgressText(`Uploading ${i + 1} of ${validFiles.length}: ${file.name}...`);
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        if (res.ok && data.url) {
+          uploadedUrls.push(data.url);
+        } else {
+          toast.error(data.error || `Failed to upload ${file.name}`);
+        }
+      } catch (err: any) {
+        toast.error(err.message || `Error uploading ${file.name}`);
+      }
+    }
+
+    if (uploadedUrls.length > 0) {
+      setImages(prev => [...prev, ...uploadedUrls]);
+      toast.success(`Successfully uploaded ${uploadedUrls.length} image${uploadedUrls.length > 1 ? 's' : ''}`);
+    }
+
+    setIsUploadingImages(false);
+    setUploadProgressText('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   // Fetch categories
   useEffect(() => {

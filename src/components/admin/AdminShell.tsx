@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard,
+  Leaf,
   ShoppingCart,
   Package,
   Boxes,
@@ -75,6 +76,9 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Storefront CMS',
     items: [
+      { label: '21 Sacred Herbs', href: '/admin/ingredients', icon: Leaf },
+      { label: 'About Us Page', href: '/admin/about', icon: Sparkles },
+      { label: 'Footer CMS', href: '/admin/footer', icon: LayoutGrid },
       { label: 'Categories', href: '/admin/categories', icon: FolderTree },
       { label: 'Collections', href: '/admin/collections', icon: Layers },
     ],
