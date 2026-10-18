@@ -2,6 +2,8 @@
 import { prisma } from '@/lib/prisma';
 import { verifyCashfreeWebhook } from '@/lib/payment/cashfree';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();

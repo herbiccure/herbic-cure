@@ -4,6 +4,8 @@ import { generatePhoneOtp, checkOtpRateLimit } from '@/lib/otp';
 import { sendSmsOtp } from '@/lib/sms';
 import { enforceRateLimit } from '@/lib/rateLimit';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const ipRateLimit = enforceRateLimit(request, 'send_otp_ip', 6, 60 * 1000);

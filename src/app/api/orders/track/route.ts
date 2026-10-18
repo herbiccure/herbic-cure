@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { verifyGuestAccessToken } from '@/lib/auth/guest-token';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // 1. Rate limiting: max 15 lookups per minute per IP to prevent enumeration

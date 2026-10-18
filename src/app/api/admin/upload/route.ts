@@ -67,23 +67,17 @@ export async function POST(request: NextRequest) {
     const filename = `${safeBase}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Target upload locations
-    const uploadLocations = [
-      path.join(process.cwd(), 'public', 'uploads'),
-      path.join('C:\\Users\\Asus\\.gemini\\antigravity-ide\\scratch\\herbicCure', 'public', 'uploads'),
-      path.join('d:\\Codes\\Projects\\herbicCure-main', 'public', 'uploads'),
-    ];
-
-    for (const dir of uploadLocations) {
-      try {
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
-        }
-        const fullFilePath = path.join(dir, filename);
-        fs.writeFileSync(fullFilePath, buffer);
-      } catch (err) {
-        // Continue writing to other locations if one path doesn't exist
+    // Target upload location (statically scoped for Turbopack & serverless safety)
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    try {
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
       }
+      const fullFilePath = path.join(uploadsDir, filename);
+      fs.writeFileSync(fullFilePath, buffer);
+    } catch (fsErr) {
+      // In serverless environments (like Vercel production), filesystem may be read-only
+      console.warn('Filesystem write warning (serverless environment):', fsErr);
     }
 
     const publicUrl = `/uploads/${filename}`;

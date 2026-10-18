@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { contactSchema } from '@/lib/validations';
 import { enforceRateLimit } from '@/lib/rateLimit';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // Rate limit: max 10 contact messages per minute per IP

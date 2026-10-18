@@ -3,6 +3,8 @@ import { getServerSession } from '@/lib/auth/server';
 import { getAuditLogs } from '@/data/admin/audit';
 import { isAdminRole } from '@/lib/permissions/guard';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession();
   const role = (session?.user as { role?: string })?.role;

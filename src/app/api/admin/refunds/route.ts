@@ -3,6 +3,8 @@ import { getServerSession } from '@/lib/auth/server';
 import { listRefundRequests, initiateRefundRequest, approveRefundRequest } from '@/data/admin/refunds';
 import { isAdminRole } from '@/lib/permissions/guard';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const session = await getServerSession();
   const role = (session?.user as { role?: string })?.role;

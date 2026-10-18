@@ -6,6 +6,8 @@ import { enforceRateLimit } from '@/lib/rateLimit';
 import { createDelhiveryShipment } from '@/lib/shipping/delhivery';
 import { createCashfreeOrder } from '@/lib/payment/cashfree';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     // 1. Rate Limiting: max 10 checkout attempts per min per IP

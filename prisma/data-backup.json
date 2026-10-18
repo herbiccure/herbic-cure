@@ -1,0 +1,2732 @@
+{
+  "users": [
+    {
+      "id": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "name": "Herbic Cure Admin",
+      "email": "admin@herbiccure.com",
+      "emailVerified": true,
+      "image": null,
+      "phone": null,
+      "phoneVerified": false,
+      "role": "OWNER",
+      "status": "ACTIVE",
+      "twoFactorEnabled": false,
+      "banned": false,
+      "banReason": null,
+      "banExpires": null,
+      "lastLoginAt": null,
+      "lastActiveAt": null,
+      "failedLoginAttempts": 0,
+      "lockedUntil": null,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:27.397Z",
+      "updatedAt": "2026-10-13T20:48:27.397Z"
+    }
+  ],
+  "accounts": [
+    {
+      "id": "admin-credential-account",
+      "userId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "accountId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "providerId": "credential",
+      "passwordHash": "$argon2id$v=19$m=19456,t=2,p=1$bEH0Nry5YinZ5WzIWeNK2A$+dSUNH45ry3X+PH+5Vj/bV/Gwqm6sdZs74hHipFPJZs",
+      "accessToken": null,
+      "refreshToken": null,
+      "idToken": null,
+      "expiresAt": null,
+      "passwordResetRequired": false,
+      "accessTokenExpiresAt": null,
+      "refreshTokenExpiresAt": null,
+      "scope": null,
+      "password": "$argon2id$v=19$m=19456,t=2,p=1$bEH0Nry5YinZ5WzIWeNK2A$+dSUNH45ry3X+PH+5Vj/bV/Gwqm6sdZs74hHipFPJZs",
+      "createdAt": "2026-10-13T20:48:27.700Z",
+      "updatedAt": "2026-10-13T20:48:27.700Z"
+    }
+  ],
+  "adminUsers": [
+    {
+      "id": "914b1426-7946-460b-8efc-8e60f817d730",
+      "email": "admin@herbiccure.com",
+      "passwordHash": "$2b$10$Y860wrKYeDTshCSkEz9jz.VW.ZvzR1D2uaKmS1Z99v1meeGEEgJLS",
+      "name": "Herbic Cure Admin",
+      "role": "SUPER_ADMIN",
+      "active": true,
+      "createdAt": "2026-10-13T20:48:28.086Z",
+      "updatedAt": "2026-10-13T20:48:28.086Z"
+    },
+    {
+      "id": "cc9c938a-d65f-4db7-9f2b-77e942750e91",
+      "email": "admin@herbicas.com",
+      "passwordHash": "$2b$10$Y860wrKYeDTshCSkEz9jz.VW.ZvzR1D2uaKmS1Z99v1meeGEEgJLS",
+      "name": "Herbic Cure Super Admin",
+      "role": "SUPER_ADMIN",
+      "active": true,
+      "createdAt": "2026-10-13T20:48:28.395Z",
+      "updatedAt": "2026-10-13T20:48:28.395Z"
+    }
+  ],
+  "customers": [
+    {
+      "id": "7ab7465d-f928-4ffe-bf70-0f5a65def108",
+      "email": "priya.sharma@example.com",
+      "passwordHash": "$2b$10$h1q9FlAnBkI3EbgRayRoheXf851HqKGeryKFWwvXKKDoexMTGWIjq",
+      "name": "Priya Sharma",
+      "phone": "+91 8121961219",
+      "totalOrders": 0,
+      "totalSpend": 0,
+      "createdAt": "2026-10-13T20:48:28.611Z",
+      "updatedAt": "2026-10-13T20:48:28.611Z",
+      "addresses": [
+        {
+          "id": "02ea681a-29ee-4021-901c-663817498087",
+          "userId": null,
+          "customerId": "7ab7465d-f928-4ffe-bf70-0f5a65def108",
+          "name": "Priya Sharma",
+          "phone": "+91 8121961219",
+          "addressLine1": "Flat 402, Green Valley Apartments",
+          "addressLine2": "Road No. 12, Banjara Hills",
+          "city": "Hyderabad",
+          "state": "Telangana",
+          "pinCode": "500034",
+          "country": "India",
+          "isDefault": true,
+          "createdAt": "2026-10-13T20:48:28.611Z",
+          "updatedAt": "2026-10-13T20:48:28.611Z"
+        }
+      ]
+    },
+    {
+      "id": "e1df7473-fb5f-4008-a0cd-85af5cf8d693",
+      "email": "admin@herbiccure.com",
+      "passwordHash": null,
+      "name": "Herbic Cure Admin",
+      "phone": "9307490495",
+      "totalOrders": 2,
+      "totalSpend": 1733,
+      "createdAt": "2026-10-15T19:31:41.340Z",
+      "updatedAt": "2026-10-15T19:32:19.026Z",
+      "addresses": []
+    }
+  ],
+  "categories": [
+    {
+      "id": "6b145916-b89c-4b1a-acae-1291412a88b9",
+      "name": "21 Herbs Hair Oils",
+      "slug": "hair-oils",
+      "description": "Herbic Cure flagship cold-pressed 21 Herbs Fusion Hair Oils formulated to control hair fall and stimulate rapid regrowth.",
+      "image": "/images/products/herbic-cure/herbic-cure-oil-q1-main.jpg",
+      "displayOrder": 1,
+      "active": true,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:35.722Z",
+      "updatedAt": "2026-10-13T20:48:35.722Z"
+    },
+    {
+      "id": "9dee7915-7ba4-4df1-9fd9-a1609c0b9712",
+      "name": "Shampoo & Conditioners",
+      "slug": "shampoo-and-conditioner",
+      "description": "Gentle, sulfate-free Biotin & 21 Herbs infused cleansers that leave hair silky, voluminous, and healthy.",
+      "image": "/images/products/herbic-cure/herbic-cure-shampoo-q1.jpg",
+      "displayOrder": 2,
+      "active": true,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:36.019Z",
+      "updatedAt": "2026-10-13T20:48:36.019Z"
+    },
+    {
+      "id": "35b93dbc-e1a7-487d-8eb5-3339ee8803e7",
+      "name": "Combos & Kits",
+      "slug": "combos",
+      "description": "Curated complete therapy bundles combining 21 Herbs Hair Oil, Shampoo with Conditioner, and hand-carved Neem wood combs.",
+      "image": "/images/products/herbic-cure/herbic-cure-complete-trio-kit.jpg",
+      "displayOrder": 3,
+      "active": true,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:36.168Z",
+      "updatedAt": "2026-10-13T20:48:36.168Z"
+    },
+    {
+      "id": "295f96fb-eb33-42d1-b1e9-22b5aa7158cc",
+      "name": "Wooden Accessories",
+      "slug": "accessories",
+      "description": "Handcrafted pure neem wood combs and scalp massagers for anti-static, gentle detangling.",
+      "image": "/images/products/herbic-cure/herbic-cure-neem-wood-comb.jpg",
+      "displayOrder": 4,
+      "active": true,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:36.338Z",
+      "updatedAt": "2026-10-13T20:48:36.338Z"
+    }
+  ],
+  "collections": [
+    {
+      "id": "93c53771-7279-4f30-8be4-7257abe60309",
+      "name": "Best Sellers",
+      "slug": "best-sellers",
+      "description": "Our highest-rated, most loved Ayurvedic hair fall control products.",
+      "image": null,
+      "bannerImage": "/images/banners/herbic-hero-banner-1.jpg",
+      "displayOrder": 1,
+      "active": true,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:36.486Z",
+      "updatedAt": "2026-10-13T20:48:36.486Z"
+    },
+    {
+      "id": "d539e493-2de9-41ea-8c14-a3f36f4b9a51",
+      "name": "21 Herbs Hair Oils",
+      "slug": "hair-oils",
+      "description": "Pure Ayurvedic infusions of 21 herbs, roots, and botanicals.",
+      "image": null,
+      "bannerImage": "/images/banners/herbic-hero-banner-1.jpg",
+      "displayOrder": 2,
+      "active": true,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:36.782Z",
+      "updatedAt": "2026-10-13T20:48:36.782Z"
+    },
+    {
+      "id": "0a8d02d3-c6b8-4e1b-953d-b3134e84950a",
+      "name": "Combos & Kits",
+      "slug": "combos",
+      "description": "Value savings packs for complete 360-degree hair wellness.",
+      "image": null,
+      "bannerImage": "/images/banners/herbic-hero-banner-2.jpg",
+      "displayOrder": 3,
+      "active": true,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:36.934Z",
+      "updatedAt": "2026-10-13T20:48:36.934Z"
+    },
+    {
+      "id": "c9f36bf1-115f-4792-9b23-4c646e3d478e",
+      "name": "Wooden Accessories",
+      "slug": "accessories",
+      "description": "Eco-friendly Neem wood combs for healthy hair naturally.",
+      "image": null,
+      "bannerImage": "/images/banners/herbic-hero-banner-1.jpg",
+      "displayOrder": 4,
+      "active": true,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:37.082Z",
+      "updatedAt": "2026-10-13T20:48:37.082Z"
+    }
+  ],
+  "products": [
+    {
+      "id": "d27be197-5ad6-437c-abaf-763a87247619",
+      "name": "Herbic Cure - 21 Herbs Fusion Hair Oil (Q1)",
+      "slug": "herbic-cure-21-herbs-fusion-hair-oil-q1",
+      "sku": "HC-OIL-Q1",
+      "shortDescription": "Flagship 190ml Ayurvedic hair oil infused with 21 natural herbs, roots, and floral extracts. Controls hair fall & boosts natural hair growth.",
+      "fullDescription": "<h6>Herbic Cure 21 Herbs Fusion Hair Oil 🌿</h6>\n<p><strong>Nature In Every Drop.</strong> Experience the proven power of authentic Ayurvedic herbs formulated to control acute hair fall, nourish the scalp from root to tip, and stimulate healthy new hair growth.</p>\n<h6>What Makes It Special:</h6>\n<p>✔ <strong>Infused with 21+ Herbs, Roots & Floral Extracts:</strong> Bhringraj, Amla, Brahmi, Hibiscus, Fenugreek, Neem, Rosemary, and more.</p>\n<p>✔ <strong>100% Mineral Oil Free & Paraben Free:</strong> Zero harsh chemicals, silicone-free, cruelty-free.</p>\n<p>✔ <strong>Lightweight & Non-Sticky:</strong> Absorbs deep into hair follicles without weighing hair down. Pleasant natural herbal fragrance.</p>\n<p>✔ <strong>Suitable for All Hair Types:</strong> Effective for both men and women facing hair thinning, excessive shedding, or dry scalp.</p>",
+      "regularPrice": 699,
+      "salePrice": 469,
+      "costPrice": 120,
+      "tax": 0,
+      "stockQuantity": 450,
+      "lowStockThreshold": 10,
+      "trackInventory": true,
+      "allowBackorders": false,
+      "isFeatured": true,
+      "isBestSeller": true,
+      "isNew": false,
+      "isOnSale": true,
+      "hasTimer": false,
+      "active": true,
+      "displayOrder": 0,
+      "rating": 4.9,
+      "reviewCount": 312,
+      "benefits": "[\"Controls hair fall within 14 days of regular use\",\"Stimulates dormant roots to trigger new baby hair growth\",\"Deeply nourishes scalp & prevents dry, flaky dandruff\",\"Special 33% OFF limited launch deal (Save ₹230)\",\"Zero mineral oils, parabens, silicones, or synthetic dyes\"]",
+      "howToUse": "Step 1: Take a small amount of oil directly on your palms.\nStep 2: Gently massage in circular motions across the scalp for 5 to 10 minutes.\nStep 3: Leave on for at least 1 hour, or overnight for intensive nourishment.\nStep 4: Wash with mild shampoo. Repeat 2 to 3 times per week for optimal results.",
+      "faqJson": null,
+      "seoTitle": null,
+      "seoDescription": null,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:37.232Z",
+      "updatedAt": "2026-10-13T20:48:37.232Z",
+      "categoryId": "6b145916-b89c-4b1a-acae-1291412a88b9",
+      "images": [
+        {
+          "id": "e880227a-bb2c-4da9-b5b9-814e1d5996a7",
+          "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-q1-main.jpg",
+          "alt": "Herbic Cure 21 Herbs Fusion Hair Oil 190ml Bottle",
+          "displayOrder": 1,
+          "isThumbnail": true
+        },
+        {
+          "id": "19c03690-c874-443b-8c77-a01a07f5b988",
+          "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-root-to-tip.jpg",
+          "alt": "Herbic Cure Care from Root to Tip",
+          "displayOrder": 2,
+          "isThumbnail": false
+        },
+        {
+          "id": "9dfcfa43-0f87-4dc0-a736-897c4a1b8787",
+          "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-infused-roots.jpg",
+          "alt": "Herbic Cure Transparent Infused Herbs Bottle",
+          "displayOrder": 3,
+          "isThumbnail": false
+        },
+        {
+          "id": "035f6180-d106-48c8-9326-65e60ef4f323",
+          "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-vs-local-comparison.jpg",
+          "alt": "Herbic Cure vs Local Brand Oil Comparison",
+          "displayOrder": 4,
+          "isThumbnail": false
+        },
+        {
+          "id": "3ac7b22d-7c07-4524-896d-96ffa19d5bc0",
+          "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+          "url": "/images/products/herbic-cure/herbic-cure-how-to-use-guide.jpg",
+          "alt": "How to Use Herbic Cure 21 Herbs Oil",
+          "displayOrder": 5,
+          "isThumbnail": false
+        }
+      ],
+      "collections": [
+        {
+          "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+          "collectionId": "93c53771-7279-4f30-8be4-7257abe60309"
+        },
+        {
+          "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+          "collectionId": "d539e493-2de9-41ea-8c14-a3f36f4b9a51"
+        }
+      ],
+      "ingredients": [
+        {
+          "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+          "ingredientId": "e86b3ea2-804e-44b0-b767-80ef26efc27e"
+        },
+        {
+          "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+          "ingredientId": "a86a4c72-fa94-4685-94eb-635500b80bad"
+        },
+        {
+          "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+          "ingredientId": "923c37ff-81ef-40e7-ba76-158173fb4637"
+        },
+        {
+          "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+          "ingredientId": "1a82d35e-c272-4c7d-9315-dcfc812c0c8f"
+        },
+        {
+          "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+          "ingredientId": "373e6671-23d2-49d4-b7df-65d96ba7ea9d"
+        },
+        {
+          "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+          "ingredientId": "0d0e4932-7bb7-4d16-a106-f33a04c01f15"
+        },
+        {
+          "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+          "ingredientId": "c6e47e4f-04d8-4d0d-91d0-92fce496d825"
+        }
+      ]
+    },
+    {
+      "id": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "name": "Herbic Cure - 21 Herbs Fusion Hair Oil (Q2 - Pack of 2)",
+      "slug": "herbic-cure-21-herbs-fusion-hair-oil-q2",
+      "sku": "HC-OIL-Q2",
+      "shortDescription": "Value Twin Pack (2 x 190ml = 380ml). 60-day intensive anti-hair fall and regrowth therapy with 21 pure Himalayan botanicals.",
+      "fullDescription": "<h6>Herbic Cure 21 Herbs Fusion Hair Oil (Twin Pack) 🌿</h6>\n<p>Get a complete 2-month Ayurvedic hair transformation regimen with our popular Pack of 2. Consistent scalp stimulation and deep root nourishment guarantees long-lasting hair density.</p>\n<h6>Key Highlights:</h6>\n<p>✔ 2 x 190ml Bottles for unbroken hair care routine</p>\n<p>✔ Infused with real botanical roots inside each bottle</p>\n<p>✔ Extra savings compared to individual purchases</p>",
+      "regularPrice": 1398,
+      "salePrice": 1118,
+      "costPrice": 220,
+      "tax": 0,
+      "stockQuantity": 320,
+      "lowStockThreshold": 10,
+      "trackInventory": true,
+      "allowBackorders": false,
+      "isFeatured": true,
+      "isBestSeller": true,
+      "isNew": false,
+      "isOnSale": true,
+      "hasTimer": false,
+      "active": true,
+      "displayOrder": 0,
+      "rating": 4.95,
+      "reviewCount": 248,
+      "benefits": "[\"Full 2-month course for stubborn hair thinning & shedding\",\"Saves ₹280 off MRP with 20% bundle discount\",\"Packed with 21 active roots, seeds, and flower extracts\",\"Non-sticky, mineral-oil-free formulation\"]",
+      "howToUse": "Apply 2-3 times per week. Massage gently into scalp for 5-10 minutes. Leave overnight or at least 1 hour before washing.",
+      "faqJson": null,
+      "seoTitle": null,
+      "seoDescription": null,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:40.154Z",
+      "updatedAt": "2026-10-13T20:48:40.154Z",
+      "categoryId": "6b145916-b89c-4b1a-acae-1291412a88b9",
+      "images": [
+        {
+          "id": "1238260a-3159-4294-93fb-be6e991fc8ee",
+          "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-q2-duo.jpg",
+          "alt": "Herbic Cure 21 Herbs Oil Twin Pack (Q2)",
+          "displayOrder": 1,
+          "isThumbnail": true
+        },
+        {
+          "id": "ac396f7d-9824-493b-b94c-8d7e99301073",
+          "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-pure-herbs-duo.jpg",
+          "alt": "Herbic Cure Pure Herbs for Stronger Hair",
+          "displayOrder": 2,
+          "isThumbnail": false
+        },
+        {
+          "id": "a3c6378a-677c-4949-9861-f4099ee345c2",
+          "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-vs-local-comparison.jpg",
+          "alt": "Comparison Infographic",
+          "displayOrder": 3,
+          "isThumbnail": false
+        },
+        {
+          "id": "240cf1a3-2954-43a8-b6a8-2444bdcc6497",
+          "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+          "url": "/images/products/herbic-cure/herbic-cure-how-to-use-guide.jpg",
+          "alt": "How to use Herbic Cure",
+          "displayOrder": 4,
+          "isThumbnail": false
+        }
+      ],
+      "collections": [
+        {
+          "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+          "collectionId": "93c53771-7279-4f30-8be4-7257abe60309"
+        },
+        {
+          "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+          "collectionId": "d539e493-2de9-41ea-8c14-a3f36f4b9a51"
+        },
+        {
+          "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+          "collectionId": "0a8d02d3-c6b8-4e1b-953d-b3134e84950a"
+        }
+      ],
+      "ingredients": [
+        {
+          "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+          "ingredientId": "e86b3ea2-804e-44b0-b767-80ef26efc27e"
+        },
+        {
+          "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+          "ingredientId": "a86a4c72-fa94-4685-94eb-635500b80bad"
+        },
+        {
+          "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+          "ingredientId": "923c37ff-81ef-40e7-ba76-158173fb4637"
+        },
+        {
+          "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+          "ingredientId": "1a82d35e-c272-4c7d-9315-dcfc812c0c8f"
+        },
+        {
+          "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+          "ingredientId": "373e6671-23d2-49d4-b7df-65d96ba7ea9d"
+        },
+        {
+          "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+          "ingredientId": "0d0e4932-7bb7-4d16-a106-f33a04c01f15"
+        },
+        {
+          "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+          "ingredientId": "c6e47e4f-04d8-4d0d-91d0-92fce496d825"
+        }
+      ]
+    },
+    {
+      "id": "f94f93e6-d209-40e8-8751-5d52d438824a",
+      "name": "Herbic Cure - 21 Herbs Fusion Hair Oil (Q3 - Pack of 3)",
+      "slug": "herbic-cure-21-herbs-fusion-hair-oil-q3",
+      "sku": "HC-OIL-Q3",
+      "shortDescription": "Family Mega Pack (3 x 190ml = 570ml). Comprehensive 90-day Ayurvedic hair wellness package for maximum savings.",
+      "fullDescription": "<h6>Herbic Cure 21 Herbs Fusion Hair Oil (Pack of 3) 🌿</h6>\n<p>The ultimate 3-month family value pack. Sustained application ensures hair follicles enter the active anagen phase, promoting thicker strands and voluminous bounce.</p>",
+      "regularPrice": 2097,
+      "salePrice": 1677,
+      "costPrice": 320,
+      "tax": 0,
+      "stockQuantity": 210,
+      "lowStockThreshold": 10,
+      "trackInventory": true,
+      "allowBackorders": false,
+      "isFeatured": true,
+      "isBestSeller": false,
+      "isNew": false,
+      "isOnSale": true,
+      "hasTimer": false,
+      "active": true,
+      "displayOrder": 0,
+      "rating": 4.92,
+      "reviewCount": 185,
+      "benefits": "[\"Save ₹420 off MRP with flat 20% discount\",\"Ideal 90-day course for full follicle reactivation\",\"Shared family hair wellness bottle pack\",\"Pure cold-pressed Kshirapak herbal preparation\"]",
+      "howToUse": "Massage 2-3 times weekly. Leave for 1 hour or overnight.",
+      "faqJson": null,
+      "seoTitle": null,
+      "seoDescription": null,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:42.562Z",
+      "updatedAt": "2026-10-13T20:48:42.562Z",
+      "categoryId": "6b145916-b89c-4b1a-acae-1291412a88b9",
+      "images": [
+        {
+          "id": "35c489e6-d2f0-4859-a843-b2fcb67c6363",
+          "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-q3-trio.jpg",
+          "alt": "Herbic Cure 21 Herbs Oil Trio Pack (Q3)",
+          "displayOrder": 1,
+          "isThumbnail": true
+        },
+        {
+          "id": "f72b205a-1311-4d60-95cd-2b0e0ebcc52d",
+          "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-q1-main.jpg",
+          "alt": "Herbic Cure Single Bottle Detail",
+          "displayOrder": 2,
+          "isThumbnail": false
+        },
+        {
+          "id": "196aee71-9537-4942-9231-659342ce676a",
+          "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-vs-local-comparison.jpg",
+          "alt": "Comparison Infographic",
+          "displayOrder": 3,
+          "isThumbnail": false
+        }
+      ],
+      "collections": [
+        {
+          "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+          "collectionId": "d539e493-2de9-41ea-8c14-a3f36f4b9a51"
+        },
+        {
+          "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+          "collectionId": "0a8d02d3-c6b8-4e1b-953d-b3134e84950a"
+        }
+      ],
+      "ingredients": [
+        {
+          "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+          "ingredientId": "e86b3ea2-804e-44b0-b767-80ef26efc27e"
+        },
+        {
+          "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+          "ingredientId": "a86a4c72-fa94-4685-94eb-635500b80bad"
+        },
+        {
+          "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+          "ingredientId": "923c37ff-81ef-40e7-ba76-158173fb4637"
+        },
+        {
+          "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+          "ingredientId": "1a82d35e-c272-4c7d-9315-dcfc812c0c8f"
+        },
+        {
+          "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+          "ingredientId": "373e6671-23d2-49d4-b7df-65d96ba7ea9d"
+        },
+        {
+          "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+          "ingredientId": "0d0e4932-7bb7-4d16-a106-f33a04c01f15"
+        },
+        {
+          "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+          "ingredientId": "c6e47e4f-04d8-4d0d-91d0-92fce496d825"
+        }
+      ]
+    },
+    {
+      "id": "d1429cb0-73fd-42f7-a6c7-db9f1bc30c1a",
+      "name": "Herbic Cure - Natural Neem Wood Comb",
+      "slug": "herbic-cure-natural-neem-wood-comb",
+      "sku": "HC-COMB-01",
+      "shortDescription": "100% pure handcrafted Neem wood comb with rounded teeth. Anti-static, stimulates scalp circulation, and prevents frizz & breakage.",
+      "fullDescription": "<h6>Herbic Cure Handcrafted Neem Wood Comb 🪵</h6>\n<p><strong>Small Comb, Big Care for Your Hair.</strong> Carved from seasoned Indian Neem wood, this comb distributes scalp sebum naturally, detangles effortlessly without pulling, and imparts natural antibacterial protection.</p>\n<h6>Why You Need a Neem Wood Comb:</h6>\n<p>✔ 100% Natural Wood — Zero toxic plastic or petroleum polymers</p>\n<p>✔ Reduces Hair Fall caused by static pulling and tension</p>\n<p>✔ Gentle on Scalp: Rounded hand-filed teeth massage pressure points</p>\n<p>✔ Eco-Friendly, Biodegradable & Long-Lasting</p>",
+      "regularPrice": 149,
+      "salePrice": 128,
+      "costPrice": 40,
+      "tax": 0,
+      "stockQuantity": 600,
+      "lowStockThreshold": 10,
+      "trackInventory": true,
+      "allowBackorders": false,
+      "isFeatured": false,
+      "isBestSeller": true,
+      "isNew": false,
+      "isOnSale": true,
+      "hasTimer": false,
+      "active": true,
+      "displayOrder": 0,
+      "rating": 4.88,
+      "reviewCount": 165,
+      "benefits": "[\"100% pure natural Neem wood with herbal properties\",\"Anti-static: Eliminates frizz and flying hair strands\",\"Smooth rounded teeth that massage scalp acupoints\",\"14% OFF limited offer on handcrafted Neem wood\"]",
+      "howToUse": "Use morning and evening on dry or slightly damp hair. Gently detangle starting from the ends and moving upward towards the roots.",
+      "faqJson": null,
+      "seoTitle": null,
+      "seoDescription": null,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:46.893Z",
+      "updatedAt": "2026-10-13T20:48:46.893Z",
+      "categoryId": "295f96fb-eb33-42d1-b1e9-22b5aa7158cc",
+      "images": [
+        {
+          "id": "284630ae-82a5-46d7-b77f-4921805ac0b9",
+          "productId": "d1429cb0-73fd-42f7-a6c7-db9f1bc30c1a",
+          "url": "/images/products/herbic-cure/herbic-cure-neem-wood-comb.jpg",
+          "alt": "Herbic Cure Natural Neem Wood Comb",
+          "displayOrder": 1,
+          "isThumbnail": true
+        }
+      ],
+      "collections": [
+        {
+          "productId": "d1429cb0-73fd-42f7-a6c7-db9f1bc30c1a",
+          "collectionId": "c9f36bf1-115f-4792-9b23-4c646e3d478e"
+        }
+      ],
+      "ingredients": []
+    },
+    {
+      "id": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "name": "Herbic Cure - 21 Herbs Fusion Hair Oil + Natural Neem Wood Comb",
+      "slug": "herbic-cure-21-herbs-fusion-hair-oil-neem-wood-comb",
+      "sku": "HC-OIL-COMB",
+      "shortDescription": "Bestselling Duo: 190ml 21 Herbs Hair Oil + Handcrafted Pure Neem Wood Comb. Reduces breakage & stimulates scalp acupressure points.",
+      "fullDescription": "<h6>Herbic Cure Oil & Neem Wood Comb Ritual Kit 🌿🪵</h6>\n<p>Combine the deep follicle nourishment of our 21 Herbs Fusion Hair Oil with the gentle, anti-static detangling of a 100% natural Neem Wood Comb.</p>\n<p>Unlike plastic combs that cause static charge and pull fragile roots, Neem wood naturally prevents dandruff, massages the scalp, and stimulates healthy blood flow.</p>",
+      "regularPrice": 848,
+      "salePrice": 695,
+      "costPrice": 150,
+      "tax": 0,
+      "stockQuantity": 399,
+      "lowStockThreshold": 10,
+      "trackInventory": true,
+      "allowBackorders": false,
+      "isFeatured": true,
+      "isBestSeller": true,
+      "isNew": false,
+      "isOnSale": true,
+      "hasTimer": false,
+      "active": true,
+      "displayOrder": 0,
+      "rating": 4.97,
+      "reviewCount": 420,
+      "benefits": "[\"Neem wood releases natural medicinal oils directly to scalp\",\"Zero static electricity — glides smoothly without hair snapping\",\"Oil penetrates deeper when combed through after gentle massage\",\"18% OFF combo savings (Save ₹153)\"]",
+      "howToUse": "Apply 21 Herbs Oil to scalp. Use the Neem Wood Comb to gently comb through from roots to tips, distributing oil evenly.",
+      "faqJson": null,
+      "seoTitle": null,
+      "seoDescription": null,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:44.761Z",
+      "updatedAt": "2026-10-15T19:31:40.810Z",
+      "categoryId": "35b93dbc-e1a7-487d-8eb5-3339ee8803e7",
+      "images": [
+        {
+          "id": "c08961e7-3fbf-40d5-bd62-6ad7e393d19d",
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-neem-comb-combo.jpg",
+          "alt": "Herbic Cure 21 Herbs Oil + Natural Neem Wood Comb",
+          "displayOrder": 1,
+          "isThumbnail": true
+        },
+        {
+          "id": "f2f633e7-4d1c-46c5-a6db-635b4a6a9c5e",
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "url": "/images/products/herbic-cure/herbic-cure-neem-wood-comb.jpg",
+          "alt": "Handcrafted Neem Wood Comb Detail",
+          "displayOrder": 2,
+          "isThumbnail": false
+        },
+        {
+          "id": "3171943c-934e-4544-b99f-9014a977532c",
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-q1-main.jpg",
+          "alt": "Herbic Cure Oil Bottle",
+          "displayOrder": 3,
+          "isThumbnail": false
+        },
+        {
+          "id": "2643a5b8-1a27-45c9-beae-031a369d9609",
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "url": "/images/products/herbic-cure/herbic-cure-how-to-use-guide.jpg",
+          "alt": "How to use guide",
+          "displayOrder": 4,
+          "isThumbnail": false
+        }
+      ],
+      "collections": [
+        {
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "collectionId": "93c53771-7279-4f30-8be4-7257abe60309"
+        },
+        {
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "collectionId": "0a8d02d3-c6b8-4e1b-953d-b3134e84950a"
+        },
+        {
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "collectionId": "c9f36bf1-115f-4792-9b23-4c646e3d478e"
+        }
+      ],
+      "ingredients": [
+        {
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "ingredientId": "e86b3ea2-804e-44b0-b767-80ef26efc27e"
+        },
+        {
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "ingredientId": "a86a4c72-fa94-4685-94eb-635500b80bad"
+        },
+        {
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "ingredientId": "923c37ff-81ef-40e7-ba76-158173fb4637"
+        },
+        {
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "ingredientId": "1a82d35e-c272-4c7d-9315-dcfc812c0c8f"
+        },
+        {
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "ingredientId": "373e6671-23d2-49d4-b7df-65d96ba7ea9d"
+        },
+        {
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "ingredientId": "0d0e4932-7bb7-4d16-a106-f33a04c01f15"
+        },
+        {
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "ingredientId": "c6e47e4f-04d8-4d0d-91d0-92fce496d825"
+        }
+      ]
+    },
+    {
+      "id": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+      "name": "Herbic Cure - Shampoo with Conditioner (Q1)",
+      "slug": "herbic-cure-shampoo-with-conditioner-q1",
+      "sku": "HC-SHMP-Q1",
+      "shortDescription": "2-in-1 Daily Cleansing Shampoo with Conditioner (200ml) enriched with Neem, Tulsi & Argan Oil + Shea Butter. Paraben-free, pH balanced for all hair types.",
+      "fullDescription": "<h6>Herbic Cure Daily Cleansing Shampoo with Conditioner 🧴</h6>\n<p><strong>Gentle Cleansing. Healthier-Looking Hair.</strong> Cleanse, nourish, and refresh with our authentic 2-in-1 formula combining thorough scalp cleansing and deep botanical conditioning in one easy wash.</p>\n<h6>Why You Will Love It:</h6>\n<p>✔ <strong>Enriched with Neem, Tulsi & Argan Oil + Shea Butter:</strong> Deeply cleanses impurities while adding brilliant natural shine and silky softness.</p>\n<p>✔ <strong>Sulfate-Free & Paraben-Free:</strong> Gentle pH-balanced formulation that preserves essential scalp oils.</p>\n<p>✔ <strong>Unisex & Suitable for All Hair Types:</strong> Daily use formula designed for oily, dry, or chemically treated hair.</p>",
+      "regularPrice": 599,
+      "salePrice": 489,
+      "costPrice": 110,
+      "tax": 0,
+      "stockQuantity": 380,
+      "lowStockThreshold": 10,
+      "trackInventory": true,
+      "allowBackorders": false,
+      "isFeatured": true,
+      "isBestSeller": false,
+      "isNew": true,
+      "isOnSale": true,
+      "hasTimer": false,
+      "active": true,
+      "displayOrder": 0,
+      "rating": 4.89,
+      "reviewCount": 140,
+      "benefits": "[\"2-in-1 Formula: Shampoo + Conditioner in one refreshing wash\",\"Enriched with Neem, Tulsi, Argan Oil and pure Shea Butter\",\"100% Paraben-free, pH balanced, and sulfate-free\",\"18% OFF launch discount (Save ₹110)\"]",
+      "howToUse": "01 Wet: Thoroughly wet your hair with water. 02 Apply: Take a suitable amount and gently massage into scalp and hair. 03 Rinse: Rinse thoroughly with water.",
+      "faqJson": null,
+      "seoTitle": null,
+      "seoDescription": null,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:48.188Z",
+      "updatedAt": "2026-10-13T20:48:48.188Z",
+      "categoryId": "9dee7915-7ba4-4df1-9fd9-a1609c0b9712",
+      "images": [
+        {
+          "id": "c1b0534e-d48a-452d-989f-429f3ca91193",
+          "productId": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+          "url": "/images/products/herbic-cure/herbic-cure-shampoo-main.jpg",
+          "alt": "Herbic Cure Daily Cleansing Shampoo with Conditioner 200ml Bottle",
+          "displayOrder": 1,
+          "isThumbnail": true
+        },
+        {
+          "id": "4b5e43e6-60f8-45d8-b0bd-52bbd035de14",
+          "productId": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+          "url": "/images/products/herbic-cure/herbic-cure-shampoo-hero-benefits.jpg",
+          "alt": "Herbic Cure Shampoo Cleanse Nourish Refresh Benefits",
+          "displayOrder": 2,
+          "isThumbnail": false
+        },
+        {
+          "id": "ae06f4a5-e7d5-4e08-909f-a23d4ba61fc7",
+          "productId": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+          "url": "/images/products/herbic-cure/herbic-cure-shampoo-ingredients.jpg",
+          "alt": "Power of Natural Ingredients: Neem, Tulsi, Argan Oil, Shea Butter",
+          "displayOrder": 3,
+          "isThumbnail": false
+        },
+        {
+          "id": "d9224853-3777-44a0-ab91-a4c348cc06af",
+          "productId": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+          "url": "/images/products/herbic-cure/herbic-cure-shampoo-how-to-use.jpg",
+          "alt": "How to Use Herbic Cure Shampoo with Conditioner",
+          "displayOrder": 4,
+          "isThumbnail": false
+        },
+        {
+          "id": "af2e2553-1f01-4207-8ac1-a8679bfdfec6",
+          "productId": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+          "url": "/images/products/herbic-cure/herbic-cure-shampoo-why-choose.jpg",
+          "alt": "Why Choose Herbic Cure Shampoo - Sulfate & Paraben Free",
+          "displayOrder": 5,
+          "isThumbnail": false
+        },
+        {
+          "id": "61b115f6-2075-4afd-830c-4127b9d1ea3d",
+          "productId": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+          "url": "/images/products/herbic-cure/herbic-cure-shampoo-healthy-hair.jpg",
+          "alt": "Healthy Scalp, Naturally Beautiful Hair",
+          "displayOrder": 6,
+          "isThumbnail": false
+        }
+      ],
+      "collections": [
+        {
+          "productId": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+          "collectionId": "93c53771-7279-4f30-8be4-7257abe60309"
+        }
+      ],
+      "ingredients": []
+    },
+    {
+      "id": "06817469-062d-48c6-bbee-51dc507be79e",
+      "name": "Herbic Cure - Shampoo with Conditioner (Q2 - Pack of 2)",
+      "slug": "herbic-cure-shampoo-with-conditioner-q2",
+      "sku": "HC-SHMP-Q2",
+      "shortDescription": "Value Twin Pack (2 x 200ml = 400ml) of Herbic Cure 2-in-1 Daily Cleansing Shampoo with Conditioner. Long-lasting nourishment for healthier-looking hair.",
+      "fullDescription": "<h6>Herbic Cure Shampoo with Conditioner (Duo Pack) 🧴</h6>\n<p>Double the daily cleansing and conditioning with our 2-pack Shampoo with Conditioner bundle. Enriched with Neem, Tulsi, Argan Oil, and Shea Butter for soft, tangle-free hair every day.</p>",
+      "regularPrice": 1198,
+      "salePrice": 999,
+      "costPrice": 200,
+      "tax": 0,
+      "stockQuantity": 250,
+      "lowStockThreshold": 10,
+      "trackInventory": true,
+      "allowBackorders": false,
+      "isFeatured": false,
+      "isBestSeller": false,
+      "isNew": false,
+      "isOnSale": true,
+      "hasTimer": false,
+      "active": true,
+      "displayOrder": 0,
+      "rating": 4.91,
+      "reviewCount": 96,
+      "benefits": "[\"Twin 200ml bottles (total 400ml) for extended family routine\",\"Save ₹199 with 16% twin-pack discount\",\"Paraben-free and pH balanced for daily cleansing\"]",
+      "howToUse": "Lather into wet scalp and rinse thoroughly. Ideal for daily or alternate day use.",
+      "faqJson": null,
+      "seoTitle": null,
+      "seoDescription": null,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:49.333Z",
+      "updatedAt": "2026-10-13T20:48:49.333Z",
+      "categoryId": "9dee7915-7ba4-4df1-9fd9-a1609c0b9712",
+      "images": [
+        {
+          "id": "d0e65bc1-ab4f-4c62-b72e-a3f63dc7a151",
+          "productId": "06817469-062d-48c6-bbee-51dc507be79e",
+          "url": "/images/products/herbic-cure/herbic-cure-shampoo-hero-benefits.jpg",
+          "alt": "Herbic Cure Shampoo Duo Pack (Q2)",
+          "displayOrder": 1,
+          "isThumbnail": true
+        },
+        {
+          "id": "31a4c7d9-55d5-4116-b2a0-58e8923f93c6",
+          "productId": "06817469-062d-48c6-bbee-51dc507be79e",
+          "url": "/images/products/herbic-cure/herbic-cure-shampoo-main.jpg",
+          "alt": "Herbic Cure Shampoo 200ml Bottle",
+          "displayOrder": 2,
+          "isThumbnail": false
+        },
+        {
+          "id": "668ec9d0-427e-49b0-9472-09e3d3be8eb6",
+          "productId": "06817469-062d-48c6-bbee-51dc507be79e",
+          "url": "/images/products/herbic-cure/herbic-cure-shampoo-why-choose.jpg",
+          "alt": "Herbic Cure Shampoo Quality Features",
+          "displayOrder": 3,
+          "isThumbnail": false
+        },
+        {
+          "id": "ce0e1c0e-4ed4-4f4b-868c-141554b212a4",
+          "productId": "06817469-062d-48c6-bbee-51dc507be79e",
+          "url": "/images/products/herbic-cure/herbic-cure-shampoo-ingredients.jpg",
+          "alt": "Natural Botanical Actives",
+          "displayOrder": 4,
+          "isThumbnail": false
+        }
+      ],
+      "collections": [
+        {
+          "productId": "06817469-062d-48c6-bbee-51dc507be79e",
+          "collectionId": "0a8d02d3-c6b8-4e1b-953d-b3134e84950a"
+        }
+      ],
+      "ingredients": []
+    },
+    {
+      "id": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+      "name": "Herbic Cure - 21 Herbs Fusion Hair Oil + Shampoo with Conditioner + Neem Wood Comb",
+      "slug": "herbic-cure-complete-hair-therapy-kit",
+      "sku": "HC-KIT-COMPLETE",
+      "shortDescription": "All-in-One Complete Hair Care Kit: 21 Herbs Fusion Hair Oil (190ml) + Shampoo with Conditioner (200ml) + Natural Neem Wood Comb.",
+      "fullDescription": "<h6>Herbic Cure 360° Complete Hair Care Kit 🌿🧴🪵</h6>\n<p>Everything your hair needs in one luxurious bundle. Stop hair fall, revive damaged follicles, cleanse gently, and detangle smoothly with nature’s best:</p>\n<p>🌿 <strong>Herbic Cure 21 Herbs Fusion Hair Oil (190ml):</strong> Deep follicular activation and scalp revitalization.</p>\n<p>🧴 <strong>Herbic Cure Shampoo with Conditioner (200ml):</strong> Gentle, sulfate-free cleansing with Neem, Tulsi & Argan Oil.</p>\n<p>🪵 <strong>Handcrafted Neem Wood Comb:</strong> Anti-static gentle detangler that boosts scalp circulation.</p>",
+      "regularPrice": 1448,
+      "salePrice": 1158,
+      "costPrice": 260,
+      "tax": 0,
+      "stockQuantity": 280,
+      "lowStockThreshold": 10,
+      "trackInventory": true,
+      "allowBackorders": false,
+      "isFeatured": true,
+      "isBestSeller": true,
+      "isNew": false,
+      "isOnSale": true,
+      "hasTimer": false,
+      "active": true,
+      "displayOrder": 0,
+      "rating": 4.98,
+      "reviewCount": 380,
+      "benefits": "[\"Complete 3-step Ayurvedic routine: Oil, Cleanse, Detangle\",\"20% OFF comprehensive kit savings (Save ₹290!)\",\"Noticeably thicker, softer, and longer hair within weeks\",\"Includes Free Express Shipping & Cash on Delivery\"]",
+      "howToUse": "Step 1: Massage 21 Herbs Oil into scalp for 5-10 mins. Step 2: Wash with Shampoo with Conditioner. Step 3: Gently comb through with the Neem Wood Comb.",
+      "faqJson": null,
+      "seoTitle": null,
+      "seoDescription": null,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:52.690Z",
+      "updatedAt": "2026-10-13T20:48:52.690Z",
+      "categoryId": "35b93dbc-e1a7-487d-8eb5-3339ee8803e7",
+      "images": [
+        {
+          "id": "e648c7af-23bd-4514-8eaa-fd88978a856e",
+          "productId": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-shampoo-combo.jpg",
+          "alt": "Herbic Cure Complete Hair Therapy Kit",
+          "displayOrder": 1,
+          "isThumbnail": true
+        },
+        {
+          "id": "4cf39a91-6749-4684-8ae1-f80034360c85",
+          "productId": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-shampoo-benefits.jpg",
+          "alt": "Complete Hair Care Benefits Guide",
+          "displayOrder": 2,
+          "isThumbnail": false
+        },
+        {
+          "id": "b6cdb1f5-349a-415c-9bc0-4e37a914c868",
+          "productId": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-neem-comb-combo.jpg",
+          "alt": "Oil & Comb Close-up",
+          "displayOrder": 3,
+          "isThumbnail": false
+        },
+        {
+          "id": "2f851aaa-a781-4e3d-8a9a-49e56d32cd48",
+          "productId": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+          "url": "/images/products/herbic-cure/herbic-cure-neem-wood-comb.jpg",
+          "alt": "Natural Neem Wood Comb",
+          "displayOrder": 4,
+          "isThumbnail": false
+        }
+      ],
+      "collections": [
+        {
+          "productId": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+          "collectionId": "93c53771-7279-4f30-8be4-7257abe60309"
+        },
+        {
+          "productId": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+          "collectionId": "0a8d02d3-c6b8-4e1b-953d-b3134e84950a"
+        }
+      ],
+      "ingredients": []
+    },
+    {
+      "id": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "name": "Herbic Cure - 21 Herbs Fusion Hair Oil + Shampoo with Conditioner",
+      "slug": "herbic-cure-21-herbs-hair-oil-shampoo-with-conditioner",
+      "sku": "HC-COMBO-OIL-SHMP",
+      "shortDescription": "Complete Hair Care Duo: 190ml 21 Herbs Fusion Hair Oil + 200ml Daily Cleansing Shampoo with Conditioner. Nourish, Cleanse & Strengthen.",
+      "fullDescription": "<h6>Herbic Cure Complete Hair Care Duo 🌿🧴</h6>\n<p><strong>Nourish • Cleanse • Strengthen.</strong> The ultimate two-part Ayurvedic harmony for complete hair fall reversal:</p>\n<p>✔ <strong>Reduces Hair Fall & Nourishes Scalp:</strong> 21 Herbs Fusion Hair Oil delivers deep root stimulation and strengthens follicles.</p>\n<p>✔ <strong>Deep Cleansing & Conditions Hair:</strong> Daily Cleansing Shampoo with Conditioner gently washes away grime with Neem & Tulsi while Argan Oil & Shea Butter leave strands touchably soft.</p>",
+      "regularPrice": 1298,
+      "salePrice": 1038,
+      "costPrice": 220,
+      "tax": 0,
+      "stockQuantity": 299,
+      "lowStockThreshold": 10,
+      "trackInventory": true,
+      "allowBackorders": false,
+      "isFeatured": true,
+      "isBestSeller": true,
+      "isNew": false,
+      "isOnSale": true,
+      "hasTimer": false,
+      "active": true,
+      "displayOrder": 0,
+      "rating": 4.96,
+      "reviewCount": 290,
+      "benefits": "[\"Harmonized 2-step treatment: Oil overnight, cleanse gently in the morning\",\"Reduces hair fall, strengthens roots, adds natural shine and silky feel\",\"20% OFF combo savings: ₹1,298 down to ₹1,038 (Save ₹260)\",\"100% Mineral-oil-free, paraben-free & sulfate-free\"]",
+      "howToUse": "Step 1: Massage 21 Herbs Hair Oil into scalp roots and leave for 1 hour or overnight. Step 2: Wash off with Herbic Cure Daily Cleansing Shampoo with Conditioner.",
+      "faqJson": null,
+      "seoTitle": null,
+      "seoDescription": null,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:50.381Z",
+      "updatedAt": "2026-10-15T19:32:18.491Z",
+      "categoryId": "35b93dbc-e1a7-487d-8eb5-3339ee8803e7",
+      "images": [
+        {
+          "id": "a1a6fc8a-163d-4381-adfb-76fb7e055c43",
+          "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-shampoo-combo.jpg",
+          "alt": "Herbic Cure 21 Herbs Hair Oil + Shampoo with Conditioner Duo",
+          "displayOrder": 1,
+          "isThumbnail": true
+        },
+        {
+          "id": "447f61ca-82f7-4003-a628-19dfd4936eab",
+          "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-shampoo-benefits.jpg",
+          "alt": "Complete Hair Care Duo - Nourish, Cleanse, Strengthen Infographic",
+          "displayOrder": 2,
+          "isThumbnail": false
+        },
+        {
+          "id": "eb1a80ac-75f8-4901-b148-7ca9a8415501",
+          "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+          "url": "/images/products/herbic-cure/herbic-cure-oil-q1-main.jpg",
+          "alt": "Herbic Cure 21 Herbs Fusion Hair Oil Bottle",
+          "displayOrder": 3,
+          "isThumbnail": false
+        },
+        {
+          "id": "39417519-45f8-4651-ae98-991898e2fcbb",
+          "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+          "url": "/images/products/herbic-cure/herbic-cure-shampoo-main.jpg",
+          "alt": "Herbic Cure Shampoo with Conditioner Bottle",
+          "displayOrder": 4,
+          "isThumbnail": false
+        }
+      ],
+      "collections": [
+        {
+          "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+          "collectionId": "93c53771-7279-4f30-8be4-7257abe60309"
+        },
+        {
+          "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+          "collectionId": "0a8d02d3-c6b8-4e1b-953d-b3134e84950a"
+        }
+      ],
+      "ingredients": [
+        {
+          "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+          "ingredientId": "e86b3ea2-804e-44b0-b767-80ef26efc27e"
+        },
+        {
+          "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+          "ingredientId": "a86a4c72-fa94-4685-94eb-635500b80bad"
+        },
+        {
+          "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+          "ingredientId": "923c37ff-81ef-40e7-ba76-158173fb4637"
+        },
+        {
+          "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+          "ingredientId": "1a82d35e-c272-4c7d-9315-dcfc812c0c8f"
+        },
+        {
+          "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+          "ingredientId": "373e6671-23d2-49d4-b7df-65d96ba7ea9d"
+        },
+        {
+          "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+          "ingredientId": "0d0e4932-7bb7-4d16-a106-f33a04c01f15"
+        },
+        {
+          "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+          "ingredientId": "c6e47e4f-04d8-4d0d-91d0-92fce496d825"
+        }
+      ]
+    }
+  ],
+  "reviews": [
+    {
+      "id": "fe687a3a-824d-4f1f-9fdc-7b2cde8bd2eb",
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "userId": null,
+      "customerName": "Ananya Sharma",
+      "customerEmail": "ananya.s@gmail.com",
+      "rating": 5,
+      "title": "Hair fall visibly controlled in 3 weeks!",
+      "content": "Noticeable density improvement along my parting line and shedding reduced significantly within 3 weeks. It is lightweight, non-greasy, and smells authentically herbal without artificial perfumes.",
+      "images": null,
+      "isVerifiedPurchase": true,
+      "isApproved": true,
+      "isFeatured": true,
+      "createdAt": "2026-10-15T20:54:40.066Z"
+    },
+    {
+      "id": "8c8552a4-722c-4724-950d-df42839ed799",
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "userId": null,
+      "customerName": "Rohit Verma",
+      "customerEmail": "rohit.v@outlook.com",
+      "rating": 5,
+      "title": "Root strength restored & receding hairline arrested",
+      "content": "Crown thinning reversed significantly. The cold-pressed herbs make my scalp feel fresh and calm. The Neem wood comb included in the bundle makes scalp massage effortless.",
+      "images": null,
+      "isVerifiedPurchase": true,
+      "isApproved": true,
+      "isFeatured": true,
+      "createdAt": "2026-10-15T20:54:40.463Z"
+    },
+    {
+      "id": "9fcef855-f538-4710-b501-b584ccfb8211",
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "userId": null,
+      "customerName": "Kavitha Murthy",
+      "customerEmail": "kavitha.m@yahoo.com",
+      "rating": 5,
+      "title": "Authentic 21 Herbs Ayurvedic oil",
+      "content": "Pure herbal aroma without chemical fragrance. Keeps hair shiny, thick, and deeply nourished from root to tip. Best Ayurvedic hair wellness product I have used.",
+      "images": null,
+      "isVerifiedPurchase": true,
+      "isApproved": true,
+      "isFeatured": true,
+      "createdAt": "2026-10-15T20:54:40.706Z"
+    },
+    {
+      "id": "2d4c887a-6a27-49a3-b9b0-af83e6ad1cf2",
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "userId": null,
+      "customerName": "Deepak Kumar",
+      "customerEmail": "deepak.k@gmail.com",
+      "rating": 5,
+      "title": "Zero dandruff & strong roots",
+      "content": "Within 21 days my dry flaky scalp cleared up completely. Strands feel thicker and do not break when combing. Outstanding results.",
+      "images": null,
+      "isVerifiedPurchase": true,
+      "isApproved": true,
+      "isFeatured": true,
+      "createdAt": "2026-10-15T20:54:40.885Z"
+    },
+    {
+      "id": "abd8ced8-83ec-4d7d-806d-558c90a8f672",
+      "productId": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+      "userId": null,
+      "customerName": "Sneha Patel",
+      "customerEmail": "sneha.p@gmail.com",
+      "rating": 5,
+      "title": "Best Ayurvedic combo regimen",
+      "content": "Using the hair oil along with the sulfate-free botanical shampoo. Soft bouncy hair without conditioner needed. Highly recommended!",
+      "images": null,
+      "isVerifiedPurchase": true,
+      "isApproved": true,
+      "isFeatured": true,
+      "createdAt": "2026-10-15T20:54:41.058Z"
+    },
+    {
+      "id": "1ce5da00-45b8-4260-a2bd-1955e5abc848",
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "userId": null,
+      "customerName": "Meera Rao",
+      "customerEmail": "meera.r@gmail.com",
+      "rating": 5,
+      "title": "Remarkable postpartum hair recovery",
+      "content": "Post-pregnancy hair thinning was severe until I started this 72-hour Kshirapak regimen. In two months baby hair started sprouting around the temples!",
+      "images": null,
+      "isVerifiedPurchase": true,
+      "isApproved": true,
+      "isFeatured": true,
+      "createdAt": "2026-10-15T20:54:41.236Z"
+    },
+    {
+      "id": "3eec9aae-08dc-410b-82ce-1cc99d89a412",
+      "productId": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+      "userId": null,
+      "customerName": "Priya Nair",
+      "customerEmail": "priya.nair@hotmail.com",
+      "rating": 5,
+      "title": "Very gentle and deeply restorative",
+      "content": "I have sensitive scalp and this oil causes zero irritation. The comb is beautifully handcrafted neem wood. Will definitely repurchase.",
+      "images": null,
+      "isVerifiedPurchase": true,
+      "isApproved": true,
+      "isFeatured": false,
+      "createdAt": "2026-10-15T20:54:41.416Z"
+    },
+    {
+      "id": "fa30d4be-08a2-4937-9276-f1dc883f0ed4",
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "userId": null,
+      "customerName": "Rajesh G.",
+      "customerEmail": "rajesh.g@gmail.com",
+      "rating": 4,
+      "title": "High quality authentic oil",
+      "content": "Very good results on hair fall control. Takes around 2 to 3 weeks of patience but genuine Vedic quality.",
+      "images": null,
+      "isVerifiedPurchase": true,
+      "isApproved": true,
+      "isFeatured": false,
+      "createdAt": "2026-10-15T20:54:41.593Z"
+    }
+  ],
+  "coupons": [
+    {
+      "id": "a880c9fb-3049-4018-870c-a9c89cb343df",
+      "code": "HERBIC10",
+      "discountType": "PERCENTAGE",
+      "discountValue": 10,
+      "minOrderValue": 0,
+      "maxDiscount": 200,
+      "usageLimit": 1000,
+      "usedCount": 0,
+      "expiresAt": null,
+      "active": true,
+      "isPublic": true,
+      "creatorName": null,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:53.932Z",
+      "updatedAt": "2026-10-13T20:48:53.932Z"
+    },
+    {
+      "id": "32ad026f-d4d4-4ec0-b59d-5a0b387fe87a",
+      "code": "GROWTH100",
+      "discountType": "FIXED",
+      "discountValue": 100,
+      "minOrderValue": 699,
+      "maxDiscount": null,
+      "usageLimit": 500,
+      "usedCount": 0,
+      "expiresAt": null,
+      "active": true,
+      "isPublic": true,
+      "creatorName": null,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:53.932Z",
+      "updatedAt": "2026-10-13T20:48:53.932Z"
+    },
+    {
+      "id": "b5daf5da-f1db-4f4d-9b17-eb7fc64f550a",
+      "code": "AYURVEDA20",
+      "discountType": "PERCENTAGE",
+      "discountValue": 20,
+      "minOrderValue": 999,
+      "maxDiscount": 400,
+      "usageLimit": 250,
+      "usedCount": 0,
+      "expiresAt": null,
+      "active": true,
+      "isPublic": true,
+      "creatorName": null,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:53.932Z",
+      "updatedAt": "2026-10-13T20:48:53.932Z"
+    }
+  ],
+  "orders": [
+    {
+      "id": "bceec9b7-8980-472f-998f-a2c33228ae1a",
+      "orderNumber": "HC-10028",
+      "userId": null,
+      "customerId": null,
+      "customerName": "Priya Sharma",
+      "customerEmail": "priya.sharma@example.com",
+      "customerPhone": "+91 8121961219",
+      "guestAccessToken": null,
+      "shippingAddress": "{\"name\":\"Priya Sharma\",\"phone\":\"+91 8121961219\",\"addressLine1\":\"Flat 402, Green Valley Apartments\",\"addressLine2\":\"Banjara Hills\",\"city\":\"Hyderabad\",\"state\":\"Telangana\",\"pinCode\":\"500034\",\"country\":\"India\"}",
+      "billingAddress": null,
+      "subtotal": 699,
+      "discount": 0,
+      "shippingFee": 0,
+      "tax": 0,
+      "total": 699,
+      "couponCode": null,
+      "paymentMethod": "COD",
+      "paymentStatus": "PENDING",
+      "orderStatus": "SHIPPED",
+      "trackingNumber": "SR-784920194",
+      "trackingUrl": "https://shiprocket.co/tracking/SR-784920194",
+      "carrier": "Shiprocket Express",
+      "notes": null,
+      "version": 1,
+      "createdAt": "2026-10-13T20:48:57.000Z",
+      "updatedAt": "2026-10-13T20:48:57.000Z",
+      "items": [
+        {
+          "id": "75b61a0d-0fe2-4d22-b35e-1f380adde185",
+          "orderId": "bceec9b7-8980-472f-998f-a2c33228ae1a",
+          "productId": null,
+          "productName": "Herbic Cure - 21 Herbs Fusion Hair Oil + Shampoo with Conditioner + Neem Wood Comb",
+          "productImage": "/images/products/herbic-cure/herbic-cure-complete-trio-kit.jpg",
+          "price": 699,
+          "quantity": 1,
+          "total": 699
+        }
+      ],
+      "events": [
+        {
+          "id": "13a15f2e-9f06-4d4c-b43e-627d1ea3b25a",
+          "orderId": "bceec9b7-8980-472f-998f-a2c33228ae1a",
+          "status": "CONFIRMED",
+          "location": "Hyderabad Fulfillment Hub",
+          "description": "Order confirmed and registered at Herbic Cure dispensary.",
+          "timestamp": "2026-10-13T20:48:57.000Z"
+        },
+        {
+          "id": "73cdfef5-f952-4bb1-a466-f4f7549145dc",
+          "orderId": "bceec9b7-8980-472f-998f-a2c33228ae1a",
+          "status": "PROCESSING",
+          "location": "Hyderabad Fulfillment Hub",
+          "description": "Freshly packed with natural botanical care and dispatched to courier.",
+          "timestamp": "2026-10-13T20:48:57.000Z"
+        },
+        {
+          "id": "2e903508-6b66-44f8-b2d9-682c575781fb",
+          "orderId": "bceec9b7-8980-472f-998f-a2c33228ae1a",
+          "status": "SHIPPED",
+          "location": "Banjara Hills Distribution Center",
+          "description": "In transit via Shiprocket Express Air Cargo.",
+          "timestamp": "2026-10-13T20:48:57.000Z"
+        }
+      ],
+      "refunds": []
+    },
+    {
+      "id": "cb838595-e71b-4f0c-821e-7db8bd7fe49f",
+      "orderNumber": "HC-699635",
+      "userId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "customerId": null,
+      "customerName": "Herbic Cure Admin",
+      "customerEmail": "admin@herbiccure.com",
+      "customerPhone": "9307490495",
+      "guestAccessToken": null,
+      "shippingAddress": "{\"name\":\"Herbic Cure Admin\",\"phone\":\"9307490495\",\"address\":\"new colony rajdepur\",\"city\":\"Ghazipur\",\"state\":\"Uttar Pradesh\",\"pincode\":\"233001\"}",
+      "billingAddress": null,
+      "subtotal": 695,
+      "discount": 0,
+      "shippingFee": 0,
+      "tax": 0,
+      "total": 695,
+      "couponCode": null,
+      "paymentMethod": "COD",
+      "paymentStatus": "PENDING",
+      "orderStatus": "CONFIRMED",
+      "trackingNumber": "320069963500",
+      "trackingUrl": "https://www.delhivery.com/track/package/320069963500",
+      "carrier": "Delhivery",
+      "notes": null,
+      "version": 1,
+      "createdAt": "2026-10-15T19:31:39.800Z",
+      "updatedAt": "2026-10-15T19:31:39.800Z",
+      "items": [
+        {
+          "id": "edb135f5-7498-43c0-a376-a1d401e49bf2",
+          "orderId": "cb838595-e71b-4f0c-821e-7db8bd7fe49f",
+          "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+          "productName": "Herbic Cure - 21 Herbs Fusion Hair Oil + Natural Neem Wood Comb",
+          "productImage": "/images/products/herbic-cure/herbic-cure-oil-neem-comb-combo.jpg",
+          "price": 695,
+          "quantity": 1,
+          "total": 695
+        }
+      ],
+      "events": [],
+      "refunds": []
+    },
+    {
+      "id": "595b0bbf-13bb-4424-9718-1ba100a38ca8",
+      "orderNumber": "HC-737234",
+      "userId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "customerId": "e1df7473-fb5f-4008-a0cd-85af5cf8d693",
+      "customerName": "Herbic Cure Admin",
+      "customerEmail": "admin@herbiccure.com",
+      "customerPhone": "9307490495",
+      "guestAccessToken": null,
+      "shippingAddress": "{\"name\":\"Herbic Cure Admin\",\"phone\":\"9307490495\",\"address\":\"new colony rajdepur\",\"city\":\"Ghazipur\",\"state\":\"Uttar Pradesh\",\"pincode\":\"233001\"}",
+      "billingAddress": null,
+      "subtotal": 1038,
+      "discount": 0,
+      "shippingFee": 0,
+      "tax": 0,
+      "total": 1038,
+      "couponCode": null,
+      "paymentMethod": "CASHFREE",
+      "paymentStatus": "PENDING",
+      "orderStatus": "CANCELLED",
+      "trackingNumber": "320073723400",
+      "trackingUrl": "https://www.delhivery.com/track/package/320073723400",
+      "carrier": "Delhivery",
+      "notes": null,
+      "version": 1,
+      "createdAt": "2026-10-15T19:32:17.414Z",
+      "updatedAt": "2026-10-15T20:47:14.696Z",
+      "items": [
+        {
+          "id": "effcac5a-6683-4e29-82b0-1d445021db8f",
+          "orderId": "595b0bbf-13bb-4424-9718-1ba100a38ca8",
+          "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+          "productName": "Herbic Cure - 21 Herbs Fusion Hair Oil + Shampoo with Conditioner",
+          "productImage": "/images/products/herbic-cure/herbic-cure-oil-shampoo-combo.jpg",
+          "price": 1038,
+          "quantity": 1,
+          "total": 1038
+        }
+      ],
+      "events": [
+        {
+          "id": "0d12e9e5-0897-4493-ab68-3bd30a8443a0",
+          "orderId": "595b0bbf-13bb-4424-9718-1ba100a38ca8",
+          "status": "CANCELLED",
+          "location": "Delhivery",
+          "description": "Order status updated to CANCELLED",
+          "timestamp": "2026-10-15T20:47:16.224Z"
+        }
+      ],
+      "refunds": []
+    }
+  ],
+  "homepageSections": [
+    {
+      "id": "380fba48-b1fc-40fe-9847-f87cbb912dcc",
+      "sectionType": "HERO_SLIDER",
+      "title": "Hero Banner Slider",
+      "subtitle": "Discover Authentic Ayurvedic Hair Rituals",
+      "contentJson": "{\"slides\":[{\"desktopImage\":\"/images/banners/herbic-hero-banner-1.jpg\",\"mobileImage\":\"/images/banners/herbic-hero-banner-1.jpg\",\"badge\":\"Authentic Ayurvedic Kshirapak Vidhi\",\"heading\":\"Herbic Cure - 21 Herbs Fusion Hair Oil\",\"subheading\":\"Ancient Ayurveda for Modern Strength. Nature In Every Drop: 100% Herbal infusion of 21 roots and botanical extracts to stop hair fall.\",\"ctaText\":\"SHOP INTRODUCTORY OFFER (33% OFF)\",\"ctaUrl\":\"/products/herbic-cure-21-herbs-fusion-hair-oil-q1\",\"secondaryCtaText\":\"VIEW 21 HERBS\",\"secondaryCtaUrl\":\"/ingredients\"},{\"desktopImage\":\"/images/banners/herbic-hero-banner-2.jpg\",\"mobileImage\":\"/images/banners/herbic-hero-banner-2.jpg\",\"badge\":\"Authentic Ayurvedic Kshirapak Vidhi\",\"heading\":\"Complete Hair Therapy Ritual Kits\",\"subheading\":\"Stop hair fall, cleanse gently, and detangle with 21 Herbs Hair Oil, Shampoo with Conditioner & Handcrafted Neem Wood Comb.\",\"ctaText\":\"EXPLORE KITS & COMBOS\",\"ctaUrl\":\"/collections/combos\",\"secondaryCtaText\":\"ORDER ON WHATSAPP\",\"secondaryCtaUrl\":\"https://wa.me/918121961219\"}]}",
+      "displayOrder": 0,
+      "active": true,
+      "offerEndsAt": null,
+      "createdAt": "2026-10-16T04:54:10.984Z",
+      "updatedAt": "2026-10-16T05:13:12.920Z"
+    },
+    {
+      "id": "31052d8a-a708-438e-8073-fc1d7701f9a4",
+      "sectionType": "BEST_SELLERS",
+      "title": "Best Selling Hair Rituals",
+      "subtitle": "Handcrafted with 21 potent herbs for visible restoration",
+      "contentJson": "{}",
+      "displayOrder": 1,
+      "active": true,
+      "offerEndsAt": null,
+      "createdAt": "2026-10-16T05:03:59.307Z",
+      "updatedAt": "2026-10-16T05:13:12.920Z"
+    },
+    {
+      "id": "41feec31-2a56-4414-9092-334161361b38",
+      "sectionType": "CATEGORIES",
+      "title": "Explore Ayurvedic Categories",
+      "subtitle": "Targeted wellness collections for every hair need",
+      "contentJson": "{}",
+      "displayOrder": 2,
+      "active": true,
+      "offerEndsAt": null,
+      "createdAt": "2026-10-16T05:05:39.883Z",
+      "updatedAt": "2026-10-16T05:13:12.920Z"
+    },
+    {
+      "id": "a3578301-8152-45fd-bd6e-47c207c66908",
+      "sectionType": "DISCOVER",
+      "title": "Combo",
+      "subtitle": "Rooted in Kshirapak Vidhi and nature purity",
+      "contentJson": "{}",
+      "displayOrder": 3,
+      "active": true,
+      "offerEndsAt": null,
+      "createdAt": "2026-10-16T05:12:43.889Z",
+      "updatedAt": "2026-10-16T05:13:37.770Z"
+    },
+    {
+      "id": "45acd500-4995-40ac-90e5-404489fbaf39",
+      "sectionType": "REVIEWS",
+      "title": "Loved by Over 50,000+ Customers",
+      "subtitle": "Verified feedback from genuine daily users",
+      "contentJson": "{}",
+      "displayOrder": 4,
+      "active": true,
+      "offerEndsAt": null,
+      "createdAt": "2026-10-16T05:09:37.686Z",
+      "updatedAt": "2026-10-16T05:13:12.920Z"
+    },
+    {
+      "id": "a0ee8b45-d447-428b-a6f2-5bc19b05636b",
+      "sectionType": "REELS",
+      "title": "Trending on Social",
+      "subtitle": "Watch genuine creator hair journeys and unboxings",
+      "contentJson": "{}",
+      "displayOrder": 5,
+      "active": true,
+      "offerEndsAt": null,
+      "createdAt": "2026-10-16T05:07:57.015Z",
+      "updatedAt": "2026-10-16T05:13:12.920Z"
+    },
+    {
+      "id": "50bbfc72-9b3c-4dec-b0d1-ca341e27f8c5",
+      "sectionType": "WHY_US",
+      "title": "The Herbic Cure Promise",
+      "subtitle": "Clean, transparent, authentic ayurveda guaranteed",
+      "contentJson": "{}",
+      "displayOrder": 6,
+      "active": true,
+      "offerEndsAt": null,
+      "createdAt": "2026-10-16T05:09:06.954Z",
+      "updatedAt": "2026-10-16T05:13:12.920Z"
+    },
+    {
+      "id": "40c2d3b4-255c-4a01-860c-c6f5bebf3825",
+      "sectionType": "FAQ",
+      "title": "Frequently Asked Questions",
+      "subtitle": "Everything you need to know about our oils and rituals",
+      "contentJson": "{}",
+      "displayOrder": 7,
+      "active": true,
+      "offerEndsAt": null,
+      "createdAt": "2026-10-16T05:04:20.640Z",
+      "updatedAt": "2026-10-16T05:13:12.920Z"
+    }
+  ],
+  "customerResults": [
+    {
+      "id": "f81bd0a8-11ab-48b1-a74f-24e47b6c48e3",
+      "customerName": "Ananya S., Bengaluru",
+      "productTitle": "Herbic Cure 21 Herbs Fusion Hair Oil",
+      "beforeImage": "/images/results/result-1.png",
+      "afterImage": "/images/results/result-2.png",
+      "caption": "Parting line visibly denser and post-wash shedding stopped in 8 weeks.",
+      "displayOrder": 1,
+      "active": true,
+      "createdAt": "2026-10-13T20:48:54.525Z"
+    },
+    {
+      "id": "8ca6b4ab-05ef-499b-a098-9b09a8915c52",
+      "customerName": "Rohit K., Pune",
+      "productTitle": "21 Herbs Oil + Neem Wood Comb",
+      "beforeImage": "/images/results/result-3.png",
+      "afterImage": "/images/results/result-4.png",
+      "caption": "Receding temple corners filled in with healthy, dark baby hair in 12 weeks.",
+      "displayOrder": 2,
+      "active": true,
+      "createdAt": "2026-10-13T20:48:54.525Z"
+    }
+  ],
+  "socialPosts": [
+    {
+      "id": "0e3f602e-e083-4a1e-bf0e-290a4c800946",
+      "instagramUrl": "https://www.instagram.com/",
+      "videoUrl": null,
+      "thumbnailUrl": "/images/banners/client-1.png",
+      "caption": "Night oiling routine with Herbic Cure 21 Herbs Fusion Hair Oil. My hair feels so soft!",
+      "productTitle": "21 Herbs Fusion Hair Oil",
+      "displayOrder": 1,
+      "active": true,
+      "createdAt": "2026-10-13T20:48:55.120Z"
+    },
+    {
+      "id": "fbe62624-8baf-42bb-a963-f2f28e1f71e1",
+      "instagramUrl": "https://www.instagram.com/",
+      "videoUrl": null,
+      "thumbnailUrl": "/images/banners/client-2.png",
+      "caption": "Neem wood comb + 21 herbs oil: The easiest 5-minute hair routine that stopped my hair fall.",
+      "productTitle": "Complete Hair Therapy Kit",
+      "displayOrder": 2,
+      "active": true,
+      "createdAt": "2026-10-13T20:48:55.120Z"
+    },
+    {
+      "id": "f9edaeeb-540a-4817-8f68-021786797bc8",
+      "instagramUrl": "https://www.instagram.com/",
+      "videoUrl": null,
+      "thumbnailUrl": "/images/banners/client-3.png",
+      "caption": "12-week transformation! Look at that volume and shine without any chemicals.",
+      "productTitle": "21 Herbs Fusion Hair Oil (Twin Pack)",
+      "displayOrder": 3,
+      "active": true,
+      "createdAt": "2026-10-13T20:48:55.120Z"
+    },
+    {
+      "id": "151b7a8e-e02b-48bc-8646-be0750dad80f",
+      "instagramUrl": "https://www.instagram.com/",
+      "videoUrl": null,
+      "thumbnailUrl": "/images/banners/client-4.png",
+      "caption": "Pure botanical roots infused right inside the bottle! You can literally smell the authenticity.",
+      "productTitle": "21 Herbs Fusion Hair Oil",
+      "displayOrder": 4,
+      "active": true,
+      "createdAt": "2026-10-13T20:48:55.120Z"
+    }
+  ],
+  "blogPosts": [
+    {
+      "id": "4c8b73e5-36e7-469c-8452-9a7f300c5fe4",
+      "title": "The Science of Kshirapak Vidhi: How 21 Himalayan Herbs Reverse Hair Fall",
+      "slug": "science-of-kshirapak-vidhi-hair-fall-control",
+      "featuredImage": "/images/products/herbic-cure/herbic-cure-oil-pure-herbs-duo.jpg",
+      "excerpt": "Discover the ancient 72-hour slow-boiling ritual that locks active alkaloids from Bhringraj and Amla into a deep-penetrating elixir.",
+      "content": "<h3>What is Kshirapak Vidhi?</h3>\n<p>Kshirapak Vidhi is an esteemed Vedic pharmaceutical preparation where medicinal herbs are slow-boiled in pure cow milk and cold-pressed sesame oil until the entire moisture evaporates, leaving behind only the concentrated therapeutic essence of the botanicals.</p>\n<h3>Why Modern Mineral Oils Fail</h3>\n<p>Standard commercial hair oils contain up to 90% liquid paraffin (mineral oil), which merely coats the hair shaft in synthetic silicone wax, suffocating the dermal papilla. In contrast, Herbic Cure 21 Herbs Fusion Hair Oil is 100% natural, penetrating all three layers of the hair follicle to stimulate active root cells.</p>",
+      "author": "Dr. Meera Nambiar (BAMS, MD Ayurveda)",
+      "category": "Hair Care",
+      "tags": "Ayurveda,Hair Fall,Kshirapak Vidhi,Bhringraj",
+      "seoTitle": null,
+      "seoDescription": null,
+      "published": true,
+      "publishedAt": "2026-10-13T20:48:55.732Z",
+      "createdAt": "2026-10-13T20:48:55.732Z",
+      "updatedAt": "2026-10-13T20:48:55.732Z"
+    },
+    {
+      "id": "8f8ea31c-5a1f-4c4b-ac8c-2cf817302146",
+      "title": "Why You Must Switch from Plastic Combs to Pure Neem Wood Immediately",
+      "slug": "why-switch-to-neem-wood-combs",
+      "featuredImage": "/images/products/herbic-cure/herbic-cure-neem-wood-comb.jpg",
+      "excerpt": "How plastic combs generate static charge that tears fragile follicles, and why handcrafted Neem wood acts as a natural scalp doctor.",
+      "content": "<h3>The Hidden Cause of Brushing Hair Loss: Static Friction</h3>\n<p>When synthetic plastic or nylon combs pass through dry hair, they generate up to 2,000 volts of static micro-friction. This static pulls brittle root bulbs straight out of their follicles.</p>\n<h3>The Healing Power of Neem Wood</h3>\n<p>Herbic Cure Neem Wood Combs are carved from seasoned Margosa (Neem) timber. Each stroke distributes natural scalp lipids evenly along the shaft while depositing trace amounts of azadirachtin to keep dandruff and bacteria away.</p>",
+      "author": "Ayurvedic Wellness Team",
+      "category": "Hair Care",
+      "tags": "Neem Comb,Detangling,Anti-Static,Hair Care Rituals",
+      "seoTitle": null,
+      "seoDescription": null,
+      "published": true,
+      "publishedAt": "2026-10-13T20:48:55.732Z",
+      "createdAt": "2026-10-13T20:48:55.732Z",
+      "updatedAt": "2026-10-13T20:48:55.732Z"
+    }
+  ],
+  "faqs": [
+    {
+      "id": "4541ee8d-dabe-4eda-a4a6-243b3c8af07f",
+      "question": "How quickly can I expect to see results with Herbic Cure 21 Herbs Fusion Hair Oil?",
+      "answer": "Most customers notice a substantial reduction in hair fall and shower shedding within 14 to 21 days of consistent use (2-3 times per week). Visible baby hair regrowth around receding temples and Crown volume typically becomes noticeable between weeks 6 and 10.",
+      "category": "Usage & Results",
+      "placement": "HOMEPAGE",
+      "displayOrder": 1,
+      "active": true
+    },
+    {
+      "id": "af6136de-7f1b-444c-8c43-87eb072b8d55",
+      "question": "How often should I apply Herbic Cure 21 Herbs Fusion Hair Oil?",
+      "answer": "For optimal root strengthening, apply 2 to 3 times a week before sleeping or 1-2 hours prior to shampooing. Warm the oil gently in your palms and massage deep into the scalp using our Neem Wood Comb.",
+      "category": "Usage & Rituals",
+      "placement": "HOMEPAGE",
+      "displayOrder": 1,
+      "active": true
+    },
+    {
+      "id": "24972d92-f68e-4005-acbe-064b67ee7d75",
+      "question": "Is Herbic Cure suitable for oily scalps or color-treated hair?",
+      "answer": "Yes! Herbic Cure 21 Herbs Fusion Hair Oil is lightweight, non-sticky, and 100% free from mineral oil or artificial colorants. It will not strip or alter chemical hair color, and its antimicrobial herbs naturally regulate excess scalp sebum.",
+      "category": "Product Suitability",
+      "placement": "HOMEPAGE",
+      "displayOrder": 2,
+      "active": true
+    },
+    {
+      "id": "f3a17f78-6e76-4b31-b208-c6d8611070c2",
+      "question": "How quickly can I expect to see visible results?",
+      "answer": "Most customers notice a substantial reduction in hair fall and shower shedding within 14 to 21 days of consistent use (2-3 times per week). Visible baby hair regrowth around receding temples and Crown volume typically becomes noticeable between weeks 6 and 10.",
+      "category": "Usage & Results",
+      "placement": "HOMEPAGE",
+      "displayOrder": 2,
+      "active": true
+    },
+    {
+      "id": "12470ae5-086b-4013-b366-5df6cf0036df",
+      "question": "Can I leave the oil on overnight?",
+      "answer": "Yes, leaving Herbic Cure overnight is highly recommended for intensive hair therapy. The therapeutic botanicals like Jatamansi and Brahmi also calm the nervous system and promote peaceful, deep sleep.",
+      "category": "Application Rituals",
+      "placement": "HOMEPAGE",
+      "displayOrder": 3,
+      "active": false
+    },
+    {
+      "id": "ccbad66d-8329-4f66-a6be-fe2dfeb8a5c2",
+      "question": "Is Herbic Cure suitable for both men and women?",
+      "answer": "Yes! Our 100% Ayurvedic formulation contains 21 medicinal herbs (Bhringraj, Brahmi, Amla, Jatamansi, Neem) designed to address DHT-induced hair fall, receding hairline, dandruff, and split ends for all hair types and genders.",
+      "category": "Product Suitability",
+      "placement": "HOMEPAGE",
+      "displayOrder": 3,
+      "active": true
+    },
+    {
+      "id": "825991b8-5d7d-4852-9896-9fa57a9ab70c",
+      "question": "Do you offer Cash on Delivery (COD) across India?",
+      "answer": "Yes! We offer Cash on Delivery (COD) to over 26,000 pin codes across India. You can also pay online via UPI (Google Pay, PhonePe, Paytm) or Cards for express same-day dispatch.",
+      "category": "Shipping & Payment",
+      "placement": "HOMEPAGE",
+      "displayOrder": 4,
+      "active": false
+    },
+    {
+      "id": "35e53ae1-b69c-4c76-906e-818d7d5cc261",
+      "question": "Does the Shampoo contain Sulfates, Parabens, or Artificial Colors?",
+      "answer": "Zero chemicals, zero mineral oils, zero silicones, zero artificial dyes. Herbic Cure Shampoo with Conditioner is formulated with plant-derived surfactants and enriched with Argan Oil and Shea Butter for gentle clarifying without stripping natural moisture.",
+      "category": "Ingredients & Safety",
+      "placement": "HOMEPAGE",
+      "displayOrder": 4,
+      "active": false
+    },
+    {
+      "id": "822d249d-9175-4bfa-87e7-f9987297dbd1",
+      "question": "How do I reach Ayurvedic customer support for personal guidance?",
+      "answer": "You can directly message our Ayurvedic hair wellness specialists on WhatsApp at +91 8121961219 (Monday through Saturday, 9 AM to 7 PM IST).",
+      "category": "Support",
+      "placement": "HOMEPAGE",
+      "displayOrder": 5,
+      "active": false
+    }
+  ],
+  "siteSettings": [
+    {
+      "id": "dd6eba0e-dd4b-4d7f-8fea-0f9ba578d096",
+      "key": "brand_name",
+      "value": "Herbic Cure",
+      "updatedAt": "2026-10-13T20:48:29.916Z"
+    },
+    {
+      "id": "f4bd6410-292e-4b01-972c-0dd2d99590a5",
+      "key": "site_title",
+      "value": "Herbic Cure | 21 Herbs Fusion Hair Oil & Ayurvedic Hair Wellness",
+      "updatedAt": "2026-10-13T20:48:30.211Z"
+    },
+    {
+      "id": "1f3dccdb-1e0f-4abd-8964-fb5a648957b7",
+      "key": "meta_description",
+      "value": "Herbic Cure - Nature in Every Drop. 100% Herbal 21 Herbs Fusion Hair Oil, Shampoo with Conditioner, and Handcrafted Neem Wood Combs for hair fall control and rapid hair growth.",
+      "updatedAt": "2026-10-13T20:48:30.361Z"
+    },
+    {
+      "id": "f7fa15af-520c-42c1-83c5-c9704ebf5f4b",
+      "key": "logo_url",
+      "value": "/images/banners/herbic-cure-logo.png",
+      "updatedAt": "2026-10-13T20:48:30.509Z"
+    },
+    {
+      "id": "1924afb1-c7f5-4927-a6e6-6f0790742755",
+      "key": "whatsapp_number",
+      "value": "918121961219",
+      "updatedAt": "2026-10-13T20:48:30.658Z"
+    },
+    {
+      "id": "85233e34-9c71-48c3-bdc9-d8339b8fe76f",
+      "key": "contact_email",
+      "value": "care@herbiccure.com",
+      "updatedAt": "2026-10-13T20:48:30.872Z"
+    },
+    {
+      "id": "f1c82de2-f5e8-47d1-9dca-a4c3f7308e8b",
+      "key": "contact_phone",
+      "value": "+91 8121961219",
+      "updatedAt": "2026-10-13T20:48:31.033Z"
+    },
+    {
+      "id": "633b5cf2-01e9-419d-83b5-8eeabdef0771",
+      "key": "address",
+      "value": "Herbic Cure Ayurvedic Naturals, Plot 45, Jubilee Enclave, HITEC City, Hyderabad, Telangana 500081",
+      "updatedAt": "2026-10-13T20:48:31.199Z"
+    },
+    {
+      "id": "e6448e27-ca3d-4a14-9e9d-2bdf53bec547",
+      "key": "free_shipping_threshold",
+      "value": "499",
+      "updatedAt": "2026-10-13T20:48:31.350Z"
+    },
+    {
+      "id": "59ded8bc-5406-4c90-9bda-7ff5af521611",
+      "key": "standard_shipping_fee",
+      "value": "49",
+      "updatedAt": "2026-10-13T20:48:31.499Z"
+    },
+    {
+      "id": "f2274d93-6a66-44ab-8c92-e53b1404bf40",
+      "key": "cod_available",
+      "value": "true",
+      "updatedAt": "2026-10-13T20:48:31.647Z"
+    },
+    {
+      "id": "6c5e3fed-952f-47c1-a195-b301db497eb5",
+      "key": "razorpay_enabled",
+      "value": "true",
+      "updatedAt": "2026-10-13T20:48:31.799Z"
+    },
+    {
+      "id": "11ea5e88-eccd-4578-8d34-cfe1985a4b96",
+      "key": "announcements",
+      "value": "[\"🌿 Herbic Cure: Nature in Every Drop • 100% Herbal 21 Herbs Fusion Hair Oil\",\"🚚 Free Express Shipping across India on orders above ₹499\",\"✨ Flat 50% Off Introductory Offer — Cash on Delivery Available\",\"💬 Instant WhatsApp Ayurvedic Consultation: +91 8121961219\"]",
+      "updatedAt": "2026-10-13T20:48:31.952Z"
+    }
+  ],
+  "contactSubmissions": [],
+  "newsletterSubscribers": [],
+  "ingredients": [
+    {
+      "id": "e86b3ea2-804e-44b0-b767-80ef26efc27e",
+      "name": "Bhringraj",
+      "slug": "bhringraj",
+      "image": "/images/ingredients/bhringraj.png",
+      "shortDescription": "Keshraj (King of Hair) • Primary Activator",
+      "fullDescription": "Ancient Ayurvedic herb celebrated for activating micro-circulation in the scalp, reviving dormant hair follicles, and arresting premature greying.",
+      "benefits": "Stimulates root micro-circulation, stops acute shedding, deepens natural hair color.",
+      "displayOrder": 1,
+      "active": true
+    },
+    {
+      "id": "a86a4c72-fa94-4685-94eb-635500b80bad",
+      "name": "Amla",
+      "slug": "amla",
+      "image": "/images/ingredients/amla.png",
+      "shortDescription": "Amalaki • Vitamin C Antioxidant",
+      "fullDescription": "Loaded with bio-available Vitamin C and essential fatty acids, Amla fortifies the hair cortex and prevents oxidative follicle damage.",
+      "benefits": "Strengthens hair shafts, eliminates split ends, boosts melanin production.",
+      "displayOrder": 2,
+      "active": true
+    },
+    {
+      "id": "923c37ff-81ef-40e7-ba76-158173fb4637",
+      "name": "Brahmi",
+      "slug": "brahmi",
+      "image": "/images/ingredients/brahmi.png",
+      "shortDescription": "Bacopa Monnieri • Stress Reliever & Scalp Calmer",
+      "fullDescription": "Calms the nervous system, alleviates hair loss caused by psychological stress, and supplies vital alkaloids directly to hair roots.",
+      "benefits": "Reduces cortisol-triggered hair fall, cools burning scalp, coats roots with protective sheen.",
+      "displayOrder": 3,
+      "active": true
+    },
+    {
+      "id": "1a82d35e-c272-4c7d-9315-dcfc812c0c8f",
+      "name": "Hibiscus",
+      "slug": "hibiscus",
+      "image": "/images/ingredients/hibiscus.png",
+      "shortDescription": "Japa Pushpa • Keratin Builder & Volume Enhancer",
+      "fullDescription": "Rich in natural amino acids and mucilage, Hibiscus stimulates keratin protein synthesis for thick, bouncy, lustrous hair strands.",
+      "benefits": "Increases hair thickness, conditions dry brittle ends, prevents premature shedding.",
+      "displayOrder": 4,
+      "active": true
+    },
+    {
+      "id": "373e6671-23d2-49d4-b7df-65d96ba7ea9d",
+      "name": "Fenugreek",
+      "slug": "fenugreek",
+      "image": "/images/ingredients/fenugreek.png",
+      "shortDescription": "Methi • Anti-Dandruff & Follicle Rebuilder",
+      "fullDescription": "Abundant in nicotinic acid and lecithin, fenugreek cleanses scalp buildup, eradicates stubborn dandruff, and rebuilds damaged hair follicles.",
+      "benefits": "Clears dandruff flakes, moisturizes dry scalp, boosts hair shaft tensile strength.",
+      "displayOrder": 5,
+      "active": true
+    },
+    {
+      "id": "0d0e4932-7bb7-4d16-a106-f33a04c01f15",
+      "name": "Neem",
+      "slug": "neem",
+      "image": "/images/ingredients/neem.png",
+      "shortDescription": "Nimba • Antimicrobial Scalp Shield",
+      "fullDescription": "Powerful antibacterial and antifungal shield that purifies the scalp biome, soothes itching, and maintains healthy sebum balance.",
+      "benefits": "Eliminates fungal dandruff, soothes scalp inflammation, prevents lice and microbes.",
+      "displayOrder": 6,
+      "active": true
+    },
+    {
+      "id": "c6e47e4f-04d8-4d0d-91d0-92fce496d825",
+      "name": "Rosemary",
+      "slug": "rosemary",
+      "image": "/images/ingredients/rosemary.png",
+      "shortDescription": "Rusmari • DHT Blocker & Regrowth Stimulator",
+      "fullDescription": "Clinically benchmarked against minoxidil in peer-reviewed studies for stimulating cellular regrowth and curbing androgenetic follicle shrinking.",
+      "benefits": "Blocks scalp DHT receptors, encourages new baby hair growth, improves hair density.",
+      "displayOrder": 7,
+      "active": true
+    },
+    {
+      "id": "23e5ffe9-2759-4562-91df-67f0b0106b55",
+      "name": "Jatamansi",
+      "slug": "jatamansi",
+      "image": "/images/ingredients/jatamansi.png",
+      "shortDescription": "Spikenard • Anagen Phase Extender",
+      "fullDescription": "Himalayan root renowned for extending the anagen (growth) cycle of hair, allowing hair to grow significantly longer without shedding.",
+      "benefits": "Lengthens anagen phase, calms mental stress, promotes deep restful sleep when applied at night.",
+      "displayOrder": 8,
+      "active": true
+    },
+    {
+      "id": "fb513351-5fa1-43d7-b154-d186dbe43cd6",
+      "name": "Shikakai",
+      "slug": "shikakai",
+      "image": "/images/ingredients/shikakai.png",
+      "shortDescription": "Fruit for Hair • Natural Cleanser & Detangler",
+      "fullDescription": "Low-pH fruit rich in vitamins A, D, E, and K that gently detangles hair and conditions roots without stripping natural oils.",
+      "benefits": "Natural silky detangling, maintains scalp pH 5.5, prevents frizz and dryness.",
+      "displayOrder": 9,
+      "active": true
+    },
+    {
+      "id": "04029732-859b-478b-91c8-97292f584f55",
+      "name": "Nagarmotha",
+      "slug": "nagarmotha",
+      "image": "/images/ingredients/nagarmotha.png",
+      "shortDescription": "Nut Grass Root • Sebum Controller",
+      "fullDescription": "Traditional root that decongests clogged sebum pores and regulates oily scalp conditions without drying out hair ends.",
+      "benefits": "Unclogs hair follicles, balances oiliness, imparts rich woody fragrance.",
+      "displayOrder": 10,
+      "active": true
+    },
+    {
+      "id": "6403da72-562c-433a-9301-033efb5c4cea",
+      "name": "Aloe Vera",
+      "slug": "aloe-vera",
+      "image": "/images/ingredients/aloe-vera.png",
+      "shortDescription": "Ghritkumari • Hydration Reservoir",
+      "fullDescription": "Supplies proteolytic enzymes that dissolve dead skin cells on the scalp while locking deep moisture into dry hair strands.",
+      "benefits": "Intense moisture lock, repairs dead cuticle cells, calms itchy scalp.",
+      "displayOrder": 11,
+      "active": true
+    },
+    {
+      "id": "b622fcca-fb04-45be-888a-f4d7f289c463",
+      "name": "Castor Seed Oil",
+      "slug": "castor-seed-oil",
+      "image": "/images/ingredients/castor-seed-oil.png",
+      "shortDescription": "Eranda Taila • Density & Thickness Booster",
+      "fullDescription": "Packed with ricinoleic acid and omega-6 fatty acids, cold-pressed castor creates a barrier that prevents breakage and promotes thick regrowth.",
+      "benefits": "Thickens sparse hairline, reinforces shaft elasticity, seals moisture.",
+      "displayOrder": 12,
+      "active": true
+    },
+    {
+      "id": "eea7d530-a35a-481e-8a84-068551614135",
+      "name": "Gunja",
+      "slug": "gunja",
+      "image": "/images/ingredients/gunja.png",
+      "shortDescription": "Ratti Seeds • Alopecia Fighter",
+      "fullDescription": "Potent Ayurvedic seeds traditionally boiled in herbal oils to combat patchy bald spots (Indralupta/Alopecia Areata).",
+      "benefits": "Targets stubborn patchy thinning, activates dormant hair papilla.",
+      "displayOrder": 13,
+      "active": true
+    },
+    {
+      "id": "aada809f-dac5-4272-8682-9b8797583425",
+      "name": "Lodhra",
+      "slug": "lodhra",
+      "image": "/images/ingredients/lodhra.png",
+      "shortDescription": "Symplocos Bark • Follicle Tightener",
+      "fullDescription": "Natural astringent bark that firms up the scalp tissue, tightening loose hair roots and drastically reducing shedding during brushing.",
+      "benefits": "Tightens loose hair roots, reduces brush shedding, soothes scalp heat.",
+      "displayOrder": 14,
+      "active": true
+    },
+    {
+      "id": "d48e6eef-5cc8-4c98-bc77-adb03be16d5f",
+      "name": "Manjistha",
+      "slug": "manjistha",
+      "image": "/images/ingredients/manjistha.png",
+      "shortDescription": "Indian Madder • Blood Purifier & Scalp Detox",
+      "fullDescription": "Flushes metabolic waste and toxins out of the dermal papilla, enhancing pure oxygen and nutrient supply to hair roots.",
+      "benefits": "Deep follicle detoxification, improves blood micro-circulation, imparts healthy shine.",
+      "displayOrder": 15,
+      "active": true
+    },
+    {
+      "id": "53518f9a-2447-41a7-a1d6-60f08408cbab",
+      "name": "Kalonji (Black Seed)",
+      "slug": "kalonji-black-seed",
+      "image": "/images/ingredients/kalonji-black-seed.png",
+      "shortDescription": "Upakunchika • Thymoquinone Super-Nutrient",
+      "fullDescription": "Contains concentrated thymoquinone to nourish weakened follicles, combat autoimmune thinning, and smooth rough cuticles.",
+      "benefits": "Revitalizes brittle hair, combats premature greying, restores silky softness.",
+      "displayOrder": 16,
+      "active": true
+    },
+    {
+      "id": "b594cd3a-aa8b-42a8-9707-caee4137e3cf",
+      "name": "Camphor",
+      "slug": "camphor",
+      "image": "/images/ingredients/camphor.png",
+      "shortDescription": "Karpura • Cooling Circulation Catalyst",
+      "fullDescription": "Stimulates sensory nerve endings with an invigorating tingling cooling sensation that triggers instant blood rush to the roots.",
+      "benefits": "Instant cooling relief, boosts nutrient flow, prevents scalp itching.",
+      "displayOrder": 17,
+      "active": true
+    },
+    {
+      "id": "bf388870-70c1-41e0-9d4f-9d73e0f0abc9",
+      "name": "Tulsi",
+      "slug": "tulsi",
+      "image": "/images/ingredients/tulsi.png",
+      "shortDescription": "Holy Basil • Scalp Detox & Immunity",
+      "fullDescription": "Antibacterial adaptogen that keeps the scalp microbiome healthy and resilient against environmental pollution and hard water damage.",
+      "benefits": "Protects from pollution, maintains scalp hydration, reduces scalp tenderness.",
+      "displayOrder": 18,
+      "active": true
+    },
+    {
+      "id": "c0292e77-8a3a-4fc0-acc6-9fb7fe75d736",
+      "name": "Curry Leaves",
+      "slug": "curry-leaves",
+      "image": "/images/ingredients/curry-leaves.png",
+      "shortDescription": "Kaidarya • Beta-Carotene Powerhouse",
+      "fullDescription": "Rich in beta-carotene and essential proteins that strengthen the cellular fiber of each strand, preventing breakage and premature greying.",
+      "benefits": "Restores natural dark pigment, repairs damaged cuticle scales, reduces thinning.",
+      "displayOrder": 19,
+      "active": true
+    },
+    {
+      "id": "eb13b5d3-35aa-4ef9-b0c0-3627fa557d2a",
+      "name": "Cold-Pressed Sesame Oil",
+      "slug": "cold-pressed-sesame-oil",
+      "image": "/images/ingredients/cold-pressed-sesame-oil.png",
+      "shortDescription": "Tila Taila • Deep-Penetrating Ayurvedic Carrier",
+      "fullDescription": "The premier Ayurvedic base oil capable of carrying herb nutrients deep into the third dermal layer without feeling greasy.",
+      "benefits": "Deep cellular absorption, natural UV protectant, nourishing lipid base.",
+      "displayOrder": 20,
+      "active": true
+    },
+    {
+      "id": "b19ff670-cb7e-467d-904c-a792ca2b9fdd",
+      "name": "Virgin Coconut Oil",
+      "slug": "virgin-coconut-oil",
+      "image": "/images/ingredients/virgin-coconut-oil.png",
+      "shortDescription": "Narikela Taila • Lauric Acid Moisture Sealant",
+      "fullDescription": "High-affinity lauric acid easily binds with hair keratin protein, preventing protein loss and keeping locks deeply hydrated.",
+      "benefits": "Prevents protein loss, seals split ends, provides brilliant glossy finish.",
+      "displayOrder": 21,
+      "active": true
+    }
+  ],
+  "productImages": [
+    {
+      "id": "e880227a-bb2c-4da9-b5b9-814e1d5996a7",
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-q1-main.jpg",
+      "alt": "Herbic Cure 21 Herbs Fusion Hair Oil 190ml Bottle",
+      "displayOrder": 1,
+      "isThumbnail": true
+    },
+    {
+      "id": "19c03690-c874-443b-8c77-a01a07f5b988",
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-root-to-tip.jpg",
+      "alt": "Herbic Cure Care from Root to Tip",
+      "displayOrder": 2,
+      "isThumbnail": false
+    },
+    {
+      "id": "9dfcfa43-0f87-4dc0-a736-897c4a1b8787",
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-infused-roots.jpg",
+      "alt": "Herbic Cure Transparent Infused Herbs Bottle",
+      "displayOrder": 3,
+      "isThumbnail": false
+    },
+    {
+      "id": "035f6180-d106-48c8-9326-65e60ef4f323",
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-vs-local-comparison.jpg",
+      "alt": "Herbic Cure vs Local Brand Oil Comparison",
+      "displayOrder": 4,
+      "isThumbnail": false
+    },
+    {
+      "id": "3ac7b22d-7c07-4524-896d-96ffa19d5bc0",
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "url": "/images/products/herbic-cure/herbic-cure-how-to-use-guide.jpg",
+      "alt": "How to Use Herbic Cure 21 Herbs Oil",
+      "displayOrder": 5,
+      "isThumbnail": false
+    },
+    {
+      "id": "1238260a-3159-4294-93fb-be6e991fc8ee",
+      "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-q2-duo.jpg",
+      "alt": "Herbic Cure 21 Herbs Oil Twin Pack (Q2)",
+      "displayOrder": 1,
+      "isThumbnail": true
+    },
+    {
+      "id": "ac396f7d-9824-493b-b94c-8d7e99301073",
+      "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-pure-herbs-duo.jpg",
+      "alt": "Herbic Cure Pure Herbs for Stronger Hair",
+      "displayOrder": 2,
+      "isThumbnail": false
+    },
+    {
+      "id": "a3c6378a-677c-4949-9861-f4099ee345c2",
+      "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-vs-local-comparison.jpg",
+      "alt": "Comparison Infographic",
+      "displayOrder": 3,
+      "isThumbnail": false
+    },
+    {
+      "id": "240cf1a3-2954-43a8-b6a8-2444bdcc6497",
+      "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "url": "/images/products/herbic-cure/herbic-cure-how-to-use-guide.jpg",
+      "alt": "How to use Herbic Cure",
+      "displayOrder": 4,
+      "isThumbnail": false
+    },
+    {
+      "id": "35c489e6-d2f0-4859-a843-b2fcb67c6363",
+      "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-q3-trio.jpg",
+      "alt": "Herbic Cure 21 Herbs Oil Trio Pack (Q3)",
+      "displayOrder": 1,
+      "isThumbnail": true
+    },
+    {
+      "id": "f72b205a-1311-4d60-95cd-2b0e0ebcc52d",
+      "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-q1-main.jpg",
+      "alt": "Herbic Cure Single Bottle Detail",
+      "displayOrder": 2,
+      "isThumbnail": false
+    },
+    {
+      "id": "196aee71-9537-4942-9231-659342ce676a",
+      "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-vs-local-comparison.jpg",
+      "alt": "Comparison Infographic",
+      "displayOrder": 3,
+      "isThumbnail": false
+    },
+    {
+      "id": "c08961e7-3fbf-40d5-bd62-6ad7e393d19d",
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-neem-comb-combo.jpg",
+      "alt": "Herbic Cure 21 Herbs Oil + Natural Neem Wood Comb",
+      "displayOrder": 1,
+      "isThumbnail": true
+    },
+    {
+      "id": "f2f633e7-4d1c-46c5-a6db-635b4a6a9c5e",
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "url": "/images/products/herbic-cure/herbic-cure-neem-wood-comb.jpg",
+      "alt": "Handcrafted Neem Wood Comb Detail",
+      "displayOrder": 2,
+      "isThumbnail": false
+    },
+    {
+      "id": "3171943c-934e-4544-b99f-9014a977532c",
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-q1-main.jpg",
+      "alt": "Herbic Cure Oil Bottle",
+      "displayOrder": 3,
+      "isThumbnail": false
+    },
+    {
+      "id": "2643a5b8-1a27-45c9-beae-031a369d9609",
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "url": "/images/products/herbic-cure/herbic-cure-how-to-use-guide.jpg",
+      "alt": "How to use guide",
+      "displayOrder": 4,
+      "isThumbnail": false
+    },
+    {
+      "id": "284630ae-82a5-46d7-b77f-4921805ac0b9",
+      "productId": "d1429cb0-73fd-42f7-a6c7-db9f1bc30c1a",
+      "url": "/images/products/herbic-cure/herbic-cure-neem-wood-comb.jpg",
+      "alt": "Herbic Cure Natural Neem Wood Comb",
+      "displayOrder": 1,
+      "isThumbnail": true
+    },
+    {
+      "id": "c1b0534e-d48a-452d-989f-429f3ca91193",
+      "productId": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+      "url": "/images/products/herbic-cure/herbic-cure-shampoo-main.jpg",
+      "alt": "Herbic Cure Daily Cleansing Shampoo with Conditioner 200ml Bottle",
+      "displayOrder": 1,
+      "isThumbnail": true
+    },
+    {
+      "id": "4b5e43e6-60f8-45d8-b0bd-52bbd035de14",
+      "productId": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+      "url": "/images/products/herbic-cure/herbic-cure-shampoo-hero-benefits.jpg",
+      "alt": "Herbic Cure Shampoo Cleanse Nourish Refresh Benefits",
+      "displayOrder": 2,
+      "isThumbnail": false
+    },
+    {
+      "id": "ae06f4a5-e7d5-4e08-909f-a23d4ba61fc7",
+      "productId": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+      "url": "/images/products/herbic-cure/herbic-cure-shampoo-ingredients.jpg",
+      "alt": "Power of Natural Ingredients: Neem, Tulsi, Argan Oil, Shea Butter",
+      "displayOrder": 3,
+      "isThumbnail": false
+    },
+    {
+      "id": "d9224853-3777-44a0-ab91-a4c348cc06af",
+      "productId": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+      "url": "/images/products/herbic-cure/herbic-cure-shampoo-how-to-use.jpg",
+      "alt": "How to Use Herbic Cure Shampoo with Conditioner",
+      "displayOrder": 4,
+      "isThumbnail": false
+    },
+    {
+      "id": "af2e2553-1f01-4207-8ac1-a8679bfdfec6",
+      "productId": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+      "url": "/images/products/herbic-cure/herbic-cure-shampoo-why-choose.jpg",
+      "alt": "Why Choose Herbic Cure Shampoo - Sulfate & Paraben Free",
+      "displayOrder": 5,
+      "isThumbnail": false
+    },
+    {
+      "id": "61b115f6-2075-4afd-830c-4127b9d1ea3d",
+      "productId": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+      "url": "/images/products/herbic-cure/herbic-cure-shampoo-healthy-hair.jpg",
+      "alt": "Healthy Scalp, Naturally Beautiful Hair",
+      "displayOrder": 6,
+      "isThumbnail": false
+    },
+    {
+      "id": "d0e65bc1-ab4f-4c62-b72e-a3f63dc7a151",
+      "productId": "06817469-062d-48c6-bbee-51dc507be79e",
+      "url": "/images/products/herbic-cure/herbic-cure-shampoo-hero-benefits.jpg",
+      "alt": "Herbic Cure Shampoo Duo Pack (Q2)",
+      "displayOrder": 1,
+      "isThumbnail": true
+    },
+    {
+      "id": "31a4c7d9-55d5-4116-b2a0-58e8923f93c6",
+      "productId": "06817469-062d-48c6-bbee-51dc507be79e",
+      "url": "/images/products/herbic-cure/herbic-cure-shampoo-main.jpg",
+      "alt": "Herbic Cure Shampoo 200ml Bottle",
+      "displayOrder": 2,
+      "isThumbnail": false
+    },
+    {
+      "id": "668ec9d0-427e-49b0-9472-09e3d3be8eb6",
+      "productId": "06817469-062d-48c6-bbee-51dc507be79e",
+      "url": "/images/products/herbic-cure/herbic-cure-shampoo-why-choose.jpg",
+      "alt": "Herbic Cure Shampoo Quality Features",
+      "displayOrder": 3,
+      "isThumbnail": false
+    },
+    {
+      "id": "ce0e1c0e-4ed4-4f4b-868c-141554b212a4",
+      "productId": "06817469-062d-48c6-bbee-51dc507be79e",
+      "url": "/images/products/herbic-cure/herbic-cure-shampoo-ingredients.jpg",
+      "alt": "Natural Botanical Actives",
+      "displayOrder": 4,
+      "isThumbnail": false
+    },
+    {
+      "id": "a1a6fc8a-163d-4381-adfb-76fb7e055c43",
+      "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-shampoo-combo.jpg",
+      "alt": "Herbic Cure 21 Herbs Hair Oil + Shampoo with Conditioner Duo",
+      "displayOrder": 1,
+      "isThumbnail": true
+    },
+    {
+      "id": "447f61ca-82f7-4003-a628-19dfd4936eab",
+      "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-shampoo-benefits.jpg",
+      "alt": "Complete Hair Care Duo - Nourish, Cleanse, Strengthen Infographic",
+      "displayOrder": 2,
+      "isThumbnail": false
+    },
+    {
+      "id": "eb1a80ac-75f8-4901-b148-7ca9a8415501",
+      "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-q1-main.jpg",
+      "alt": "Herbic Cure 21 Herbs Fusion Hair Oil Bottle",
+      "displayOrder": 3,
+      "isThumbnail": false
+    },
+    {
+      "id": "39417519-45f8-4651-ae98-991898e2fcbb",
+      "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "url": "/images/products/herbic-cure/herbic-cure-shampoo-main.jpg",
+      "alt": "Herbic Cure Shampoo with Conditioner Bottle",
+      "displayOrder": 4,
+      "isThumbnail": false
+    },
+    {
+      "id": "e648c7af-23bd-4514-8eaa-fd88978a856e",
+      "productId": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-shampoo-combo.jpg",
+      "alt": "Herbic Cure Complete Hair Therapy Kit",
+      "displayOrder": 1,
+      "isThumbnail": true
+    },
+    {
+      "id": "4cf39a91-6749-4684-8ae1-f80034360c85",
+      "productId": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-shampoo-benefits.jpg",
+      "alt": "Complete Hair Care Benefits Guide",
+      "displayOrder": 2,
+      "isThumbnail": false
+    },
+    {
+      "id": "b6cdb1f5-349a-415c-9bc0-4e37a914c868",
+      "productId": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+      "url": "/images/products/herbic-cure/herbic-cure-oil-neem-comb-combo.jpg",
+      "alt": "Oil & Comb Close-up",
+      "displayOrder": 3,
+      "isThumbnail": false
+    },
+    {
+      "id": "2f851aaa-a781-4e3d-8a9a-49e56d32cd48",
+      "productId": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+      "url": "/images/products/herbic-cure/herbic-cure-neem-wood-comb.jpg",
+      "alt": "Natural Neem Wood Comb",
+      "displayOrder": 4,
+      "isThumbnail": false
+    }
+  ],
+  "productCollections": [
+    {
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "collectionId": "93c53771-7279-4f30-8be4-7257abe60309"
+    },
+    {
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "collectionId": "d539e493-2de9-41ea-8c14-a3f36f4b9a51"
+    },
+    {
+      "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "collectionId": "93c53771-7279-4f30-8be4-7257abe60309"
+    },
+    {
+      "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "collectionId": "d539e493-2de9-41ea-8c14-a3f36f4b9a51"
+    },
+    {
+      "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "collectionId": "0a8d02d3-c6b8-4e1b-953d-b3134e84950a"
+    },
+    {
+      "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+      "collectionId": "d539e493-2de9-41ea-8c14-a3f36f4b9a51"
+    },
+    {
+      "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+      "collectionId": "0a8d02d3-c6b8-4e1b-953d-b3134e84950a"
+    },
+    {
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "collectionId": "93c53771-7279-4f30-8be4-7257abe60309"
+    },
+    {
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "collectionId": "0a8d02d3-c6b8-4e1b-953d-b3134e84950a"
+    },
+    {
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "collectionId": "c9f36bf1-115f-4792-9b23-4c646e3d478e"
+    },
+    {
+      "productId": "d1429cb0-73fd-42f7-a6c7-db9f1bc30c1a",
+      "collectionId": "c9f36bf1-115f-4792-9b23-4c646e3d478e"
+    },
+    {
+      "productId": "e245ce5a-72b5-4ac3-93d4-3e72439321b4",
+      "collectionId": "93c53771-7279-4f30-8be4-7257abe60309"
+    },
+    {
+      "productId": "06817469-062d-48c6-bbee-51dc507be79e",
+      "collectionId": "0a8d02d3-c6b8-4e1b-953d-b3134e84950a"
+    },
+    {
+      "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "collectionId": "93c53771-7279-4f30-8be4-7257abe60309"
+    },
+    {
+      "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "collectionId": "0a8d02d3-c6b8-4e1b-953d-b3134e84950a"
+    },
+    {
+      "productId": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+      "collectionId": "93c53771-7279-4f30-8be4-7257abe60309"
+    },
+    {
+      "productId": "6b4f92ca-03bf-4b74-be98-df23123b9419",
+      "collectionId": "0a8d02d3-c6b8-4e1b-953d-b3134e84950a"
+    }
+  ],
+  "productIngredients": [
+    {
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "ingredientId": "e86b3ea2-804e-44b0-b767-80ef26efc27e"
+    },
+    {
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "ingredientId": "a86a4c72-fa94-4685-94eb-635500b80bad"
+    },
+    {
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "ingredientId": "923c37ff-81ef-40e7-ba76-158173fb4637"
+    },
+    {
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "ingredientId": "1a82d35e-c272-4c7d-9315-dcfc812c0c8f"
+    },
+    {
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "ingredientId": "373e6671-23d2-49d4-b7df-65d96ba7ea9d"
+    },
+    {
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "ingredientId": "0d0e4932-7bb7-4d16-a106-f33a04c01f15"
+    },
+    {
+      "productId": "d27be197-5ad6-437c-abaf-763a87247619",
+      "ingredientId": "c6e47e4f-04d8-4d0d-91d0-92fce496d825"
+    },
+    {
+      "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "ingredientId": "e86b3ea2-804e-44b0-b767-80ef26efc27e"
+    },
+    {
+      "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "ingredientId": "a86a4c72-fa94-4685-94eb-635500b80bad"
+    },
+    {
+      "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "ingredientId": "923c37ff-81ef-40e7-ba76-158173fb4637"
+    },
+    {
+      "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "ingredientId": "1a82d35e-c272-4c7d-9315-dcfc812c0c8f"
+    },
+    {
+      "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "ingredientId": "373e6671-23d2-49d4-b7df-65d96ba7ea9d"
+    },
+    {
+      "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "ingredientId": "0d0e4932-7bb7-4d16-a106-f33a04c01f15"
+    },
+    {
+      "productId": "7d35ec93-12f8-4d47-9b56-e797f8693837",
+      "ingredientId": "c6e47e4f-04d8-4d0d-91d0-92fce496d825"
+    },
+    {
+      "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+      "ingredientId": "e86b3ea2-804e-44b0-b767-80ef26efc27e"
+    },
+    {
+      "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+      "ingredientId": "a86a4c72-fa94-4685-94eb-635500b80bad"
+    },
+    {
+      "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+      "ingredientId": "923c37ff-81ef-40e7-ba76-158173fb4637"
+    },
+    {
+      "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+      "ingredientId": "1a82d35e-c272-4c7d-9315-dcfc812c0c8f"
+    },
+    {
+      "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+      "ingredientId": "373e6671-23d2-49d4-b7df-65d96ba7ea9d"
+    },
+    {
+      "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+      "ingredientId": "0d0e4932-7bb7-4d16-a106-f33a04c01f15"
+    },
+    {
+      "productId": "f94f93e6-d209-40e8-8751-5d52d438824a",
+      "ingredientId": "c6e47e4f-04d8-4d0d-91d0-92fce496d825"
+    },
+    {
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "ingredientId": "e86b3ea2-804e-44b0-b767-80ef26efc27e"
+    },
+    {
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "ingredientId": "a86a4c72-fa94-4685-94eb-635500b80bad"
+    },
+    {
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "ingredientId": "923c37ff-81ef-40e7-ba76-158173fb4637"
+    },
+    {
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "ingredientId": "1a82d35e-c272-4c7d-9315-dcfc812c0c8f"
+    },
+    {
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "ingredientId": "373e6671-23d2-49d4-b7df-65d96ba7ea9d"
+    },
+    {
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "ingredientId": "0d0e4932-7bb7-4d16-a106-f33a04c01f15"
+    },
+    {
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "ingredientId": "c6e47e4f-04d8-4d0d-91d0-92fce496d825"
+    },
+    {
+      "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "ingredientId": "e86b3ea2-804e-44b0-b767-80ef26efc27e"
+    },
+    {
+      "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "ingredientId": "a86a4c72-fa94-4685-94eb-635500b80bad"
+    },
+    {
+      "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "ingredientId": "923c37ff-81ef-40e7-ba76-158173fb4637"
+    },
+    {
+      "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "ingredientId": "1a82d35e-c272-4c7d-9315-dcfc812c0c8f"
+    },
+    {
+      "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "ingredientId": "373e6671-23d2-49d4-b7df-65d96ba7ea9d"
+    },
+    {
+      "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "ingredientId": "0d0e4932-7bb7-4d16-a106-f33a04c01f15"
+    },
+    {
+      "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "ingredientId": "c6e47e4f-04d8-4d0d-91d0-92fce496d825"
+    }
+  ],
+  "addresses": [
+    {
+      "id": "02ea681a-29ee-4021-901c-663817498087",
+      "userId": null,
+      "customerId": "7ab7465d-f928-4ffe-bf70-0f5a65def108",
+      "name": "Priya Sharma",
+      "phone": "+91 8121961219",
+      "addressLine1": "Flat 402, Green Valley Apartments",
+      "addressLine2": "Road No. 12, Banjara Hills",
+      "city": "Hyderabad",
+      "state": "Telangana",
+      "pinCode": "500034",
+      "country": "India",
+      "isDefault": true,
+      "createdAt": "2026-10-13T20:48:28.611Z",
+      "updatedAt": "2026-10-13T20:48:28.611Z"
+    }
+  ],
+  "orderItems": [
+    {
+      "id": "75b61a0d-0fe2-4d22-b35e-1f380adde185",
+      "orderId": "bceec9b7-8980-472f-998f-a2c33228ae1a",
+      "productId": null,
+      "productName": "Herbic Cure - 21 Herbs Fusion Hair Oil + Shampoo with Conditioner + Neem Wood Comb",
+      "productImage": "/images/products/herbic-cure/herbic-cure-complete-trio-kit.jpg",
+      "price": 699,
+      "quantity": 1,
+      "total": 699
+    },
+    {
+      "id": "edb135f5-7498-43c0-a376-a1d401e49bf2",
+      "orderId": "cb838595-e71b-4f0c-821e-7db8bd7fe49f",
+      "productId": "a6663d05-f143-453a-b4e6-8ce8d056bfd6",
+      "productName": "Herbic Cure - 21 Herbs Fusion Hair Oil + Natural Neem Wood Comb",
+      "productImage": "/images/products/herbic-cure/herbic-cure-oil-neem-comb-combo.jpg",
+      "price": 695,
+      "quantity": 1,
+      "total": 695
+    },
+    {
+      "id": "effcac5a-6683-4e29-82b0-1d445021db8f",
+      "orderId": "595b0bbf-13bb-4424-9718-1ba100a38ca8",
+      "productId": "117c9bd0-6a00-41e6-be1b-6c8d4980a2fc",
+      "productName": "Herbic Cure - 21 Herbs Fusion Hair Oil + Shampoo with Conditioner",
+      "productImage": "/images/products/herbic-cure/herbic-cure-oil-shampoo-combo.jpg",
+      "price": 1038,
+      "quantity": 1,
+      "total": 1038
+    }
+  ],
+  "shipmentEvents": [
+    {
+      "id": "13a15f2e-9f06-4d4c-b43e-627d1ea3b25a",
+      "orderId": "bceec9b7-8980-472f-998f-a2c33228ae1a",
+      "status": "CONFIRMED",
+      "location": "Hyderabad Fulfillment Hub",
+      "description": "Order confirmed and registered at Herbic Cure dispensary.",
+      "timestamp": "2026-10-13T20:48:57.000Z"
+    },
+    {
+      "id": "73cdfef5-f952-4bb1-a466-f4f7549145dc",
+      "orderId": "bceec9b7-8980-472f-998f-a2c33228ae1a",
+      "status": "PROCESSING",
+      "location": "Hyderabad Fulfillment Hub",
+      "description": "Freshly packed with natural botanical care and dispatched to courier.",
+      "timestamp": "2026-10-13T20:48:57.000Z"
+    },
+    {
+      "id": "2e903508-6b66-44f8-b2d9-682c575781fb",
+      "orderId": "bceec9b7-8980-472f-998f-a2c33228ae1a",
+      "status": "SHIPPED",
+      "location": "Banjara Hills Distribution Center",
+      "description": "In transit via Shiprocket Express Air Cargo.",
+      "timestamp": "2026-10-13T20:48:57.000Z"
+    },
+    {
+      "id": "0d12e9e5-0897-4493-ab68-3bd30a8443a0",
+      "orderId": "595b0bbf-13bb-4424-9718-1ba100a38ca8",
+      "status": "CANCELLED",
+      "location": "Delhivery",
+      "description": "Order status updated to CANCELLED",
+      "timestamp": "2026-10-15T20:47:16.224Z"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "bf3aef25-1527-47cf-8e46-69026be03ad4",
+      "actorId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "actorEmail": "admin@herbiccure.com",
+      "actorRole": "OWNER",
+      "action": "ADMIN_LOGIN_SUCCESS",
+      "resource": "Session",
+      "resourceId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "diffJson": null,
+      "ipAddress": "127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "status": "SUCCESS",
+      "timestamp": "2026-10-14T05:09:05.685Z"
+    },
+    {
+      "id": "bfe00d7a-10cc-4cd0-bcd5-fb9954631902",
+      "actorId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "actorEmail": "admin@herbiccure.com",
+      "actorRole": "OWNER",
+      "action": "ADMIN_LOGIN_SUCCESS",
+      "resource": "Session",
+      "resourceId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "diffJson": null,
+      "ipAddress": "127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "status": "SUCCESS",
+      "timestamp": "2026-10-14T05:09:11.638Z"
+    },
+    {
+      "id": "1982f0cc-a160-42c8-af72-96e94fd2a7db",
+      "actorId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "actorEmail": "admin@herbiccure.com",
+      "actorRole": "OWNER",
+      "action": "ADMIN_LOGIN_SUCCESS",
+      "resource": "Session",
+      "resourceId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "diffJson": null,
+      "ipAddress": "127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "status": "SUCCESS",
+      "timestamp": "2026-10-14T05:09:34.843Z"
+    },
+    {
+      "id": "136decf8-78bd-41be-b47b-11ef933d2e66",
+      "actorId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "actorEmail": "admin@herbiccure.com",
+      "actorRole": "OWNER",
+      "action": "ADMIN_LOGIN_SUCCESS",
+      "resource": "Session",
+      "resourceId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "diffJson": null,
+      "ipAddress": "127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "status": "SUCCESS",
+      "timestamp": "2026-10-14T05:09:51.891Z"
+    },
+    {
+      "id": "4f70b375-71a7-4be1-97a8-457db4a97454",
+      "actorId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "actorEmail": "admin@herbiccure.com",
+      "actorRole": "OWNER",
+      "action": "ADMIN_LOGIN_SUCCESS",
+      "resource": "Session",
+      "resourceId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "diffJson": null,
+      "ipAddress": "127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "status": "SUCCESS",
+      "timestamp": "2026-10-14T05:10:50.353Z"
+    },
+    {
+      "id": "4e02efd3-fa07-48ae-8fbf-80f920cca6a5",
+      "actorId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "actorEmail": "admin@herbiccure.com",
+      "actorRole": "OWNER",
+      "action": "ADMIN_LOGIN_SUCCESS",
+      "resource": "Session",
+      "resourceId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "diffJson": null,
+      "ipAddress": "127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "status": "SUCCESS",
+      "timestamp": "2026-10-14T09:14:14.464Z"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "NYplPbd1StWIcyTAcp4iu5cI7dMyw6av",
+      "userId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "token": "y8rOltxzxwSeLhcw2U8kUzFprM3oNjWG",
+      "expiresAt": "2026-10-21T05:09:04.551Z",
+      "ipAddress": "",
+      "userAgent": "",
+      "impersonatedBy": null,
+      "createdAt": "2026-10-14T05:09:04.551Z",
+      "updatedAt": "2026-10-14T05:09:04.551Z"
+    },
+    {
+      "id": "y6s6X16SXD0QSePWfqxnN3qAKtpjHytW",
+      "userId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "token": "Ido76gnIISSIayNPLdQdKBe4YNga6qGq",
+      "expiresAt": "2026-10-21T05:09:11.129Z",
+      "ipAddress": "",
+      "userAgent": "",
+      "impersonatedBy": null,
+      "createdAt": "2026-10-14T05:09:11.129Z",
+      "updatedAt": "2026-10-14T05:09:11.129Z"
+    },
+    {
+      "id": "hGDuArc6UtfvjPIoSsl8xulAdsf6ljrC",
+      "userId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "token": "8oI3stA7uE61NxcspMOwQHKm9HPzvU4r",
+      "expiresAt": "2026-10-21T05:09:34.392Z",
+      "ipAddress": "",
+      "userAgent": "",
+      "impersonatedBy": null,
+      "createdAt": "2026-10-14T05:09:34.392Z",
+      "updatedAt": "2026-10-14T05:09:34.392Z"
+    },
+    {
+      "id": "otgek0L4CnlIQBBbxPbxXIQ4ctG3ugSK",
+      "userId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "token": "QpFBUFZG7PGvktOaFfrPAJ4Y9gMD0Vuo",
+      "expiresAt": "2026-10-21T05:09:51.363Z",
+      "ipAddress": "",
+      "userAgent": "",
+      "impersonatedBy": null,
+      "createdAt": "2026-10-14T05:09:51.363Z",
+      "updatedAt": "2026-10-14T05:09:51.363Z"
+    },
+    {
+      "id": "tN0nKusnjagckgphoUwfM5fYICcZx2Wf",
+      "userId": "a6da61cb-6a06-4050-8539-f9cb9ee0897a",
+      "token": "TO8aB7qWpOpFZUxLsqbj0dA8JChZG9gI",
+      "expiresAt": "2026-10-22T11:00:22.566Z",
+      "ipAddress": "",
+      "userAgent": "",
+      "impersonatedBy": null,
+      "createdAt": "2026-10-14T09:14:13.746Z",
+      "updatedAt": "2026-10-15T11:00:22.566Z"
+    }
+  ],
+  "redirects": [
+    {
+      "id": "5bf1a8cf-7882-4df1-8216-403c318c4a35",
+      "source": "/products/herbic-oil-v1",
+      "destination": "/products/herbic-oil-v2",
+      "statusCode": 301,
+      "active": true,
+      "createdAt": "2026-10-15T16:42:10.459Z",
+      "updatedAt": "2026-10-15T16:42:10.459Z"
+    }
+  ]
+}

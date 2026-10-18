@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { signSessionToken } from '@/lib/auth/session';
 import { enforceRateLimit } from '@/lib/rateLimit';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // 1. Rate limiting

@@ -6,6 +6,8 @@ import { isAdminRole } from '@/lib/permissions/guard';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { signSessionToken } from '@/lib/auth/session';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // 1. Rate limiting: max 10 admin attempts per minute

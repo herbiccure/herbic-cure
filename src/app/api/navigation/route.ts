@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export const revalidate = 300;
 
 const getNavigationSettings = unstable_cache(

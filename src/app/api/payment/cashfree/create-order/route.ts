@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { createCashfreeOrder } from '@/lib/payment/cashfree';
 import { enforceRateLimit } from '@/lib/rateLimit';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const rateLimitError = enforceRateLimit(req, 'cashfree_create_order', 15, 60 * 1000);

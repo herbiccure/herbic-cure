@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { verifySessionToken, CustomerSessionPayload, AdminSessionPayload } from '@/lib/auth/session';
 import { enforceRateLimit } from '@/lib/rateLimit';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // 1. Rate limiting

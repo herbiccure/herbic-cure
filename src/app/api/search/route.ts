@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { enforceRateLimit } from '@/lib/rateLimit';
 
+export const dynamic = 'force-dynamic';
+
 // Hair care & Ayurvedic synonym dictionary for intuitive search expansion
 const SYNONYMS: Record<string, string[]> = {
   trio: ['kit', 'complete', 'comb', 'shampoo'],
