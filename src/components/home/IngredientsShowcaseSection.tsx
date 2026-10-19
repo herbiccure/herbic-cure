@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Leaf, Check, Sparkles, ArrowRight } from 'lucide-react';
+import HerbImageBadge from '@/components/ui/HerbImageBadge';
 
 interface Ingredient {
   id: string;
@@ -88,17 +89,7 @@ export default function IngredientsShowcaseSection({
               <div>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-2xl bg-rose-100/70 text-[#A84358] border border-rose-200/50 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
-                    {herb.image ? (
-                      <Image
-                        src={herb.image}
-                        alt={herb.name}
-                        width={40}
-                        height={40}
-                        className="object-cover w-full h-full"
-                      />
-                    ) : (
-                      <Leaf className="w-4 h-4 text-[#A84358]" />
-                    )}
+                    <HerbImageBadge src={herb.image} alt={herb.name} size="sm" />
                   </div>
                   <div>
                     <h3 className="font-serif font-bold text-base text-stone-900 leading-tight">
