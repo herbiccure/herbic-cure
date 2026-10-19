@@ -10,7 +10,6 @@ import DiscoverHerbicas from '@/components/home/DiscoverHerbicas';
 import CustomerResultsSection from '@/components/home/CustomerResultsSection';
 import SocialReelsSection from '@/components/home/SocialReelsSection';
 import ReviewsSection from '@/components/home/ReviewsSection';
-import ProductVideosSection from '@/components/home/ProductVideosSection';
 import FAQSection from '@/components/home/FAQSection';
 import IngredientsShowcaseSection from '@/components/home/IngredientsShowcaseSection';
 import {
@@ -100,7 +99,7 @@ const getCachedHomePageData = unstable_cache(
   ['herbic-homepage-data-v3'],
   {
     revalidate: 120,
-    tags: ['homepage', 'products', 'categories', 'reviews', 'faqs'],
+    tags: ['homepage', 'products', 'categories', 'reviews', 'faqs', 'social-posts', 'social-content'],
   }
 );
 
@@ -409,19 +408,21 @@ export default async function HomePage() {
       case 'RESULTS':
         return <CustomerResultsSection key={sec.id} results={results} />;
       case 'REELS':
-        return <SocialReelsSection key={sec.id} posts={socialPosts} />;
+        return (
+          <SocialReelsSection
+            key={sec.id}
+            posts={socialPosts}
+            title={sec.title || undefined}
+            subtitle={sec.subtitle || undefined}
+          />
+        );
       case 'WHY_US':
         // Removed: Herbic Cure Standard section
         return null;
       case 'REVIEWS':
-        return (
-          <React.Fragment key={sec.id}>
-            <ReviewsSection reviews={reviews} />
-            <ProductVideosSection />
-          </React.Fragment>
-        );
+        return <ReviewsSection key={sec.id} reviews={reviews} />;
       case 'PRODUCT_VIDEOS':
-        return <ProductVideosSection key={sec.id} />;
+        return null;
       case 'INGREDIENTS':
         return (
           <IngredientsShowcaseSection
@@ -459,7 +460,6 @@ export default async function HomePage() {
           <CategoryGrid categories={categories} />
           <DiscoverHerbicas contentJson={homepageSections.find((s) => s.sectionType === 'DISCOVER')?.contentJson} />
           <ReviewsSection reviews={reviews} />
-          <ProductVideosSection />
           <SocialReelsSection posts={socialPosts} />
           <FAQSection faqs={faqs} />
         </>

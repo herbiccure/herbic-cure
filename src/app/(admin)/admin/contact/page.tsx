@@ -174,7 +174,7 @@ export default function AdminContactPage() {
             'pb-2.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-all cursor-pointer',
             activeTab === 'SETTINGS'
               ? 'border-[#8C3A4F] text-[#8C3A4F]'
-              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-white'
+              : 'border-transparent text-stone-800 dark:text-stone-200 hover:text-[#8C3A4F]'
           )}
         >
           <Sparkles className="w-4 h-4" />
@@ -188,7 +188,7 @@ export default function AdminContactPage() {
             'pb-2.5 px-4 font-bold text-xs flex items-center gap-2 border-b-2 transition-all cursor-pointer',
             activeTab === 'INQUIRIES'
               ? 'border-[#8C3A4F] text-[#8C3A4F]'
-              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-white'
+              : 'border-transparent text-stone-800 dark:text-stone-200 hover:text-[#8C3A4F]'
           )}
         >
           <Inbox className="w-4 h-4" />

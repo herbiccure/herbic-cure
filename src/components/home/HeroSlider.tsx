@@ -46,6 +46,40 @@ const defaultSlides: Slide[] = [
   },
 ];
 
+function HeroSlideImage({
+  src,
+  alt,
+  priority,
+  fallback = '/images/banners/herbic-hero-banner-1.jpg',
+}: {
+  src: string;
+  alt: string;
+  priority?: boolean;
+  fallback?: string;
+}) {
+  const [imgSrc, setImgSrc] = useState(src || fallback);
+
+  useEffect(() => {
+    setImgSrc(src || fallback);
+  }, [src, fallback]);
+
+  return (
+    <Image
+      src={imgSrc}
+      alt={alt}
+      fill
+      priority={priority}
+      sizes="100vw"
+      onError={() => {
+        if (imgSrc !== fallback) {
+          setImgSrc(fallback);
+        }
+      }}
+      className="object-cover object-center transform scale-100 transition-transform duration-10000"
+    />
+  );
+}
+
 export default function HeroSlider({ slides = defaultSlides }: HeroSliderProps) {
   const [current, setCurrent] = useState(0);
 
@@ -86,41 +120,32 @@ export default function HeroSlider({ slides = defaultSlides }: HeroSliderProps) 
                 <>
                   {/* Desktop Image */}
                   <div className="hidden sm:block absolute inset-0 w-full h-full">
-                    <Image
+                    <HeroSlideImage
                       src={slide.desktopImage}
                       alt={slide.heading}
-                      fill
                       priority={index === 0}
-                      sizes="100vw"
-                      className="object-cover object-center transform scale-100 transition-transform duration-10000"
                     />
                   </div>
                   {/* Mobile Image */}
                   <div className="block sm:hidden absolute inset-0 w-full h-full">
-                    <Image
+                    <HeroSlideImage
                       src={slide.mobileImage!}
                       alt={slide.heading}
-                      fill
                       priority={index === 0}
-                      sizes="100vw"
-                      className="object-cover object-center transform scale-100 transition-transform duration-10000"
                     />
                   </div>
                 </>
               ) : (
-                <Image
+                <HeroSlideImage
                   src={slide.desktopImage}
                   alt={slide.heading}
-                  fill
                   priority={index === 0}
-                  sizes="100vw"
-                  className="object-cover object-center transform scale-100 transition-transform duration-10000"
                 />
               )}
 
-              {/* Dark Vignette Gradient Overlays for Readability */}
-              <div className="absolute inset-0 bg-gradient-to-r from-stone-950/95 via-stone-950/70 to-stone-950/20" />
-              <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-black/30" />
+              {/* Dark Vignette Gradient Overlays for Readability: dark on left for text, clear on right for image */}
+              <div className="absolute inset-0 bg-gradient-to-r from-stone-950/90 via-stone-950/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 via-transparent to-black/20" />
             </div>
 
             {/* Content Container */}

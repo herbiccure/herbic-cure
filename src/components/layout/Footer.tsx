@@ -96,9 +96,9 @@ export default function Footer({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-14">
         {/* Main Grid Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
           {/* Brand Logo & Tagline (Col 1 to 3) */}
-          <div className="lg:col-span-3 flex flex-col items-start space-y-3">
+          <div className="md:col-span-3 flex flex-col items-start space-y-3">
             <Link href="/" className="inline-flex items-center gap-2 group">
               <div className="relative w-40 sm:w-48 h-14 sm:h-16">
                 <Image
@@ -165,13 +165,13 @@ export default function Footer({
               return (
                 <div
                   key={col.id || idx}
-                  className="lg:col-span-2 border-b border-stone-300/60 pb-3 lg:pb-0 lg:border-b-0 w-full"
+                  className="md:col-span-2 border-b border-stone-300/60 pb-3 md:pb-0 md:border-b-0 w-full"
                 >
                   {/* Mobile Dropdown Trigger */}
                   <button
                     type="button"
                     onClick={() => toggleSection(idx)}
-                    className="w-full flex items-center justify-between text-left py-1 lg:hidden cursor-pointer"
+                    className="w-full flex items-center justify-between text-left py-1 md:hidden cursor-pointer"
                   >
                     <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-[#A84358]">
                       {col.title}
@@ -184,7 +184,7 @@ export default function Footer({
                   </button>
 
                   {/* Desktop Title */}
-                  <h3 className="hidden lg:inline-block text-sm font-extrabold uppercase tracking-wider text-[#A84358] pb-1.5 border-b-2 border-stone-800">
+                  <h3 className="hidden md:inline-block text-sm font-extrabold uppercase tracking-wider text-[#A84358] pb-1.5 border-b-2 border-stone-800">
                     {col.title}
                   </h3>
 
@@ -192,7 +192,7 @@ export default function Footer({
                   <ul
                     className={`${
                       isOpen ? 'block' : 'hidden'
-                    } lg:block mt-3 space-y-2.5 text-xs font-medium text-stone-700 transition-all`}
+                    } md:block mt-3 space-y-2.5 text-xs font-medium text-stone-700 transition-all`}
                   >
                     {col.links.map((link, lIdx) => (
                       <li key={link.id || lIdx}>
@@ -210,7 +210,7 @@ export default function Footer({
             })}
 
           {/* Newsletter Column with Floating Shadow Animation (Col 10 to 12) */}
-          <div className="lg:col-span-3">
+          <div className="md:col-span-3">
             <h3 className="text-sm font-bold text-stone-900 mb-3.5 leading-snug">
               {data.newsletter.heading}
             </h3>
