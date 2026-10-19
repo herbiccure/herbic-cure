@@ -107,13 +107,12 @@ export default function CheckoutPage() {
     }
   }, [formData.pincode]);
 
+  // Delivery charge: Free for prepaid, ₹89 for COD
+  const currentShippingFee = formData.paymentMethod === 'COD' ? 89 : 0;
+  const currentFinalTotal = Math.max(0, subtotal - discountAmount + currentShippingFee);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customer) {
-      toast.error('Please log in or create an account to complete checkout');
-      router.push('/account/login?callbackUrl=/checkout');
-      return;
-    }
 
     if (items.length === 0) {
       toast.error('Your shopping bag is empty');
@@ -137,8 +136,8 @@ export default function CheckoutPage() {
           items,
           subtotal,
           discount: discountAmount,
-          shippingFee,
-          total: finalTotal,
+          shippingFee: currentShippingFee,
+          total: currentFinalTotal,
         }),
       });
 
@@ -175,11 +174,6 @@ export default function CheckoutPage() {
           '/order-success?orderId=' + (data.orderId || ('HC-' + Date.now().toString().slice(-6)))
         );
       } else {
-        if (res.status === 401) {
-          toast.error('Please log in to complete your purchase');
-          router.push('/account/login?callbackUrl=/checkout');
-          return;
-        }
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || 'Failed to process order');
       }
@@ -189,75 +183,6 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center bg-[#FCF8F9]">
-        <div className="w-10 h-10 border-2 border-[#8C3A4F] border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-xs text-[#7A5B64] font-medium tracking-wide">Securing session...</p>
-      </div>
-    );
-  }
-
-  if (!customer) {
-    return (
-      <div className="min-h-[75vh] flex flex-col items-center justify-center p-6 text-center bg-[#FCF8F9]">
-        <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-10 border border-[#EAC9D1] shadow-xl shadow-rose-950/5">
-          <div className="w-16 h-16 rounded-2xl bg-[#F6DFE7] text-[#8C3A4F] flex items-center justify-center mx-auto mb-5 border border-[#EAC9D1]">
-            <Lock className="w-8 h-8" />
-          </div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF0F4] text-[#8C3A4F] text-[11px] font-bold tracking-wider uppercase mb-3">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Sign In Required
-          </span>
-          <h2 className="text-2xl font-bold text-[#2D1B1B] font-serif tracking-tight">
-            Sign In to Complete Order
-          </h2>
-          <p className="text-xs text-[#7A5B64] mt-2.5 leading-relaxed">
-            Herbic Cure requires an authenticated customer account to place an order. Having an account secures your shipment tracking, doorstep updates, and unlocks verified buyer reviews.
-          </p>
-
-          <div className="my-6 p-4 rounded-2xl bg-[#FCF8F9] border border-[#F2D7DE] flex items-center justify-between text-left">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#F6DFE7] flex items-center justify-center text-[#8C3A4F]">
-                <ShoppingBag className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-[#2D1B1B]">
-                  {items.length} {items.length === 1 ? 'item' : 'items'} in your bag
-                </p>
-                <p className="text-[10px] text-[#7A5B64]">Preserved and ready</p>
-              </div>
-            </div>
-            <span className="text-sm font-extrabold text-[#8C3A4F]">
-              ₹{finalTotal.toLocaleString('en-IN')}
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            <Link
-              href="/account/login?callbackUrl=/checkout"
-              className="w-full py-3.5 px-5 rounded-full bg-[#8C3A4F] hover:bg-[#722E3F] text-white text-xs font-bold shadow-md shadow-rose-900/15 transition-all flex items-center justify-center gap-2"
-            >
-              <span>Sign In to Checkout</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-
-            <Link
-              href="/account/register?callbackUrl=/checkout"
-              className="w-full py-3.5 px-5 rounded-full bg-[#FAF0F4] hover:bg-[#F6DFE7] text-[#8C3A4F] text-xs font-bold border border-[#EAC9D1] transition-all flex items-center justify-center gap-2"
-            >
-              <span>Create New Account</span>
-            </Link>
-          </div>
-
-          <p className="text-[10px] text-[#A3828B] mt-5">
-            Your shopping cart items will be preserved safely.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   if (items.length === 0) {
     return (
@@ -324,7 +249,7 @@ export default function CheckoutPage() {
                 <ChevronDown className="w-4 h-4 text-[#7A5B64]" />
               )}
             </div>
-            <span className="text-sm font-bold text-[#8C3A4F]">₹{finalTotal}</span>
+            <span className="text-sm font-bold text-[#8C3A4F]">₹{currentFinalTotal}</span>
           </button>
 
           {mobileSummaryOpen && (
@@ -365,13 +290,13 @@ export default function CheckoutPage() {
                 )}
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span className="font-semibold text-emerald-700">
-                    {shippingFee === 0 ? 'FREE' : ('₹' + shippingFee)}
+                  <span className={`font-semibold ${currentShippingFee === 0 ? 'text-emerald-700' : 'text-[#8C3A4F]'}`}>
+                    {currentShippingFee === 0 ? 'FREE' : ('₹' + currentShippingFee)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-extrabold text-[#2D1B1B] pt-2 border-t border-[#F2DFE4]">
                   <span>Total Due</span>
-                  <span className="text-[#8C3A4F]">₹{finalTotal}</span>
+                  <span className="text-[#8C3A4F]">₹{currentFinalTotal}</span>
                 </div>
               </div>
             </div>
@@ -575,14 +500,19 @@ export default function CheckoutPage() {
                       className="accent-[#8C3A4F] mt-0.5"
                     />
                     <div className="flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <Banknote className="w-4 h-4 text-[#8C3A4F]" />
-                        <span className="block text-xs font-bold text-[#2D1B1B]">
-                          Cash on Delivery (COD)
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <Banknote className="w-4 h-4 text-[#8C3A4F]" />
+                          <span className="block text-xs font-bold text-[#2D1B1B]">
+                            Cash on Delivery (COD)
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold text-[#8C3A4F] bg-[#F6DFE7] px-2 py-0.5 rounded-md border border-[#EAC9D1]">
+                          +₹89 Delivery
                         </span>
                       </div>
                       <span className="block text-[11px] text-[#7A5B64] mt-1 leading-snug">
-                        Pay cash or UPI to courier upon delivery
+                        Pay cash or UPI to courier upon delivery (₹89 courier charges applicable)
                       </span>
                     </div>
                   </label>
@@ -609,14 +539,19 @@ export default function CheckoutPage() {
                       className="accent-[#8C3A4F] mt-0.5"
                     />
                     <div className="flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <CreditCard className="w-4 h-4 text-[#8C3A4F]" />
-                        <span className="block text-xs font-bold text-[#2D1B1B]">
-                          UPI / Card / NetBanking
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <CreditCard className="w-4 h-4 text-emerald-700" />
+                          <span className="block text-xs font-bold text-[#2D1B1B]">
+                            Prepaid (UPI / Card / NetBanking)
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          FREE Delivery
                         </span>
                       </div>
                       <span className="block text-[11px] text-[#7A5B64] mt-1 leading-snug">
-                        Instant UPI, Credit/Debit Card &amp; NetBanking via Cashfree Payments
+                        Pay via UPI, GPay, PhonePe, Cards or NetBanking &amp; save ₹89 shipping charges
                       </span>
                     </div>
                   </label>
@@ -632,7 +567,7 @@ export default function CheckoutPage() {
                 >
                   <Lock className="w-4 h-4" />
                   <span>
-                    {loading ? 'Confirming Ayurvedic Order...' : ('PLACE ORDER • ₹' + finalTotal)}
+                    {loading ? 'Confirming Ayurvedic Order...' : ('PLACE ORDER • ₹' + currentFinalTotal)}
                   </span>
                 </button>
                 <div className="mt-3 flex items-center justify-center gap-4 text-[11px] text-[#7A5B64]">
@@ -693,13 +628,13 @@ export default function CheckoutPage() {
                 )}
                 <div className="flex justify-between items-center">
                   <span>Shipping Fee</span>
-                  <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px]">
-                    {shippingFee === 0 ? 'FREE' : ('₹' + shippingFee)}
+                  <span className={`font-semibold px-2 py-0.5 rounded-md text-[11px] ${currentShippingFee === 0 ? 'text-emerald-700 bg-emerald-50' : 'text-[#8C3A4F] bg-rose-50'}`}>
+                    {currentShippingFee === 0 ? 'FREE' : ('₹' + currentShippingFee)}
                   </span>
                 </div>
                 <div className="flex justify-between text-base font-extrabold text-[#2D1B1B] pt-3 border-t border-[#F2DFE4]">
                   <span>Total Amount</span>
-                  <span className="text-[#8C3A4F] text-lg font-serif">₹{finalTotal}</span>
+                  <span className="text-[#8C3A4F] text-lg font-serif">₹{currentFinalTotal}</span>
                 </div>
               </div>
             </div>

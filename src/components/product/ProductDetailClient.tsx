@@ -165,7 +165,7 @@ export default function ProductDetailClient({ product }: ProductDetailProps) {
               )}
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 font-serif leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 font-sans tracking-tight leading-tight">
               {product.name}
             </h1>
 
@@ -228,6 +228,23 @@ export default function ProductDetailClient({ product }: ProductDetailProps) {
             </div>
           )}
 
+          {/* How To Use Section (from Admin CMS) */}
+          {product.howToUse && (
+            <div className="bg-[#FAF5F7] rounded-2xl p-4 sm:p-5 border border-[#EAC9D1] space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[#8C3A4F] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Droplet className="w-4 h-4 fill-white" />
+                </div>
+                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#2D1B1B]">
+                  How To Use &amp; Application Ritual
+                </h3>
+              </div>
+              <div className="text-xs text-stone-700 leading-relaxed pl-9 whitespace-pre-line font-medium">
+                {product.howToUse}
+              </div>
+            </div>
+          )}
+
           {/* Quantity Selector & Add to Bag */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center gap-4">
@@ -284,7 +301,7 @@ export default function ProductDetailClient({ product }: ProductDetailProps) {
               className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-[#A84358] bg-rose-50 hover:bg-rose-100 border border-rose-200/80 flex items-center justify-center gap-2 transition-colors"
             >
               <Phone className="w-3.5 h-3.5 text-[#25D366] fill-[#25D366]" />
-              <span>Ask Ayurvedic Doctor on WhatsApp</span>
+              <span>Ask Ayurvedic Expert on WhatsApp</span>
             </a>
           </div>
 

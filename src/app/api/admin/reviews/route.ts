@@ -63,6 +63,53 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  try {
+    const authCheck = await requireAdminAuth(request);
+    if (authCheck instanceof NextResponse) return authCheck;
+
+    const body = await request.json().catch(() => ({}));
+    const {
+      productId,
+      customerName,
+      customerEmail,
+      rating = 5,
+      title,
+      content,
+      isVerifiedPurchase = true,
+      isApproved = true,
+      isFeatured = false,
+    } = body;
+
+    if (!productId || !customerName || !content) {
+      return NextResponse.json(
+        { error: 'Product, customer name, and review content are required' },
+        { status: 400 }
+      );
+    }
+
+    const review = await prisma.review.create({
+      data: {
+        productId,
+        customerName: customerName.trim(),
+        customerEmail: customerEmail ? customerEmail.trim() : null,
+        rating: Math.min(5, Math.max(1, Number(rating) || 5)),
+        title: title ? title.trim() : null,
+        content: content.trim(),
+        isVerifiedPurchase: Boolean(isVerifiedPurchase),
+        isApproved: Boolean(isApproved),
+        isFeatured: Boolean(isFeatured),
+      },
+      include: { product: { select: { id: true, name: true } } },
+    });
+
+    return NextResponse.json({ success: true, review });
+  } catch (error: any) {
+    console.error('Failed to create review:', error);
+    return NextResponse.json({ error: error?.message || 'Failed to create review' }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const authCheck = await requireAdminAuth(request);

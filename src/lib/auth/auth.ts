@@ -94,11 +94,34 @@ export const auth = betterAuth({
     }),
     haveIBeenPwned(),
   ],
+  trustedOrigins: async (request) => {
+    const origin = request?.headers.get('origin');
+    const referer = request?.headers.get('referer');
+    const allowed = [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://0.0.0.0:3000',
+      process.env.NEXT_PUBLIC_APP_URL,
+      process.env.BETTER_AUTH_URL,
+    ].filter(Boolean) as string[];
+
+    if (origin) {
+      allowed.push(origin);
+    }
+    if (referer) {
+      try {
+        const parsed = new URL(referer);
+        allowed.push(parsed.origin);
+      } catch {}
+    }
+    return allowed;
+  },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days customer session
     updateAge: 60 * 60 * 24,     // Refresh session after 24h of activity
   },
   advanced: {
+    disableOriginCheck: true,
     defaultCookieAttributes: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

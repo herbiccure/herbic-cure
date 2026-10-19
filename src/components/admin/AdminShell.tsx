@@ -78,6 +78,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: '21 Sacred Herbs', href: '/admin/ingredients', icon: Leaf },
       { label: 'About Us Page', href: '/admin/about', icon: Sparkles },
+      { label: 'Contact Us Page', href: '/admin/contact', icon: MessageSquare },
       { label: 'Footer CMS', href: '/admin/footer', icon: LayoutGrid },
       { label: 'Categories', href: '/admin/categories', icon: FolderTree },
       { label: 'Collections', href: '/admin/collections', icon: Layers },

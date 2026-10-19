@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
 
@@ -91,6 +92,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    try {
+      revalidatePath('/', 'layout');
+    } catch {}
+
     return NextResponse.json({ success: true, section: created });
   } catch (error: any) {
     console.error('Failed to create section:', error);
@@ -157,6 +162,9 @@ export async function PUT(request: NextRequest) {
           contentJson: contentJson !== undefined ? contentJson : undefined,
         },
       });
+      try {
+        revalidatePath('/', 'layout');
+      } catch {}
       return NextResponse.json({ success: true, section: updated });
     }
 
@@ -181,6 +189,10 @@ export async function DELETE(request: NextRequest) {
     await prisma.homepageSection.delete({
       where: { id },
     });
+
+    try {
+      revalidatePath('/', 'layout');
+    } catch {}
 
     return NextResponse.json({ success: true, deletedId: id });
   } catch (error: any) {

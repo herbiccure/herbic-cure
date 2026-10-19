@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Check, Phone, Mail, Clock } from 'lucide-react';
+import { ArrowRight, Check, Phone, Mail, Clock, ChevronDown } from 'lucide-react';
 import { FooterData, DEFAULT_FOOTER_DATA } from '@/lib/footer';
 
 interface FooterProps {
@@ -22,6 +22,14 @@ export default function Footer({
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<number, boolean>>({});
+
+  const toggleSection = (idx: number) => {
+    setOpenSections((prev) => ({
+      ...prev,
+      [idx]: !prev[idx],
+    }));
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -150,27 +158,56 @@ export default function Footer({
             )}
           </div>
 
-          {/* Dynamic 3 Link Columns */}
+          {/* Dynamic 3 Link Columns with Mobile Dropdown Expanders */}
           {Array.isArray(data.columns) &&
-            data.columns.map((col, idx) => (
-              <div key={col.id || idx} className="lg:col-span-2">
-                <h3 className="text-sm font-extrabold uppercase tracking-wider text-[#A84358] pb-1.5 inline-block border-b-2 border-stone-800">
-                  {col.title}
-                </h3>
-                <ul className="mt-4 space-y-2.5 text-xs font-medium text-stone-700">
-                  {col.links.map((link, lIdx) => (
-                    <li key={link.id || lIdx}>
-                      <Link
-                        href={link.url}
-                        className="hover:text-[#A84358] hover:translate-x-1 inline-block transition-all"
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            data.columns.map((col, idx) => {
+              const isOpen = Boolean(openSections[idx]);
+              return (
+                <div
+                  key={col.id || idx}
+                  className="lg:col-span-2 border-b border-stone-300/60 pb-3 lg:pb-0 lg:border-b-0 w-full"
+                >
+                  {/* Mobile Dropdown Trigger */}
+                  <button
+                    type="button"
+                    onClick={() => toggleSection(idx)}
+                    className="w-full flex items-center justify-between text-left py-1 lg:hidden cursor-pointer"
+                  >
+                    <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-[#A84358]">
+                      {col.title}
+                    </span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-[#8C3A4F] transition-transform duration-200 ${
+                        isOpen ? 'rotate-180' : 'rotate-0'
+                      }`}
+                    />
+                  </button>
+
+                  {/* Desktop Title */}
+                  <h3 className="hidden lg:inline-block text-sm font-extrabold uppercase tracking-wider text-[#A84358] pb-1.5 border-b-2 border-stone-800">
+                    {col.title}
+                  </h3>
+
+                  {/* Links List: Collapsible on mobile, always visible on desktop */}
+                  <ul
+                    className={`${
+                      isOpen ? 'block' : 'hidden'
+                    } lg:block mt-3 space-y-2.5 text-xs font-medium text-stone-700 transition-all`}
+                  >
+                    {col.links.map((link, lIdx) => (
+                      <li key={link.id || lIdx}>
+                        <Link
+                          href={link.url}
+                          className="hover:text-[#A84358] hover:translate-x-1 inline-block transition-all py-0.5"
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
 
           {/* Newsletter Column with Floating Shadow Animation (Col 10 to 12) */}
           <div className="lg:col-span-3">

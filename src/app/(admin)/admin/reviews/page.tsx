@@ -12,6 +12,8 @@ import {
   Home,
   AlertCircle,
   ArrowRight,
+  Plus,
+  X,
 } from 'lucide-react';
 import { fetcher } from '@/lib/fetcher';
 import { AdminDataTable, Column } from '@/components/admin/AdminDataTable';
@@ -41,7 +43,71 @@ export default function AdminReviewsPage() {
   );
   const reviews = data?.reviews ?? [];
 
+  const { data: productsData } = useSWR<{ products: Array<{ id: string; name: string }> }>(
+    '/api/admin/products',
+    fetcher
+  );
+  const products = productsData?.products ?? [];
+
   const [activeTab, setActiveTab] = useState('ALL');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    productId: '',
+    customerName: '',
+    customerEmail: '',
+    rating: 5,
+    title: '',
+    content: '',
+    isVerifiedPurchase: true,
+    isApproved: true,
+    isFeatured: false,
+  });
+
+  const handleCreateReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createForm.productId) {
+      toast.error('Please select a product');
+      return;
+    }
+    if (!createForm.customerName.trim() || !createForm.content.trim()) {
+      toast.error('Customer name and review content are required');
+      return;
+    }
+
+    setCreateLoading(true);
+    try {
+      const res = await fetch('/api/admin/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(createForm),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to create review');
+      }
+
+      toast.success('Review added successfully!');
+      setIsCreateOpen(false);
+      setCreateForm({
+        productId: '',
+        customerName: '',
+        customerEmail: '',
+        rating: 5,
+        title: '',
+        content: '',
+        isVerifiedPurchase: true,
+        isApproved: true,
+        isFeatured: false,
+      });
+      mutate();
+    } catch (err: any) {
+      toast.error(err.message || 'Error creating review');
+    } finally {
+      setCreateLoading(false);
+    }
+  };
 
   // Currently featured reviews on home page (max 6)
   const homeFeaturedReviews = reviews.filter((r) => r.isFeatured);
@@ -256,23 +322,39 @@ export default function AdminReviewsPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1
-          className={cn(
-            'text-2xl font-bold font-serif',
-            isLight ? 'text-slate-900' : 'text-white'
-          )}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1
+            className={cn(
+              'text-2xl font-bold font-serif',
+              isLight ? 'text-slate-900' : 'text-white'
+            )}
+          >
+            Customer Reviews &amp; Home Showcase
+          </h1>
+          <p
+            className={cn(
+              'text-xs mt-1',
+              isLight ? 'text-slate-500' : 'text-slate-400'
+            )}
+          >
+            Select exactly which 6 customer reviews are highlighted on the Home Page, or add new verified reviews from your side.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            if (products.length > 0 && !createForm.productId) {
+              setCreateForm((prev) => ({ ...prev, productId: products[0].id }));
+            }
+            setIsCreateOpen(true);
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#8C3A4F] hover:bg-[#722E3F] text-white rounded-xl text-xs font-bold transition-all shadow-md self-start sm:self-auto cursor-pointer"
         >
-          Customer Reviews &amp; Home Showcase
-        </h1>
-        <p
-          className={cn(
-            'text-xs mt-1',
-            isLight ? 'text-slate-500' : 'text-slate-400'
-          )}
-        >
-          Select exactly which 6 customer reviews are highlighted on the Home Page, or approve/moderate user testimonials.
-        </p>
+          <Plus className="w-4 h-4" />
+          <span>Add New Review</span>
+        </button>
       </div>
 
       {/* Dedicated Home Page 6-Review Slot Showcase */}
@@ -465,6 +547,214 @@ export default function AdminReviewsPage() {
         }}
         emptyMessage="No customer reviews found."
       />
+
+      {/* Add New Review Modal */}
+      {isCreateOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div
+            className={cn(
+              'relative w-full max-w-xl rounded-3xl p-6 sm:p-8 border shadow-2xl space-y-5 my-8',
+              isLight ? 'bg-white border-[#EAC9D1]' : 'bg-slate-900 border-slate-800'
+            )}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-[#EAC9D1]/60">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center">
+                  <Star className="w-5 h-5 fill-current" />
+                </div>
+                <div>
+                  <h3 className={cn('text-base font-bold', isLight ? 'text-slate-900' : 'text-white')}>
+                    Add New Customer Review
+                  </h3>
+                  <p className="text-[11px] text-slate-500">Add a verified review or testimonial from admin side</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateReview} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Product <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
+                  value={createForm.productId}
+                  onChange={(e) => setCreateForm({ ...createForm, productId: e.target.value })}
+                  className={cn(
+                    'w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium outline-none transition-colors',
+                    isLight
+                      ? 'bg-slate-50 border-slate-200 text-slate-900 focus:border-[#8C3A4F] focus:bg-white'
+                      : 'bg-slate-800 border-slate-700 text-white focus:border-[#8C3A4F]'
+                  )}
+                >
+                  <option value="">-- Select Product --</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Customer Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={createForm.customerName}
+                    onChange={(e) => setCreateForm({ ...createForm, customerName: e.target.value })}
+                    placeholder="e.g. Ananya Sen"
+                    className={cn(
+                      'w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition-colors',
+                      isLight
+                        ? 'bg-slate-50 border-slate-200 text-slate-900 focus:border-[#8C3A4F] focus:bg-white'
+                        : 'bg-slate-800 border-slate-700 text-white focus:border-[#8C3A4F]'
+                    )}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Email or Location (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={createForm.customerEmail}
+                    onChange={(e) => setCreateForm({ ...createForm, customerEmail: e.target.value })}
+                    placeholder="e.g. ananya@gmail.com or Kolkata"
+                    className={cn(
+                      'w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition-colors',
+                      isLight
+                        ? 'bg-slate-50 border-slate-200 text-slate-900 focus:border-[#8C3A4F] focus:bg-white'
+                        : 'bg-slate-800 border-slate-700 text-white focus:border-[#8C3A4F]'
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Star Rating (1-5)
+                  </label>
+                  <select
+                    value={createForm.rating}
+                    onChange={(e) => setCreateForm({ ...createForm, rating: Number(e.target.value) })}
+                    className={cn(
+                      'w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium outline-none transition-colors',
+                      isLight
+                        ? 'bg-slate-50 border-slate-200 text-slate-900 focus:border-[#8C3A4F] focus:bg-white'
+                        : 'bg-slate-800 border-slate-700 text-white focus:border-[#8C3A4F]'
+                    )}
+                  >
+                    <option value={5}>★★★★★ (5 Stars)</option>
+                    <option value={4}>★★★★☆ (4 Stars)</option>
+                    <option value={3}>★★★☆☆ (3 Stars)</option>
+                    <option value={2}>★★☆☆☆ (2 Stars)</option>
+                    <option value={1}>★☆☆☆☆ (1 Star)</option>
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Review Headline / Title
+                  </label>
+                  <input
+                    type="text"
+                    value={createForm.title}
+                    onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
+                    placeholder="e.g. Hair fall reduced noticeably in 3 weeks!"
+                    className={cn(
+                      'w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition-colors',
+                      isLight
+                        ? 'bg-slate-50 border-slate-200 text-slate-900 focus:border-[#8C3A4F] focus:bg-white'
+                        : 'bg-slate-800 border-slate-700 text-white focus:border-[#8C3A4F]'
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Review Content / Testimonial <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={createForm.content}
+                  onChange={(e) => setCreateForm({ ...createForm, content: e.target.value })}
+                  placeholder="Share details about the texture, smell, application routine, and observed results..."
+                  className={cn(
+                    'w-full p-3.5 rounded-xl border text-xs outline-none resize-none transition-colors leading-relaxed',
+                    isLight
+                      ? 'bg-slate-50 border-slate-200 text-slate-900 focus:border-[#8C3A4F] focus:bg-white'
+                      : 'bg-slate-800 border-slate-700 text-white focus:border-[#8C3A4F]'
+                  )}
+                />
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={createForm.isVerifiedPurchase}
+                    onChange={(e) => setCreateForm({ ...createForm, isVerifiedPurchase: e.target.checked })}
+                    className="accent-[#8C3A4F] rounded-sm"
+                  />
+                  <span>Mark as &quot;Verified Buyer&quot; badge</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={createForm.isApproved}
+                    onChange={(e) => setCreateForm({ ...createForm, isApproved: e.target.checked })}
+                    className="accent-[#8C3A4F] rounded-sm"
+                  />
+                  <span>Publish &amp; approve immediately</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={createForm.isFeatured}
+                    onChange={(e) => setCreateForm({ ...createForm, isFeatured: e.target.checked })}
+                    className="accent-[#8C3A4F] rounded-sm"
+                  />
+                  <span>Feature on Home Page Reviews Showcase</span>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createLoading}
+                  className="px-5 py-2.5 rounded-xl bg-[#8C3A4F] hover:bg-[#722E3F] text-white text-xs font-bold transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                >
+                  {createLoading ? 'Saving Review...' : 'Publish Review'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

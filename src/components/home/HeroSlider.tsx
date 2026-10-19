@@ -68,7 +68,7 @@ export default function HeroSlider({ slides = defaultSlides }: HeroSliderProps) 
   const activeSlides = slides && slides.length > 0 ? slides : defaultSlides;
 
   return (
-    <div className="relative w-full overflow-hidden bg-stone-950 min-h-[500px] sm:min-h-[560px] md:min-h-[620px] lg:min-h-[680px] flex items-center">
+    <div className="relative w-full overflow-hidden bg-stone-950 min-h-[280px] sm:min-h-[420px] md:min-h-[540px] lg:min-h-[640px] flex items-center">
       {activeSlides.map((slide, index) => {
         const badgeText = slide.badge ?? 'Authentic Ayurvedic Kshirapak Vidhi';
         const hasMobileImg = Boolean(slide.mobileImage && slide.mobileImage !== slide.desktopImage);
@@ -124,36 +124,36 @@ export default function HeroSlider({ slides = defaultSlides }: HeroSliderProps) 
             </div>
 
             {/* Content Container */}
-            <div className="relative z-20 h-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 flex flex-col justify-center w-full text-white">
+            <div className="relative z-20 h-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-5 sm:py-10 flex flex-col justify-center w-full text-white">
               <div className="max-w-2xl">
                 {badgeText ? (
-                  <div className="inline-flex items-center gap-2 bg-[#A84358]/90 backdrop-blur-md text-rose-200 border border-rose-500/40 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase mb-4 w-fit shadow-lg shadow-rose-950/40">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-[#A84358]/90 backdrop-blur-md text-rose-200 border border-rose-500/40 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold tracking-wider uppercase mb-2 sm:mb-4 w-fit shadow-lg shadow-rose-950/40">
+                    <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300" />
                     <span>{badgeText}</span>
                   </div>
                 ) : null}
 
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight font-serif leading-[1.1] mb-4 text-white drop-shadow-md">
+                <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight font-serif leading-[1.15] mb-1.5 sm:mb-4 text-white drop-shadow-md">
                   {slide.heading}
                 </h1>
 
-                <p className="text-sm sm:text-base md:text-lg text-rose-100/90 font-medium mb-8 max-w-xl leading-relaxed drop-shadow-xs">
+                <p className="text-xs sm:text-base md:text-lg text-rose-100/90 font-medium mb-3 sm:mb-8 max-w-xl leading-relaxed drop-shadow-xs line-clamp-2 sm:line-clamp-none">
                   {slide.subheading}
                 </p>
 
-                <div className="flex flex-wrap items-center gap-3.5">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3.5">
                   <Link
                     href={slide.ctaUrl}
-                    className="px-6 sm:px-8 py-3.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl text-xs sm:text-sm font-bold tracking-wider uppercase transition-all duration-200 shadow-xl shadow-amber-950/20 flex items-center gap-2 active:scale-95"
+                    className="px-4 sm:px-8 py-2 sm:py-3.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl text-[11px] sm:text-sm font-bold tracking-wider uppercase transition-all duration-200 shadow-xl shadow-amber-950/20 flex items-center gap-1.5 sm:gap-2 active:scale-95"
                   >
                     <span>{slide.ctaText}</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </Link>
 
                   {slide.secondaryCtaText && slide.secondaryCtaUrl && (
                     <Link
                       href={slide.secondaryCtaUrl}
-                      className="px-6 sm:px-8 py-3.5 bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/30 rounded-xl text-xs sm:text-sm font-bold tracking-wider uppercase transition-all duration-200 active:scale-95"
+                      className="px-4 sm:px-8 py-2 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/30 rounded-xl text-[11px] sm:text-sm font-bold tracking-wider uppercase transition-all duration-200 active:scale-95"
                     >
                       {slide.secondaryCtaText}
                     </Link>

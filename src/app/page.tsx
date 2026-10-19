@@ -9,8 +9,8 @@ import CategoryGrid from '@/components/home/CategoryGrid';
 import DiscoverHerbicas from '@/components/home/DiscoverHerbicas';
 import CustomerResultsSection from '@/components/home/CustomerResultsSection';
 import SocialReelsSection from '@/components/home/SocialReelsSection';
-import WhyHerbicasSection from '@/components/home/WhyHerbicasSection';
 import ReviewsSection from '@/components/home/ReviewsSection';
+import ProductVideosSection from '@/components/home/ProductVideosSection';
 import FAQSection from '@/components/home/FAQSection';
 import IngredientsShowcaseSection from '@/components/home/IngredientsShowcaseSection';
 import {
@@ -306,11 +306,11 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="flex lg:grid overflow-x-auto lg:overflow-visible snap-x snap-mandatory gap-3 sm:gap-5 lg:gap-8 pb-3 lg:pb-0 no-scrollbar lg:grid-cols-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-8">
           {displayList.map((prod) => (
             <div
               key={prod.id}
-              className="w-[calc(50%-6px)] sm:w-[260px] lg:w-auto shrink-0 lg:shrink snap-start"
+              className="w-full"
             >
               <ProductCard
                 id={prod.id}
@@ -411,9 +411,17 @@ export default async function HomePage() {
       case 'REELS':
         return <SocialReelsSection key={sec.id} posts={socialPosts} />;
       case 'WHY_US':
-        return <WhyHerbicasSection key={sec.id} />;
+        // Removed: Herbic Cure Standard section
+        return null;
       case 'REVIEWS':
-        return <ReviewsSection key={sec.id} reviews={reviews} />;
+        return (
+          <React.Fragment key={sec.id}>
+            <ReviewsSection reviews={reviews} />
+            <ProductVideosSection />
+          </React.Fragment>
+        );
+      case 'PRODUCT_VIDEOS':
+        return <ProductVideosSection key={sec.id} />;
       case 'INGREDIENTS':
         return (
           <IngredientsShowcaseSection
@@ -451,8 +459,8 @@ export default async function HomePage() {
           <CategoryGrid categories={categories} />
           <DiscoverHerbicas contentJson={homepageSections.find((s) => s.sectionType === 'DISCOVER')?.contentJson} />
           <ReviewsSection reviews={reviews} />
+          <ProductVideosSection />
           <SocialReelsSection posts={socialPosts} />
-          <WhyHerbicasSection />
           <FAQSection faqs={faqs} />
         </>
       )}

@@ -15,6 +15,28 @@ export default function ContactPage() {
     message: '',
   });
 
+  const [settings, setSettings] = useState({
+    phone: '+91 8121961219',
+    whatsapp: '918121961219',
+    email: 'care@herbiccure.com',
+    address: 'Herbic Cure Ayurvedic Naturals, Plot 45, Jubilee Enclave, HITEC City, Hyderabad, Telangana 500081',
+    hours: 'Mon - Sat: 9:00 AM - 7:00 PM IST',
+    pageTitle: "We're Here To Support Your Hair Journey",
+    pageSubtitle: 'Have questions about an order or need personalized Ayurvedic advice? Reach out below.',
+  });
+
+  React.useEffect(() => {
+    fetch('/api/admin/contact-settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && !data.error) {
+          setSettings((prev) => ({ ...prev, ...data }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -62,10 +84,10 @@ export default function ContactPage() {
             Connect With Us
           </span>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-stone-900 font-serif">
-            We&apos;re Here To Support Your Hair Journey
+            {settings.pageTitle}
           </h1>
           <p className="text-sm text-stone-600 mt-2">
-            Have questions about an order or need personalized Ayurvedic advice? Reach out below.
+            {settings.pageSubtitle}
           </p>
         </div>
 
@@ -83,8 +105,8 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-stone-900 uppercase">WhatsApp Helpline</h4>
-                  <p className="text-sm text-stone-700 mt-0.5">+91 8121961219</p>
-                  <p className="text-[11px] text-stone-500">Mon - Sat: 9:00 AM - 7:00 PM IST</p>
+                  <p className="text-sm text-stone-700 mt-0.5">{settings.phone}</p>
+                  <p className="text-[11px] text-stone-500">{settings.hours}</p>
                 </div>
               </div>
 
@@ -94,7 +116,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-stone-900 uppercase">Email Support</h4>
-                  <p className="text-sm text-stone-700 mt-0.5">care@herbiccure.com</p>
+                  <p className="text-sm text-stone-700 mt-0.5">{settings.email}</p>
                   <p className="text-[11px] text-stone-500">Responses within 24 hours</p>
                 </div>
               </div>
@@ -106,14 +128,14 @@ export default function ContactPage() {
                 <div>
                   <h4 className="text-xs font-bold text-stone-900 uppercase">Headquarters</h4>
                   <p className="text-xs text-stone-600 mt-0.5 leading-relaxed">
-                    Herbic Cure Ayurvedic Naturals, Plot 45, Jubilee Enclave, HITEC City, Hyderabad, Telangana 500081
+                    {settings.address}
                   </p>
                 </div>
               </div>
 
               <div className="pt-2">
                 <a
-                  href="https://wa.me/918121961219"
+                  href={`https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-3 px-4 rounded-xl bg-[#25D366] text-white text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#1eb956] transition-colors shadow-md"

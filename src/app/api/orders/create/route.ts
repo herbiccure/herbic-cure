@@ -1,4 +1,4 @@
-﻿import { getServerSession } from '@/lib/auth/server';
+import { getServerSession } from '@/lib/auth/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { checkoutSchema } from '@/lib/validations';
@@ -14,17 +14,9 @@ export async function POST(req: NextRequest) {
     const rateLimitError = enforceRateLimit(req, 'checkout_create', 10, 60 * 1000);
     if (rateLimitError) return rateLimitError;
 
-    // 2. Strict Server-Side Authentication: Only logged-in customers can place orders
+    // 2. Authentication Check: Guest checkouts permitted without sign-in
     const session = await getServerSession();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        {
-          error: 'You must be logged in to place an order. Please sign in or create an account to proceed.',
-          requiresAuth: true,
-        },
-        { status: 401 }
-      );
-    }
+
 
     // 2. Strict Zod Schema Validation
     const body = await req.json().catch(() => null);
@@ -134,8 +126,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Authoritative Shipping Fee Calculation (Free shipping above ₹499)
-    const calculatedShippingFee = calculatedSubtotal >= 499 ? 0 : 49;
+    // 5. Authoritative Shipping Fee: All prepaid orders are FREE shipping, all COD orders ₹89 delivery charge
+    const calculatedShippingFee = paymentMethod === 'COD' ? 89 : 0;
 
     // 6. Final Authoritative Payable Total
     const calculatedFinalTotal = Math.max(
@@ -152,8 +144,8 @@ export async function POST(req: NextRequest) {
       pincode,
     });
 
-    const matchedUserId = session.user.id;
-    const authoritativeEmail = (session.user.email || email).toLowerCase().trim();
+    const matchedUserId = session?.user?.id || null;
+    const authoritativeEmail = (session?.user?.email || email).toLowerCase().trim();
     let matchedCustomerId: string | null = null;
 
     const existingCustomerRecord = await prisma.customer.findUnique({
@@ -161,6 +153,19 @@ export async function POST(req: NextRequest) {
     });
     if (existingCustomerRecord) {
       matchedCustomerId = existingCustomerRecord.id;
+    } else {
+      try {
+        const newCustomer = await prisma.customer.create({
+          data: {
+            name,
+            email: authoritativeEmail,
+            phone,
+          },
+        });
+        matchedCustomerId = newCustomer.id;
+      } catch (custErr) {
+        // Fallback: customer record creation non-fatal
+      }
     }
 
     const orderNumber = `HC-${Date.now().toString().slice(-6)}`;
