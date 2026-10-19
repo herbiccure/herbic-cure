@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
+import { normalizeImageUrl } from '@/lib/utils';
+import { invalidateProductCache, invalidateHomepageCache } from '@/lib/cache/invalidator';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,7 +82,7 @@ export async function POST(request: NextRequest) {
         seoDescription,
         images: {
           create: images.map((img: string, idx: number) => ({
-            url: img,
+            url: normalizeImageUrl(img),
             alt: `${name} - Image ${idx + 1}`,
             displayOrder: idx,
             isThumbnail: idx === 0,
@@ -90,6 +92,8 @@ export async function POST(request: NextRequest) {
       include: { images: true },
     });
 
+    invalidateProductCache(created.slug);
+    invalidateHomepageCache();
     return NextResponse.json({ success: true, product: created });
   } catch (error) {
     console.error('Admin create product error:', error);
@@ -140,6 +144,8 @@ export async function PUT(request: NextRequest) {
       data: updateData,
     });
 
+    invalidateProductCache(updated.slug);
+    invalidateHomepageCache();
     return NextResponse.json({ success: true, product: updated });
   } catch (error) {
     console.error('Admin update product error:', error);

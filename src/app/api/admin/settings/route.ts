@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
+import { invalidateAllPublicCaches } from '@/lib/cache/invalidator';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    invalidateAllPublicCaches();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Update settings error:', error);

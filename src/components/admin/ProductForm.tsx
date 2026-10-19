@@ -21,7 +21,7 @@ import { Save,
   Clock, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminTheme } from '@/components/admin/AdminThemeProvider';
-import { cn } from '@/lib/utils';
+import { cn, normalizeImageUrl } from '@/lib/utils';
 
 interface ProductFormProps {
   isEdit?: boolean;
@@ -79,7 +79,7 @@ export default function ProductForm({ isEdit = false, initialData }: ProductForm
   const [seoDescription, setSeoDescription] = useState(initialData?.seoDescription || '');
 
   // Images state
-  const initialImages: string[] = initialData?.images?.map((img: any) => img.url) || [];
+  const initialImages: string[] = initialData?.images?.map((img: any) => normalizeImageUrl(img.url)) || [];
   const [images, setImages] = useState<string[]>(
     initialImages.length > 0 ? initialImages : ['/images/banners/banner-1.png']
   );
@@ -176,7 +176,8 @@ export default function ProductForm({ isEdit = false, initialData }: ProductForm
 
   const handleAddImage = () => {
     if (!newImageUrl.trim()) return;
-    setImages([...images, newImageUrl.trim()]);
+    const normalized = normalizeImageUrl(newImageUrl.trim());
+    setImages([...images, normalized]);
     setNewImageUrl('');
   };
 
@@ -218,7 +219,7 @@ export default function ProductForm({ isEdit = false, initialData }: ProductForm
         howToUse: howToUse.trim() || null,
         seoTitle: seoTitle.trim() || null,
         seoDescription: seoDescription.trim() || null,
-        images: images.filter((img) => img.trim().length > 0),
+        images: images.map((img) => normalizeImageUrl(img)).filter((img) => img.trim().length > 0),
       };
 
       let res;
@@ -765,11 +766,12 @@ export default function ProductForm({ isEdit = false, initialData }: ProductForm
                 )}
               >
                 <Image
-                  src={imgUrl}
+                  src={normalizeImageUrl(imgUrl)}
                   alt={`Product image ${index + 1}`}
                   fill
                   sizes="96px"
                   className="object-cover"
+                  unoptimized={imgUrl.startsWith('http')}
                 />
                 {index === 0 && (
                   <span className="absolute top-1 left-1 bg-black/70 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-sm">

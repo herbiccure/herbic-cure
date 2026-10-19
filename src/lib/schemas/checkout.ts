@@ -1,9 +1,9 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 
 export const checkoutSchema = z.object({
   name: z.string().min(2, 'Please enter your full name'),
   phone: z.string().min(10, 'Please enter a valid 10-digit mobile number'),
-  email: z.string().email('Please enter a valid email address'),
+  email: z.string().trim().email('Please enter a valid email address').optional().or(z.literal('')),
   address: z.string().min(5, 'Please enter complete delivery address'),
   city: z.string().min(2, 'Please enter your city'),
   state: z.string().min(2, 'Please enter your state'),

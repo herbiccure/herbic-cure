@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-export const revalidate = 300;
+export const revalidate = 0;
 
 const getNavigationSettings = unstable_cache(
   async () => {
@@ -38,7 +38,7 @@ const getNavigationSettings = unstable_cache(
   },
   ['navigation-settings-cache'],
   {
-    revalidate: 300,
+    revalidate: 15,
     tags: ['settings', 'navigation'],
   }
 );
@@ -48,7 +48,7 @@ export async function GET() {
     const data = await getNavigationSettings();
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30',
       },
     });
   } catch (error) {

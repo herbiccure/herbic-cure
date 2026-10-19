@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
+import { invalidateCategoryCache } from '@/lib/cache/invalidator';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    invalidateCategoryCache(created.slug);
     return NextResponse.json({ success: true, category: created });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create category' }, { status: 500 });
@@ -56,6 +58,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
     }
     await prisma.category.delete({ where: { id } });
+    invalidateCategoryCache();
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete category' }, { status: 500 });
@@ -79,6 +82,7 @@ export async function PUT(request: NextRequest) {
         })
       );
       await prisma.$transaction(updates);
+      invalidateCategoryCache();
       return NextResponse.json({ success: true, count: reorder.length });
     }
 
@@ -99,6 +103,7 @@ export async function PUT(request: NextRequest) {
       data: updateData,
     });
 
+    invalidateCategoryCache(updated.slug);
     return NextResponse.json({ success: true, category: updated });
   } catch (error) {
     console.error('Update category error:', error);

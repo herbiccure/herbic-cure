@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -537,7 +537,7 @@ export default function AdminSettingsPage() {
           <div className="space-y-3 text-xs">
             <div>
               <label className={`block font-semibold mb-1 ${isLight ? 'text-stone-600' : 'text-slate-400'}`}>
-                Standard Shipping Fee (â‚¹)
+                Standard Shipping Fee (₹)
               </label>
               <input
                 type="number"
@@ -553,7 +553,7 @@ export default function AdminSettingsPage() {
 
             <div>
               <label className={`block font-semibold mb-1 ${isLight ? 'text-stone-600' : 'text-slate-400'}`}>
-                Free Delivery Min Order Value (â‚¹)
+                Free Delivery Min Order Value (₹)
               </label>
               <input
                 type="number"

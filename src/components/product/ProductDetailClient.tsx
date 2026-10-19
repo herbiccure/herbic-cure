@@ -21,6 +21,7 @@ import {
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 import OfferCountdownTimer from '@/components/ui/OfferCountdownTimer';
+import { normalizeImageUrl } from '@/lib/utils';
 
 interface ProductImage {
   id: string;
@@ -56,8 +57,11 @@ export default function ProductDetailClient({ product }: ProductDetailProps) {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
-  const images = product.images && product.images.length > 0
-    ? product.images
+  const images: ProductImage[] = product.images && product.images.length > 0
+    ? product.images.map((img: any) => ({
+        ...img,
+        url: normalizeImageUrl(img.url),
+      }))
     : [{ id: 'default', url: '/images/products/herbic-cure/herbic-cure-oil-q1.png', alt: product.name }];
 
   const currentPrice = product.salePrice || product.regularPrice;
@@ -122,6 +126,7 @@ export default function ProductDetailClient({ product }: ProductDetailProps) {
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
               priority
               className="object-cover object-center"
+              unoptimized={Boolean((images[selectedImageIndex]?.url || images[0]?.url)?.startsWith('http'))}
             />
             {discountPercent && (
               <span className="absolute top-4 left-4 bg-amber-600 text-white text-xs font-extrabold px-3 py-1 rounded-full shadow-md">
@@ -144,7 +149,14 @@ export default function ProductDetailClient({ product }: ProductDetailProps) {
                       : 'border-stone-200 opacity-70 hover:opacity-100'
                   }`}
                 >
-                  <Image src={img.url} alt={img.alt || product.name} fill sizes="80px" className="object-cover" />
+                  <Image
+                    src={img.url}
+                    alt={img.alt || product.name}
+                    fill
+                    sizes="80px"
+                    className="object-cover"
+                    unoptimized={img.url.startsWith('http')}
+                  />
                 </button>
               ))}
             </div>

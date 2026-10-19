@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
+import { invalidateHomepageCache } from '@/lib/cache/invalidator';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,9 +92,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    try {
-      revalidatePath('/', 'layout');
-    } catch {}
+    invalidateHomepageCache();
 
     return NextResponse.json({ success: true, section: created });
   } catch (error: any) {
@@ -133,6 +131,7 @@ export async function PUT(request: NextRequest) {
         }
       }
 
+      invalidateHomepageCache();
       if (!id) {
         return NextResponse.json({ success: true, navbarOffersEnabled: boolVal });
       }
@@ -147,6 +146,7 @@ export async function PUT(request: NextRequest) {
         })
       );
       await prisma.$transaction(updates);
+      invalidateHomepageCache();
       return NextResponse.json({ success: true, reorderedCount: body.reorder.length });
     }
 
@@ -162,9 +162,7 @@ export async function PUT(request: NextRequest) {
           contentJson: contentJson !== undefined ? contentJson : undefined,
         },
       });
-      try {
-        revalidatePath('/', 'layout');
-      } catch {}
+      invalidateHomepageCache();
       return NextResponse.json({ success: true, section: updated });
     }
 
@@ -190,9 +188,7 @@ export async function DELETE(request: NextRequest) {
       where: { id },
     });
 
-    try {
-      revalidatePath('/', 'layout');
-    } catch {}
+    invalidateHomepageCache();
 
     return NextResponse.json({ success: true, deletedId: id });
   } catch (error: any) {

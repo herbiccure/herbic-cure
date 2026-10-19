@@ -1,7 +1,7 @@
 'use client';
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image, { ImageProps } from 'next/image';
+import { normalizeImageUrl } from '@/lib/utils';
 
 export interface LazyImageProps extends Omit<ImageProps, 'onLoad' | 'onError'> {
   wrapperClassName?: string;
@@ -22,7 +22,16 @@ export default function LazyImage({
   ...props
 }: LazyImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [imgSrc, setImgSrc] = useState(src);
+  const normalizedSrc = typeof src === 'string' ? normalizeImageUrl(src) : src;
+  const [imgSrc, setImgSrc] = useState(normalizedSrc);
+
+  useEffect(() => {
+    if (typeof src === 'string') {
+      setImgSrc(normalizeImageUrl(src));
+    } else {
+      setImgSrc(src);
+    }
+  }, [src]);
 
   return (
     <div
@@ -59,6 +68,7 @@ export default function LazyImage({
         sizes={sizes}
         priority={priority}
         loading={priority ? undefined : 'lazy'}
+        unoptimized={typeof imgSrc === 'string' && imgSrc.startsWith('http')}
         onLoad={() => setIsLoaded(true)}
         onError={() => {
           if (imgSrc !== fallbackSrc) {

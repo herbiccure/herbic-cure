@@ -98,8 +98,8 @@ const getCachedHomePageData = unstable_cache(
   },
   ['herbic-homepage-data-v3'],
   {
-    revalidate: 120,
-    tags: ['homepage', 'products', 'categories', 'reviews', 'faqs', 'social-posts', 'social-content'],
+    revalidate: 15,
+    tags: ['homepage', 'herbic-homepage-data-v3', 'products', 'categories', 'reviews', 'faqs', 'social-posts', 'social-content'],
   }
 );
 

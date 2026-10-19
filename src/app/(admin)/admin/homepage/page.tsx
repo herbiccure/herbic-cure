@@ -40,8 +40,10 @@ import {
   Sliders,
   Package,
   BookOpen,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { normalizeImageUrl } from '@/lib/utils';
 
 
 interface TrustBadge {
@@ -162,6 +164,35 @@ const SECTION_PRESETS = [
   },
 ];
 
+function SlidePreviewImage({ src, alt }: { src?: string; alt: string }) {
+  const [hasError, setHasError] = useState(false);
+  const normalized = normalizeImageUrl(src);
+  const effectiveSrc = hasError || !normalized ? '/images/banners/herbic-hero-banner-1.jpg' : normalized;
+
+  useEffect(() => {
+    setHasError(false);
+  }, [src]);
+
+  return (
+    <>
+      <Image
+        src={effectiveSrc}
+        alt={alt}
+        fill
+        unoptimized={Boolean(effectiveSrc.startsWith('http') || effectiveSrc.startsWith('data:'))}
+        className="object-cover object-center opacity-60 transition-opacity duration-300"
+        onError={() => setHasError(true)}
+      />
+      {hasError && (
+        <div className="absolute top-2 right-2 z-20 px-2 py-0.5 bg-rose-600/90 text-white text-[9px] font-bold rounded flex items-center gap-1 shadow">
+          <AlertCircle className="w-3 h-3" />
+          <span>Image Not Found (Showing Fallback)</span>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function AdminHomepageBuilderPage() {
   const [sections, setSections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -170,6 +201,24 @@ export default function AdminHomepageBuilderPage() {
   // Taskbar Offers section toggle state (defaults to false / OFF)
   const [navbarOffersEnabled, setNavbarOffersEnabled] = useState(false);
   const [togglingNavbarOffers, setTogglingNavbarOffers] = useState(false);
+  const [syncingLive, setSyncingLive] = useState(false);
+
+  const handleSyncLive = async () => {
+    setSyncingLive(true);
+    try {
+      const res = await fetch('/api/admin/revalidate', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || 'Website synced! All caches purged successfully.');
+      } else {
+        toast.error(data.error || 'Failed to sync website cache');
+      }
+    } catch {
+      toast.error('Network error syncing website');
+    } finally {
+      setSyncingLive(false);
+    }
+  };
 
   // Section Editing Modal
   const [editingSection, setEditingSection] = useState<any | null>(null);
@@ -534,9 +583,10 @@ export default function AdminHomepageBuilderPage() {
 
   const handleUpdateCurrentSlide = (field: keyof Slide, value: string) => {
     const copy = [...heroSlides];
+    const finalVal = (field === 'desktopImage' || field === 'mobileImage') ? normalizeImageUrl(value) : value;
     copy[selectedSlideIndex] = {
       ...copy[selectedSlideIndex],
-      [field]: value,
+      [field]: finalVal,
     };
     setHeroSlides(copy);
   };
@@ -586,7 +636,12 @@ export default function AdminHomepageBuilderPage() {
 
     // If it's the hero section, serialize our visual slide state
     if (editingSection.sectionType === 'HERO' || editingSection.sectionType === 'HERO_SLIDER') {
-      finalContentJson = JSON.stringify({ slides: heroSlides, trustBadges }, null, 2);
+      const sanitizedSlides = heroSlides.map((s) => ({
+        ...s,
+        desktopImage: normalizeImageUrl(s.desktopImage) || '/images/banners/herbic-hero-banner-1.jpg',
+        mobileImage: s.mobileImage ? normalizeImageUrl(s.mobileImage) : undefined,
+      }));
+      finalContentJson = JSON.stringify({ slides: sanitizedSlides, trustBadges }, null, 2);
     }
 
     // If it's Best Sellers or Featured Products section, serialize product IDs and headers
@@ -770,6 +825,17 @@ export default function AdminHomepageBuilderPage() {
           >
             <Plus className="w-4 h-4" />
             <span>Add New Section</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={syncingLive}
+            onClick={handleSyncLive}
+            className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-700/20 flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95"
+            title="Purge Next.js edge and server cache to instantly publish all saved changes to visitors"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncingLive ? 'animate-spin' : ''}`} />
+            <span>{syncingLive ? 'Syncing...' : 'Sync Live Site'}</span>
           </button>
 
           <Link
@@ -1189,14 +1255,10 @@ export default function AdminHomepageBuilderPage() {
                           Live Slide Preview
                         </span>
                         <div className="relative w-full h-44 sm:h-52 rounded-2xl overflow-hidden bg-stone-900 border border-stone-800 flex items-center p-6 text-white shadow-inner">
-                          {currentSlide.desktopImage && (
-                            <Image
-                              src={currentSlide.desktopImage}
-                              alt="Preview"
-                              fill
-                              className="object-cover object-center opacity-60"
-                            />
-                          )}
+                          <SlidePreviewImage
+                            src={currentSlide.desktopImage}
+                            alt={currentSlide.heading || 'Slide Preview'}
+                          />
                           <div className="absolute inset-0 bg-gradient-to-r from-stone-950/95 via-stone-950/70 to-transparent" />
 
                           <div className="relative z-10 max-w-md space-y-2">
@@ -1264,6 +1326,32 @@ export default function AdminHomepageBuilderPage() {
                               <span>{uploadingImage ? 'Uploading...' : 'Upload'}</span>
                             </button>
                           </div>
+                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                            <span className="text-[10px] font-bold text-[#7A5B64] uppercase tracking-wider mr-0.5">
+                              Presets:
+                            </span>
+                            {[
+                              { label: 'Hero 1', url: '/images/banners/herbic-hero-banner-1.jpg' },
+                              { label: 'Hero 2', url: '/images/banners/herbic-hero-banner-2.jpg' },
+                              { label: 'Banner 1', url: '/images/banners/banner-1.png' },
+                              { label: 'Banner 2', url: '/images/banners/banner-2.png' },
+                              { label: 'Banner 3', url: '/images/banners/banner-3.png' },
+                              { label: 'Banner 4', url: '/images/banners/banner-4.png' },
+                            ].map((preset) => (
+                              <button
+                                key={preset.url}
+                                type="button"
+                                onClick={() => handleUpdateCurrentSlide('desktopImage', preset.url)}
+                                className={`px-2 py-0.5 text-[10px] rounded-md font-medium border transition-colors cursor-pointer ${
+                                  currentSlide.desktopImage === preset.url
+                                    ? 'bg-[#8C3A4F] text-white border-[#8C3A4F]'
+                                    : 'bg-white hover:bg-[#FDF0F4] text-[#45363B] border-[#EAC9D1]'
+                                }`}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
 
                         {/* Mobile Image */}
@@ -1299,6 +1387,29 @@ export default function AdminHomepageBuilderPage() {
                               <Upload className="w-3.5 h-3.5" />
                               <span>Upload</span>
                             </button>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                            <span className="text-[10px] font-bold text-[#7A5B64] uppercase tracking-wider mr-0.5">
+                              Presets:
+                            </span>
+                            {[
+                              { label: 'Hero 1', url: '/images/banners/herbic-hero-banner-1.jpg' },
+                              { label: 'Hero 2', url: '/images/banners/herbic-hero-banner-2.jpg' },
+                              { label: 'Banner 1', url: '/images/banners/banner-1.png' },
+                            ].map((preset) => (
+                              <button
+                                key={preset.url}
+                                type="button"
+                                onClick={() => handleUpdateCurrentSlide('mobileImage', preset.url)}
+                                className={`px-2 py-0.5 text-[10px] rounded-md font-medium border transition-colors cursor-pointer ${
+                                  currentSlide.mobileImage === preset.url
+                                    ? 'bg-[#8C3A4F] text-white border-[#8C3A4F]'
+                                    : 'bg-white hover:bg-[#FDF0F4] text-[#45363B] border-[#EAC9D1]'
+                                }`}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
                           </div>
                         </div>
                       </div>

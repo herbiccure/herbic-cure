@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Cashfree Payments Gateway Service
  * Official API Integration for Herbic Cure Online Checkout (UPI, Cards, NetBanking)
  * Cashfree PG API Version: 2023-08-01
@@ -78,8 +78,9 @@ export async function createCashfreeOrder(
         order_currency: 'INR',
         customer_details: {
           customer_id: cleanCustomerId,
-          customer_name: params.customerName.trim().slice(0, 100),
-          customer_email: params.customerEmail.trim().toLowerCase(),
+          customer_email: params.customerEmail?.trim()
+            ? params.customerEmail.trim().toLowerCase()
+            : `guest_${cleanPhone || 'customer'}@herbiccure.com`,
           customer_phone: cleanPhone.length === 10 ? cleanPhone : '9999999999',
         },
         order_meta: {

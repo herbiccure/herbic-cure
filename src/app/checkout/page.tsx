@@ -374,16 +374,15 @@ export default function CheckoutPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-[#45363B] mb-1.5">
-                  Email Address <span className="text-[#8C3A4F]">*</span>
+                  Email Address <span className="text-[#7A5B64] font-normal text-[11px]">(Optional - for invoice copy)</span>
                 </label>
                 <div className="relative">
                   <input
                     type="email"
-                    required
                     readOnly={Boolean(customer?.email)}
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="For invoice & order confirmation"
+                    placeholder="name@example.com (Optional)"
                     className={'w-full bg-[#FAF5F7] border border-[#E2CBD2] rounded-xl px-4 py-3 text-xs text-[#2D1B1B] placeholder:text-[#9E828A] outline-none transition-all ' + (
                       customer?.email
                         ? 'cursor-not-allowed bg-stone-100/70 text-stone-600'

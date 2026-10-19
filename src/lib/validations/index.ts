@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 
 export const checkoutSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100),
@@ -6,7 +6,7 @@ export const checkoutSchema = z.object({
     .string()
     .trim()
     .regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit Indian phone number'),
-  email: z.string().trim().email('Please enter a valid email address'),
+  email: z.string().trim().email('Please enter a valid email address').optional().or(z.literal('')),
   address: z.string().trim().min(5, 'Delivery address must be at least 5 characters').max(300),
   city: z.string().trim().min(2, 'City is required').max(100),
   state: z.string().trim().min(2, 'State is required').max(100),

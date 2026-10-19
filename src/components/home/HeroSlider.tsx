@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Sparkles, ArrowRight } from 'lucide-react';
+import { normalizeImageUrl } from '@/lib/utils';
 
 export interface Slide {
   desktopImage: string;
@@ -57,10 +58,11 @@ function HeroSlideImage({
   priority?: boolean;
   fallback?: string;
 }) {
-  const [imgSrc, setImgSrc] = useState(src || fallback);
+  const normalized = normalizeImageUrl(src) || fallback;
+  const [imgSrc, setImgSrc] = useState(normalized);
 
   useEffect(() => {
-    setImgSrc(src || fallback);
+    setImgSrc(normalizeImageUrl(src) || fallback);
   }, [src, fallback]);
 
   return (
@@ -70,6 +72,7 @@ function HeroSlideImage({
       fill
       priority={priority}
       sizes="100vw"
+      unoptimized={Boolean(imgSrc.startsWith('http') || imgSrc.startsWith('data:'))}
       onError={() => {
         if (imgSrc !== fallback) {
           setImgSrc(fallback);

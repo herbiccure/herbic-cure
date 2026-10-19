@@ -67,7 +67,41 @@ export async function POST(request: NextRequest) {
     const filename = `${safeBase}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Target upload location (statically scoped for Turbopack & serverless safety)
+    // 1. Check if Supabase Storage is configured
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    const supabaseBucket = process.env.SUPABASE_STORAGE_BUCKET || 'media';
+
+    if (supabaseUrl && supabaseKey) {
+      try {
+        const uploadEndpoint = `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/${supabaseBucket}/${filename}`;
+        const uploadRes = await fetch(uploadEndpoint, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${supabaseKey}`,
+            'Content-Type': mimeType,
+            'x-upsert': 'true',
+          },
+          body: buffer,
+        });
+
+        if (uploadRes.ok) {
+          const publicUrl = `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/public/${supabaseBucket}/${filename}`;
+          return NextResponse.json({
+            success: true,
+            url: publicUrl,
+            filename,
+            size: file.size,
+            mimeType,
+          });
+        }
+      } catch (sbErr) {
+        console.warn('Supabase storage upload error:', sbErr);
+      }
+    }
+
+    // 2. Local filesystem write (effective for persistent Node servers and local development)
+    let savedToDisk = false;
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
     try {
       if (!fs.existsSync(uploadsDir)) {
@@ -75,12 +109,19 @@ export async function POST(request: NextRequest) {
       }
       const fullFilePath = path.join(uploadsDir, filename);
       fs.writeFileSync(fullFilePath, buffer);
+      savedToDisk = true;
     } catch (fsErr) {
-      // In serverless environments (like Vercel production), filesystem may be read-only
-      console.warn('Filesystem write warning (serverless environment):', fsErr);
+      console.warn('Filesystem write unavailable (serverless environment):', fsErr);
     }
 
-    const publicUrl = `/uploads/${filename}`;
+    // 3. For serverless production (e.g. Vercel) where local public/ uploads are ephemeral,
+    // return an optimized self-contained Data URI so the image displays permanently without 404
+    const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || !savedToDisk);
+
+    let publicUrl = `/uploads/${filename}`;
+    if (isServerless && buffer.length <= 4 * 1024 * 1024) {
+      publicUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
+    }
 
     // Record in media database if available
     try {
@@ -88,7 +129,7 @@ export async function POST(request: NextRequest) {
         data: {
           name: file.name || filename,
           url: publicUrl,
-          alt: file.name || 'Store Logo',
+          alt: file.name || 'Store Media',
           sizeBytes: file.size,
           mimeType,
         },

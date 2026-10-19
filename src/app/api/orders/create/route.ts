@@ -145,26 +145,29 @@ export async function POST(req: NextRequest) {
     });
 
     const matchedUserId = session?.user?.id || null;
-    const authoritativeEmail = (session?.user?.email || email).toLowerCase().trim();
+    const userEmail = (session?.user?.email || email || '').trim().toLowerCase();
+    const authoritativeEmail = userEmail || `guest_${phone}@herbiccure.com`;
     let matchedCustomerId: string | null = null;
 
-    const existingCustomerRecord = await prisma.customer.findUnique({
-      where: { email: authoritativeEmail },
-    });
-    if (existingCustomerRecord) {
-      matchedCustomerId = existingCustomerRecord.id;
-    } else {
-      try {
-        const newCustomer = await prisma.customer.create({
-          data: {
-            name,
-            email: authoritativeEmail,
-            phone,
-          },
-        });
-        matchedCustomerId = newCustomer.id;
-      } catch (custErr) {
-        // Fallback: customer record creation non-fatal
+    if (userEmail) {
+      const existingCustomerRecord = await prisma.customer.findUnique({
+        where: { email: userEmail },
+      });
+      if (existingCustomerRecord) {
+        matchedCustomerId = existingCustomerRecord.id;
+      } else {
+        try {
+          const newCustomer = await prisma.customer.create({
+            data: {
+              name,
+              email: userEmail,
+              phone,
+            },
+          });
+          matchedCustomerId = newCustomer.id;
+        } catch (custErr) {
+          // Fallback: customer record creation non-fatal
+        }
       }
     }
 
@@ -261,34 +264,36 @@ export async function POST(req: NextRequest) {
       }
 
       // Upsert or update customer record for repeat tracking
-      try {
-        const existingCustomer = await tx.customer.findUnique({
-          where: { email: authoritativeEmail },
-        });
+      if (userEmail) {
+        try {
+          const existingCustomer = await tx.customer.findUnique({
+            where: { email: userEmail },
+          });
 
-        if (existingCustomer) {
-          await tx.customer.update({
-            where: { id: existingCustomer.id },
-            data: {
-              totalOrders: { increment: 1 },
-              totalSpend: { increment: calculatedFinalTotal },
-              phone: existingCustomer.phone || phone,
-              name: existingCustomer.name || name,
-            },
-          });
-        } else {
-          await tx.customer.create({
-            data: {
-              email: authoritativeEmail,
-              name,
-              phone,
-              totalOrders: 1,
-              totalSpend: calculatedFinalTotal,
-            },
-          });
+          if (existingCustomer) {
+            await tx.customer.update({
+              where: { id: existingCustomer.id },
+              data: {
+                totalOrders: { increment: 1 },
+                totalSpend: { increment: calculatedFinalTotal },
+                phone: existingCustomer.phone || phone,
+                name: existingCustomer.name || name,
+              },
+            });
+          } else {
+            await tx.customer.create({
+              data: {
+                email: userEmail,
+                name,
+                phone,
+                totalOrders: 1,
+                totalSpend: calculatedFinalTotal,
+              },
+            });
+          }
+        } catch {
+          // Customer upsert non-critical for order completion
         }
-      } catch {
-        // Customer upsert non-critical for order completion
       }
 
       return order;

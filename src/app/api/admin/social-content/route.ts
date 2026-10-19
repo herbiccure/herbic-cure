@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
-import { revalidatePath } from 'next/cache';
+import { invalidateSocialCache } from '@/lib/cache/invalidator';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,9 +44,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    try {
-      revalidatePath('/', 'layout');
-    } catch {}
+    invalidateSocialCache();
 
     return NextResponse.json({ success: true, post: created });
   } catch (error) {
@@ -78,9 +76,7 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    try {
-      revalidatePath('/', 'layout');
-    } catch {}
+    invalidateSocialCache();
 
     return NextResponse.json({ success: true, post: updated });
   } catch (error) {
@@ -99,9 +95,7 @@ export async function DELETE(request: NextRequest) {
     }
     await prisma.socialPost.delete({ where: { id } });
 
-    try {
-      revalidatePath('/', 'layout');
-    } catch {}
+    invalidateSocialCache();
 
     return NextResponse.json({ success: true });
   } catch (error) {

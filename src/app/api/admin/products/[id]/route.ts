@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
+import { normalizeImageUrl } from '@/lib/utils';
+import { invalidateProductCache, invalidateHomepageCache } from '@/lib/cache/invalidator';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,7 +85,7 @@ export async function PUT(
         await prisma.productImage.create({
           data: {
             productId: id,
-            url: body.images[i],
+            url: normalizeImageUrl(body.images[i]),
             displayOrder: i,
             isThumbnail: i === 0,
           },
@@ -91,6 +93,8 @@ export async function PUT(
       }
     }
 
+    invalidateProductCache(updated.slug);
+    invalidateHomepageCache();
     return NextResponse.json({ success: true, product: updated });
   } catch (error) {
     console.error('Admin update product error:', error);
@@ -108,6 +112,8 @@ export async function DELETE(
 
     const { id } = await params;
     await prisma.product.delete({ where: { id } });
+    invalidateProductCache();
+    invalidateHomepageCache();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Admin delete product error:', error);
