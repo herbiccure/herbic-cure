@@ -35,18 +35,28 @@ function LoginContent() {
       }
 
       toast.success('Signed in successfully!');
-      // Check if user is staff/admin, or if callbackUrl was /admin
+      
+      let targetRedirect = callbackUrl;
       try {
         const sessionRes = await authClient.getSession();
-        const role = (sessionRes?.data?.user as any)?.role;
-        if (role && ['SUPER_ADMIN', 'ADMIN', 'STORE_MANAGER', 'STAFF'].includes(role) && (!callbackUrl || callbackUrl === '/account')) {
+        const role = ((sessionRes?.data?.user as any)?.role || '').toUpperCase();
+        const isAdmin = ['OWNER', 'SUPER_ADMIN', 'ADMIN', 'MANAGER', 'STORE_MANAGER', 'STAFF', 'SUPPORT'].includes(role);
+        
+        if (isAdmin && (!callbackUrl || callbackUrl === '/account')) {
           window.location.href = '/admin';
           return;
         }
+
+        // Normal users and customers are never redirected into the admin console
+        if (!isAdmin && targetRedirect.startsWith('/admin')) {
+          targetRedirect = '/account';
+        }
       } catch (e) {
-        // Fallback
+        if (targetRedirect.startsWith('/admin')) {
+          targetRedirect = '/account';
+        }
       }
-      window.location.href = callbackUrl;
+      window.location.href = targetRedirect;
     } catch {
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);

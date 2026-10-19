@@ -26,7 +26,7 @@ export async function getAdminSession(request?: NextRequest): Promise<AdminSessi
 
   if (token) {
     const verified = verifySessionToken<AdminSessionPayload>(token);
-    if (verified) return verified;
+    if (verified && isAdminRole(verified.role)) return verified;
   }
 
   // Fallback to Better Auth session
@@ -58,21 +58,28 @@ export async function getAdminSession(request?: NextRequest): Promise<AdminSessi
  */
 export async function requireAdminAuth(
   request?: NextRequest,
-  allowedRoles: string[] = ['OWNER', 'SUPER_ADMIN', 'ADMIN', 'STAFF']
+  allowedRoles: string[] = ['OWNER', 'SUPER_ADMIN', 'ADMIN', 'MANAGER', 'STORE_MANAGER', 'STAFF', 'SUPPORT']
 ): Promise<{ session: AdminSessionPayload } | NextResponse> {
   const session = await getAdminSession(request);
 
-  if (!session) {
+  if (!session || !isAdminRole(session.role)) {
     return NextResponse.json(
       { error: 'Unauthorized: Valid admin authentication token required' },
       { status: 401 }
     );
   }
 
+  const roleUpper = session.role.toUpperCase();
+  if (roleUpper === 'CUSTOMER' || roleUpper === 'USER') {
+    return NextResponse.json(
+      { error: 'Forbidden: Customer accounts are strictly prohibited from administrative operations' },
+      { status: 403 }
+    );
+  }
+
   if (allowedRoles.length > 0 && session.role) {
-    const roleUpper = session.role.toUpperCase();
     const hasRole = allowedRoles.some((r) => r.toUpperCase() === roleUpper);
-    if (!hasRole && session.role !== 'SUPER_ADMIN') {
+    if (!hasRole && roleUpper !== 'SUPER_ADMIN') {
       return NextResponse.json(
         { error: 'Forbidden: Insufficient privileges for this operation' },
         { status: 403 }

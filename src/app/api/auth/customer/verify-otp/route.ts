@@ -11,10 +11,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { phone, otp, verificationToken, name, email, password } = body;
 
-    // Validate required fields
-    if (!phone || !otp || !verificationToken) {
+    // Note: OTP verification has been removed for users as per store policy.
+    // Allow direct registration without requiring SMS OTP code.
+    if (!phone && !email) {
       return NextResponse.json(
-        { error: 'Mobile number, OTP, and verification token are required.' },
+        { error: 'Mobile number or email address is required.' },
         { status: 400 }
       );
     }
@@ -40,17 +41,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
+    const normalizedPhone = phone ? phone.replace(/\D/g, '').slice(-10) : '';
     const cleanEmail = email.toLowerCase().trim();
-
-    // Verify OTP using otplib and token signature
-    const verification = verifyPhoneOtp(normalizedPhone, otp, verificationToken);
-    if (!verification.valid) {
-      return NextResponse.json(
-        { error: verification.error || 'Invalid or expired verification code.' },
-        { status: 400 }
-      );
-    }
 
     // Double-check duplicate phone or email before insertion
     const existing = await prisma.customer.findFirst({

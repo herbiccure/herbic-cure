@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Delhivery Express Logistics Service
  * Official API Integration for Herbic Cure Order Dispatch, AWB Tracking & Pincode Serviceability
  */
@@ -73,7 +73,7 @@ export interface DelhiveryTrackResult {
 }
 
 const DELHIVERY_CONFIG: DelhiveryConfig = {
-  apiKey: process.env.DELHIVERY_API_KEY || '',
+  apiKey: process.env.DELHIVERY_API_KEY || process.env.DELHIVERY_API_TOKEN || '',
   clientName: process.env.DELHIVERY_CLIENT_NAME || 'HERBIC CURE',
   env: (process.env.DELHIVERY_ENV === 'production' ? 'production' : 'staging'),
   pickupLocation: process.env.DELHIVERY_PICKUP_LOCATION || 'Herbic Cure Fulfillment Hub',

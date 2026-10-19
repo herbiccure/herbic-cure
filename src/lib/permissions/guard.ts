@@ -7,21 +7,37 @@ export class ForbiddenError extends Error {
   }
 }
 
-export function isAdminRole(role: string): boolean {
-  return role === 'OWNER' || role === 'MANAGER' || role === 'SUPPORT';
+export function isAdminRole(role?: string | null): boolean {
+  if (!role || typeof role !== 'string') return false;
+  const normalized = role.trim().toUpperCase();
+  // Normal users and customers strictly forbidden from admin access
+  if (normalized === 'CUSTOMER' || normalized === 'USER') {
+    return false;
+  }
+  return [
+    'OWNER',
+    'SUPER_ADMIN',
+    'ADMIN',
+    'MANAGER',
+    'STORE_MANAGER',
+    'STAFF',
+    'SUPPORT',
+  ].includes(normalized);
 }
 
 /**
  * Strict Deny-by-Default Permission Matrix for Herbic Cure E-Commerce.
  */
 export function hasPermission(role: string, resource: AppResource, action: AppAction): boolean {
-  // CUSTOMER has zero admin permissions
-  if (role === 'CUSTOMER' || !role) {
+  // Normal users and customers have zero admin permissions
+  if (!role || !isAdminRole(role)) {
     return false;
   }
 
-  // OWNER has comprehensive authority across all resources
-  if (role === 'OWNER') {
+  const normalized = role.trim().toUpperCase();
+
+  // OWNER, SUPER_ADMIN, and ADMIN have comprehensive authority
+  if (['OWNER', 'SUPER_ADMIN', 'ADMIN'].includes(normalized)) {
     return true;
   }
 

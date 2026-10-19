@@ -29,13 +29,34 @@ export async function POST(request: NextRequest) {
       include: { accounts: true },
     });
 
-    if (!user || user.status !== 'ACTIVE') {
+    if (!user) {
+      // Check if account exists in Customer storefront table
+      const customerRecord = await prisma.customer.findFirst({
+        where: {
+          OR: [
+            { email: cleanEmail },
+            { phone: cleanEmail.replace(/\D/g, '').slice(-10) }
+          ]
+        },
+      });
+
+      if (customerRecord) {
+        return NextResponse.json(
+          { error: 'Access Denied: Customer storefront accounts cannot access the administrative console.' },
+          { status: 403 }
+        );
+      }
+
       return NextResponse.json({ error: 'Invalid credentials or inactive account' }, { status: 401 });
+    }
+
+    if (user.status !== 'ACTIVE') {
+      return NextResponse.json({ error: 'Account is inactive. Please contact system administrator.' }, { status: 403 });
     }
 
     if (!isAdminRole(user.role)) {
       return NextResponse.json(
-        { error: 'Access Denied: Customer accounts cannot access the administrative console.' },
+        { error: 'Access Denied: Customer accounts are strictly prohibited from logging into the administrative console.' },
         { status: 403 }
       );
     }
