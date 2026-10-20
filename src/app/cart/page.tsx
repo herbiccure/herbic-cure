@@ -28,13 +28,13 @@ export default function CartPage() {
     discountAmount,
     shippingFee,
     finalTotal,
+    freeShippingThreshold,
   } = useCart();
 
   const [couponInput, setCouponInput] = useState('');
   const [couponError, setCouponError] = useState('');
   const [couponSuccess, setCouponSuccess] = useState('');
 
-  const freeShippingThreshold = 499;
   const neededForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
   const progressPercent = Math.min(100, Math.round((subtotal / freeShippingThreshold) * 100));
 

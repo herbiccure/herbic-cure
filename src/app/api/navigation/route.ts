@@ -8,7 +8,7 @@ export const revalidate = 0;
 
 const getNavigationSettings = unstable_cache(
   async () => {
-    const [setting, offerSection, logoSetting, brandSetting] = await Promise.all([
+    const [setting, offerSection, logoSetting, brandSetting, feeSetting, thresholdSetting, codSetting] = await Promise.all([
       prisma.siteSetting.findUnique({
         where: { key: 'navbar_offers_enabled' },
       }),
@@ -22,18 +22,33 @@ const getNavigationSettings = unstable_cache(
       prisma.siteSetting.findUnique({
         where: { key: 'brand_name' },
       }),
+      prisma.siteSetting.findUnique({
+        where: { key: 'standard_shipping_fee' },
+      }),
+      prisma.siteSetting.findUnique({
+        where: { key: 'free_shipping_threshold' },
+      }),
+      prisma.siteSetting.findUnique({
+        where: { key: 'cod_available' },
+      }),
     ]);
 
     const navbarOffersEnabled = setting ? setting.value === 'true' : false;
     const offerBannerActive = offerSection ? offerSection.active : false;
     const logoUrl = logoSetting?.value?.trim() || '/images/banners/herbic-cure-logo.png';
     const brandName = brandSetting?.value?.trim() || 'Herbic Cure';
+    const standardShippingFee = feeSetting?.value ? Number(feeSetting.value) : 89;
+    const freeShippingThreshold = thresholdSetting?.value ? Number(thresholdSetting.value) : 499;
+    const codAvailable = codSetting ? codSetting.value === 'true' : true;
 
     return {
       navbarOffersEnabled,
       offerBannerActive,
       logoUrl,
       brandName,
+      standardShippingFee,
+      freeShippingThreshold,
+      codAvailable,
     };
   },
   ['navigation-settings-cache'],

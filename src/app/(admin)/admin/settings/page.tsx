@@ -39,7 +39,7 @@ export default function AdminSettingsPage() {
   const [supportPhone, setSupportPhone] = useState('+91 8121961219');
   const [codEnabled, setCodEnabled] = useState(true);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(499);
-  const [standardShippingFee, setStandardShippingFee] = useState(49);
+  const [standardShippingFee, setStandardShippingFee] = useState(89);
   
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -549,6 +549,9 @@ export default function AdminSettingsPage() {
                     : 'bg-slate-800 border-slate-700 text-white focus:border-rose-500'
                 }`}
               />
+              <p className="text-[11px] text-stone-400 mt-1">
+                Charged when cart subtotal is less than Free Delivery Min Order Value (₹{freeShippingThreshold}). Synced live across Cart Drawer, Cart Page, and Checkout.
+              </p>
             </div>
 
             <div>

@@ -126,8 +126,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Authoritative Shipping Fee: All prepaid orders are FREE shipping, all COD orders ₹89 delivery charge
-    const calculatedShippingFee = paymentMethod === 'COD' ? 89 : 0;
+    // 5. Authoritative Shipping Fee: Dynamic from siteSetting, free if >= freeShippingThreshold, else standardShippingFee
+    const [feeSetting, thresholdSetting] = await Promise.all([
+      prisma.siteSetting.findUnique({ where: { key: 'standard_shipping_fee' } }),
+      prisma.siteSetting.findUnique({ where: { key: 'free_shipping_threshold' } }),
+    ]);
+    const authoritativeStandardFee = feeSetting?.value ? Number(feeSetting.value) : 89;
+    const authoritativeThreshold = thresholdSetting?.value ? Number(thresholdSetting.value) : 499;
+    const calculatedShippingFee = calculatedSubtotal >= authoritativeThreshold ? 0 : authoritativeStandardFee;
 
     // 6. Final Authoritative Payable Total
     const calculatedFinalTotal = Math.max(

@@ -22,6 +22,7 @@ export default function CartDrawer() {
     discountAmount,
     shippingFee,
     finalTotal,
+    freeShippingThreshold,
   } = useCart();
 
   const [couponCode, setCouponCode] = useState('');
@@ -31,7 +32,6 @@ export default function CartDrawer() {
 
   if (!isCartOpen) return null;
 
-  const freeShippingThreshold = 499;
   const neededForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
   const progressPercent = Math.min(100, Math.round((subtotal / freeShippingThreshold) * 100));
 

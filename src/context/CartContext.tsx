@@ -28,6 +28,8 @@ interface CartContextType {
   discountAmount: number;
   finalTotal: number;
   shippingFee: number;
+  freeShippingThreshold: number;
+  standardShippingFee: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -41,6 +43,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     discountType: string;
   } | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(499);
+  const [standardShippingFee, setStandardShippingFee] = useState(89);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -57,6 +61,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.error('Failed to load cart from storage', e);
     }
+
+    // Fetch dynamic store shipping settings from admin
+    fetch('/api/navigation')
+      .then((res) => res.json())
+      .then((data) => {
+        if (typeof data?.freeShippingThreshold === 'number') {
+          setFreeShippingThreshold(data.freeShippingThreshold);
+        }
+        if (typeof data?.standardShippingFee === 'number') {
+          setStandardShippingFee(data.standardShippingFee);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Save to localStorage
@@ -129,8 +146,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Free shipping over 499
-  const shippingFee = subtotal >= 499 || subtotal === 0 ? 0 : 49;
+  // Free shipping over threshold (dynamic from admin settings, default 499)
+  const shippingFee = subtotal >= freeShippingThreshold || subtotal === 0 ? 0 : standardShippingFee;
   const finalTotal = Math.max(0, subtotal - discountAmount + shippingFee);
 
   const applyCoupon = (coupon: { code: string; discountValue: number; discountType: string }) => {
@@ -159,6 +176,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         discountAmount,
         finalTotal,
         shippingFee,
+        freeShippingThreshold,
+        standardShippingFee,
       }}
     >
       {children}
