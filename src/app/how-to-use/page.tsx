@@ -15,7 +15,7 @@ import {
   Lightbulb,
 } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: 'How to Use & Ayurvedic Hair Care Guides | Herbic Cure',

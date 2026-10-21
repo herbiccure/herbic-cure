@@ -220,24 +220,30 @@ export default function SocialReelsSection({
                     : 'border-stone-800 hover:border-amber-400/50 opacity-90 hover:opacity-100'
                 }`}
               >
-                {post.videoUrl ? (
-                  <div className="absolute inset-0 w-full h-full">
-                    <ReelPlayer
-                      url={post.videoUrl}
-                      thumbnailUrl={post.thumbnailUrl}
-                      playing={shouldPlay}
-                      muted={true}
-                      loop={true}
-                      controls={false}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
-                  </div>
-                ) : (
-                  <ReelThumbnail
-                    src={post.thumbnailUrl}
-                    alt={post.caption || 'Herbic Cure Reel'}
-                  />
-                )}
+                {(() => {
+                  const cardVideoUrl = post.videoUrl || (post.instagramUrl && (post.instagramUrl.includes('/reel/') || post.instagramUrl.includes('/p/')) ? post.instagramUrl : null);
+                  return (
+                    <>
+                      <ReelThumbnail
+                        src={post.thumbnailUrl}
+                        alt={post.caption || 'Herbic Cure Reel'}
+                      />
+                      {cardVideoUrl && shouldPlay && (
+                        <div className="absolute inset-0 w-full h-full z-1">
+                          <ReelPlayer
+                            url={cardVideoUrl}
+                            thumbnailUrl={post.thumbnailUrl}
+                            playing={shouldPlay}
+                            muted={true}
+                            loop={true}
+                            controls={false}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          />
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
 
                 {/* Subtle gradient overlay for contrast */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/30 group-hover:from-black/95 transition-colors pointer-events-none" />
@@ -322,34 +328,67 @@ export default function SocialReelsSection({
                 <X className="w-5 h-5" />
               </button>
 
-              <div className="relative aspect-9/16 w-full bg-black flex items-center justify-center">
-                {activeVideo.videoUrl ? (
-                  <ReelPlayer
-                    url={activeVideo.videoUrl}
-                    thumbnailUrl={activeVideo.thumbnailUrl}
-                    playing={true}
-                    muted={false}
-                    controls={true}
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-center p-6 bg-stone-900">
-                    <p className="text-sm text-stone-300 mb-4">
-                      {activeVideo.caption || 'Instagram Reel Preview'}
-                    </p>
-                    {activeVideo.instagramUrl && (
-                      <a
-                        href={activeVideo.instagramUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-5 py-2.5 rounded-full bg-[#A84358] text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-[#8C374A] transition-all"
-                      >
-                        <span>Watch On Instagram</span>
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    )}
-                  </div>
-                )}
+              <div className="relative aspect-9/16 w-full bg-black flex items-center justify-center overflow-hidden">
+                {(() => {
+                  const modalVideoUrl = activeVideo.videoUrl || (activeVideo.instagramUrl && (activeVideo.instagramUrl.includes('/reel/') || activeVideo.instagramUrl.includes('/p/')) ? activeVideo.instagramUrl : null);
+
+                  if (modalVideoUrl) {
+                    return (
+                      <ReelPlayer
+                        url={modalVideoUrl}
+                        thumbnailUrl={activeVideo.thumbnailUrl}
+                        playing={true}
+                        muted={false}
+                        controls={true}
+                        className="w-full h-full object-contain"
+                      />
+                    );
+                  }
+
+                  return (
+                    <div className="relative w-full h-full flex flex-col items-center justify-center text-center p-6 bg-stone-950 overflow-hidden">
+                      {activeVideo.thumbnailUrl && (
+                        <Image
+                          src={activeVideo.thumbnailUrl}
+                          alt={activeVideo.caption || 'Reel Preview'}
+                          fill
+                          className="object-cover opacity-30 blur-xs scale-105"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/80 to-stone-950/60" />
+
+                      <div className="relative z-10 max-w-xs space-y-4 flex flex-col items-center">
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 p-0.5 shadow-xl flex items-center justify-center">
+                          <div className="w-full h-full bg-stone-950 rounded-[14px] flex items-center justify-center text-white">
+                            <InstagramIcon className="w-7 h-7" />
+                          </div>
+                        </div>
+
+                        {activeVideo.productTitle && (
+                          <span className="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/20 px-3 py-1 rounded-full">
+                            {activeVideo.productTitle}
+                          </span>
+                        )}
+
+                        <p className="text-sm font-medium text-stone-200 line-clamp-3 leading-relaxed">
+                          {activeVideo.caption || 'Watch this exclusive routine on our official Instagram page.'}
+                        </p>
+
+                        {activeVideo.instagramUrl && (
+                          <a
+                            href={activeVideo.instagramUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#A84358] to-[#8C374A] hover:brightness-110 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all"
+                          >
+                            <span>Watch On Instagram</span>
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Modal footer with product info and external link */}

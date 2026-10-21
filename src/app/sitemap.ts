@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import prisma from '@/lib/prisma';
 
-export const dynamic = 'force-dynamic'; // Cache sitemap for 1 hour, or revalidate on catalog changes
+export const revalidate = 3600; // Cache sitemap for 1 hour, or revalidate on catalog changes
 
 /**
  * Technical SEO XML Sitemap Specification

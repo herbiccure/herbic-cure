@@ -55,6 +55,7 @@ interface TrustBadge {
 
 interface Slide {
   desktopImage: string;
+  tabletImage?: string;
   mobileImage?: string;
   badge?: string;
   heading: string;
@@ -306,9 +307,12 @@ export default function AdminHomepageBuilderPage() {
   const [heroActiveTab, setHeroActiveTab] = useState<'slides' | 'badges'>('slides');
 
   const [selectedSlideIndex, setSelectedSlideIndex] = useState(0);
+  const [heroPreviewDevice, setHeroPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const tabletFileInputRef = useRef<HTMLInputElement>(null);
   const mobileFileInputRef = useRef<HTMLInputElement>(null);
+  const comboFileInputRef = useRef<HTMLInputElement>(null);
 
   // Add New Section Modal
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
@@ -588,18 +592,22 @@ export default function AdminHomepageBuilderPage() {
   };
 
   const handleUpdateCurrentSlide = (field: keyof Slide, value: string) => {
-    const copy = [...heroSlides];
-    const finalVal = (field === 'desktopImage' || field === 'mobileImage') ? normalizeImageUrl(value) : value;
-    copy[selectedSlideIndex] = {
-      ...copy[selectedSlideIndex],
-      [field]: finalVal,
-    };
-    setHeroSlides(copy);
+    setHeroSlides((prev) => {
+      const copy = [...prev];
+      if (!copy[selectedSlideIndex]) return prev;
+      const finalVal = (field === 'desktopImage' || field === 'tabletImage' || field === 'mobileImage') ? normalizeImageUrl(value) : value;
+      copy[selectedSlideIndex] = {
+        ...copy[selectedSlideIndex],
+        [field]: finalVal,
+      };
+      return copy;
+    });
   };
 
-  const handleImageFileUpload = async (file: File, isMobile: boolean = false) => {
+  const handleImageFileUpload = async (file: File, target: 'desktop' | 'tablet' | 'mobile') => {
     if (!file) return;
     setUploadingImage(true);
+    const toastId = toast.loading(`Uploading ${target} banner image...`);
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -609,22 +617,46 @@ export default function AdminHomepageBuilderPage() {
       });
       const data = await res.json();
       if (res.ok && data.url) {
-        if (isMobile) {
-          handleUpdateCurrentSlide('mobileImage', data.url);
-          toast.success('Mobile image uploaded successfully!');
-        } else {
+        if (target === 'desktop') {
           handleUpdateCurrentSlide('desktopImage', data.url);
-          // Auto-set mobile if not set yet
-          if (!heroSlides[selectedSlideIndex]?.mobileImage) {
-            handleUpdateCurrentSlide('mobileImage', data.url);
-          }
-          toast.success('Banner image uploaded successfully!');
+          toast.success('Desktop banner uploaded successfully!', { id: toastId });
+        } else if (target === 'tablet') {
+          handleUpdateCurrentSlide('tabletImage', data.url);
+          toast.success('iPad / Tablet banner uploaded successfully!', { id: toastId });
+        } else if (target === 'mobile') {
+          handleUpdateCurrentSlide('mobileImage', data.url);
+          toast.success('Mobile banner uploaded successfully!', { id: toastId });
         }
       } else {
-        toast.error(data.error || 'Failed to upload image');
+        toast.error(data.error || 'Failed to upload image', { id: toastId });
       }
     } catch {
-      toast.error('Network error during image upload');
+      toast.error('Network error during image upload', { id: toastId });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleComboImageUpload = async (file: File) => {
+    if (!file) return;
+    setUploadingImage(true);
+    const toastId = toast.loading('Uploading combo image...');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setComboImage(data.url);
+        toast.success('Combo image uploaded successfully!', { id: toastId });
+      } else {
+        toast.error(data.error || 'Failed to upload image', { id: toastId });
+      }
+    } catch {
+      toast.error('Network error during image upload', { id: toastId });
     } finally {
       setUploadingImage(false);
     }
@@ -645,6 +677,7 @@ export default function AdminHomepageBuilderPage() {
       const sanitizedSlides = heroSlides.map((s) => ({
         ...s,
         desktopImage: normalizeImageUrl(s.desktopImage) || '/images/banners/herbic-hero-banner-1.jpg',
+        tabletImage: s.tabletImage ? normalizeImageUrl(s.tabletImage) : undefined,
         mobileImage: s.mobileImage ? normalizeImageUrl(s.mobileImage) : undefined,
       }));
       finalContentJson = JSON.stringify({ slides: sanitizedSlides, trustBadges }, null, 2);
@@ -1257,12 +1290,63 @@ export default function AdminHomepageBuilderPage() {
 
                       {/* Live Mini Preview Box */}
                       <div>
-                        <span className="block text-[11px] font-bold text-[#7A5B64] uppercase tracking-wider mb-2">
-                          Live Slide Preview
-                        </span>
-                        <div className="relative w-full h-44 sm:h-52 rounded-2xl overflow-hidden bg-stone-900 border border-stone-800 flex items-center p-6 text-white shadow-inner">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                          <span className="block text-[11px] font-bold text-[#7A5B64] uppercase tracking-wider">
+                            Live Slide Preview
+                          </span>
+                          {/* Device Switcher */}
+                          <div className="flex items-center gap-1 bg-[#F6DFE7]/80 p-0.5 rounded-lg border border-[#EAC9D1]">
+                            <button
+                              type="button"
+                              onClick={() => setHeroPreviewDevice('desktop')}
+                              className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                                heroPreviewDevice === 'desktop'
+                                  ? 'bg-[#8C3A4F] text-white shadow-xs'
+                                  : 'text-[#543E44] hover:bg-white/60'
+                              }`}
+                            >
+                              Desktop
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setHeroPreviewDevice('tablet')}
+                              className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                                heroPreviewDevice === 'tablet'
+                                  ? 'bg-[#8C3A4F] text-white shadow-xs'
+                                  : 'text-[#543E44] hover:bg-white/60'
+                              }`}
+                            >
+                              iPad / Tablet
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setHeroPreviewDevice('mobile')}
+                              className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                                heroPreviewDevice === 'mobile'
+                                  ? 'bg-[#8C3A4F] text-white shadow-xs'
+                                  : 'text-[#543E44] hover:bg-white/60'
+                              }`}
+                            >
+                              Mobile
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className={`relative mx-auto rounded-2xl overflow-hidden bg-stone-900 border border-stone-800 flex items-center p-6 text-white shadow-inner transition-all duration-300 ${
+                          heroPreviewDevice === 'mobile'
+                            ? 'max-w-sm h-64'
+                            : heroPreviewDevice === 'tablet'
+                            ? 'max-w-xl h-52'
+                            : 'w-full h-44 sm:h-52'
+                        }`}>
                           <SlidePreviewImage
-                            src={currentSlide.desktopImage}
+                            src={
+                              heroPreviewDevice === 'mobile'
+                                ? (currentSlide.mobileImage || currentSlide.tabletImage || currentSlide.desktopImage)
+                                : heroPreviewDevice === 'tablet'
+                                ? (currentSlide.tabletImage || currentSlide.desktopImage)
+                                : currentSlide.desktopImage
+                            }
                             alt={currentSlide.heading || 'Slide Preview'}
                           />
                           <div className="absolute inset-0 bg-gradient-to-r from-stone-950/95 via-stone-950/70 to-transparent" />
@@ -1293,6 +1377,10 @@ export default function AdminHomepageBuilderPage() {
                               )}
                             </div>
                           </div>
+
+                          <div className="absolute bottom-2 right-3 z-10 text-[9px] font-bold text-white/60 bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-xs">
+                            Viewing: {heroPreviewDevice.toUpperCase()}
+                          </div>
                         </div>
                       </div>
 
@@ -1304,7 +1392,7 @@ export default function AdminHomepageBuilderPage() {
                             <span className="font-bold text-[#8C3A4F]">Recommended Banner Dimensions:</span>
                             <div className="text-[11px] text-[#7A5B64] mt-0.5">
                               • <strong>Desktop:</strong> 1920 × 700 px (or 1920 × 800 px, 16:9 / 2.4:1)<br />
-                              • <strong>Tablet:</strong> 1200 × 600 px (or 1024 × 576 px, 16:9)<br />
+                              • <strong>iPad / Tablet:</strong> 1200 × 600 px (or 1024 × 576 px, 16:9)<br />
                               • <strong>Mobile:</strong> 800 × 800 px (1:1 square) or 750 × 900 px (4:5 portrait)
                             </div>
                           </div>
@@ -1313,11 +1401,11 @@ export default function AdminHomepageBuilderPage() {
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Desktop Image */}
-                          <div className="space-y-2">
-                            <label className="block text-[#45363B] font-semibold text-xs">
-                              Desktop / Tablet Banner Image <span className="text-[#8C3A4F] font-normal">(1920x700 recommended)</span>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                          {/* 1. Desktop Image */}
+                          <div className="space-y-2 p-3 bg-white/60 rounded-xl border border-[#EAC9D1]">
+                            <label className="block text-[#45363B] font-bold text-xs">
+                              Desktop Banner Image <span className="text-[#8C3A4F] font-normal block sm:inline">(1920×700)</span>
                             </label>
                             <div className="flex gap-2">
                               <input
@@ -1325,7 +1413,7 @@ export default function AdminHomepageBuilderPage() {
                                 value={currentSlide.desktopImage || ''}
                                 onChange={(e) => handleUpdateCurrentSlide('desktopImage', e.target.value)}
                                 placeholder="/images/banners/banner-1.jpg or https://..."
-                                className="flex-1 bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl p-2.5 text-[#2D1B1B] text-xs focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white outline-hidden"
+                                className="flex-1 bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl p-2 text-[#2D1B1B] text-xs focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white outline-hidden"
                               />
                               <input
                                 type="file"
@@ -1334,7 +1422,7 @@ export default function AdminHomepageBuilderPage() {
                                 className="hidden"
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
-                                  if (file) handleImageFileUpload(file, false);
+                                  if (file) handleImageFileUpload(file, 'desktop');
                                 }}
                               />
                               <button
@@ -1345,11 +1433,11 @@ export default function AdminHomepageBuilderPage() {
                                 title="Upload Desktop Image"
                               >
                                 <Upload className="w-3.5 h-3.5" />
-                                <span>{uploadingImage ? 'Uploading...' : 'Upload'}</span>
+                                <span>Upload</span>
                               </button>
                             </div>
-                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                              <span className="text-[10px] font-bold text-[#7A5B64] uppercase tracking-wider mr-0.5">
+                            <div className="flex flex-wrap items-center gap-1 pt-1">
+                              <span className="text-[9px] font-bold text-[#7A5B64] uppercase tracking-wider mr-0.5">
                                 Presets:
                               </span>
                               {[
@@ -1358,13 +1446,12 @@ export default function AdminHomepageBuilderPage() {
                                 { label: 'Banner 1', url: '/images/banners/banner-1.png' },
                                 { label: 'Banner 2', url: '/images/banners/banner-2.png' },
                                 { label: 'Banner 3', url: '/images/banners/banner-3.png' },
-                                { label: 'Banner 4', url: '/images/banners/banner-4.png' },
                               ].map((preset) => (
                                 <button
                                   key={preset.url}
                                   type="button"
                                   onClick={() => handleUpdateCurrentSlide('desktopImage', preset.url)}
-                                  className={`px-2 py-0.5 text-[10px] rounded-md font-medium border transition-colors cursor-pointer ${
+                                  className={`px-1.5 py-0.5 text-[9px] rounded-md font-medium border transition-colors cursor-pointer ${
                                     currentSlide.desktopImage === preset.url
                                       ? 'bg-[#8C3A4F] text-white border-[#8C3A4F]'
                                       : 'bg-white hover:bg-[#FDF0F4] text-[#45363B] border-[#EAC9D1]'
@@ -1376,18 +1463,77 @@ export default function AdminHomepageBuilderPage() {
                             </div>
                           </div>
 
-                          {/* Mobile Image */}
-                          <div className="space-y-2">
-                            <label className="block text-[#45363B] font-semibold text-xs">
-                              Mobile Banner Image <span className="text-[#8C3A4F] font-normal">(Optional: 800x800 square or 750x900)</span>
+                          {/* 2. iPad / Tablet Image */}
+                          <div className="space-y-2 p-3 bg-white/60 rounded-xl border border-[#EAC9D1]">
+                            <label className="block text-[#45363B] font-bold text-xs">
+                              iPad / Tablet Banner Image <span className="text-[#8C3A4F] font-normal block sm:inline">(1200×600)</span>
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={currentSlide.tabletImage || ''}
+                                onChange={(e) => handleUpdateCurrentSlide('tabletImage', e.target.value)}
+                                placeholder="Optional: /images/banners/tablet.jpg"
+                                className="flex-1 bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl p-2 text-[#2D1B1B] text-xs focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white outline-hidden"
+                              />
+                              <input
+                                type="file"
+                                ref={tabletFileInputRef}
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageFileUpload(file, 'tablet');
+                                }}
+                              />
+                              <button
+                                type="button"
+                                disabled={uploadingImage}
+                                onClick={() => tabletFileInputRef.current?.click()}
+                                className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0 disabled:opacity-50 text-xs"
+                                title="Upload Tablet Image"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Upload</span>
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1 pt-1">
+                              <span className="text-[9px] font-bold text-[#7A5B64] uppercase tracking-wider mr-0.5">
+                                Presets:
+                              </span>
+                              {[
+                                { label: 'Hero 1', url: '/images/banners/herbic-hero-banner-1.jpg' },
+                                { label: 'Hero 2', url: '/images/banners/herbic-hero-banner-2.jpg' },
+                                { label: 'Banner 1', url: '/images/banners/banner-1.png' },
+                              ].map((preset) => (
+                                <button
+                                  key={preset.url}
+                                  type="button"
+                                  onClick={() => handleUpdateCurrentSlide('tabletImage', preset.url)}
+                                  className={`px-1.5 py-0.5 text-[9px] rounded-md font-medium border transition-colors cursor-pointer ${
+                                    currentSlide.tabletImage === preset.url
+                                      ? 'bg-amber-600 text-white border-amber-600'
+                                      : 'bg-white hover:bg-[#FDF0F4] text-[#45363B] border-[#EAC9D1]'
+                                  }`}
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* 3. Mobile Image */}
+                          <div className="space-y-2 p-3 bg-white/60 rounded-xl border border-[#EAC9D1]">
+                            <label className="block text-[#45363B] font-bold text-xs">
+                              Mobile Banner Image <span className="text-[#8C3A4F] font-normal block sm:inline">(800×800 or 750×900)</span>
                             </label>
                             <div className="flex gap-2">
                               <input
                                 type="text"
                                 value={currentSlide.mobileImage || ''}
                                 onChange={(e) => handleUpdateCurrentSlide('mobileImage', e.target.value)}
-                                placeholder="/images/banners/banner-mobile.jpg or https://..."
-                                className="flex-1 bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl p-2.5 text-[#2D1B1B] text-xs focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white outline-hidden"
+                                placeholder="Optional: /images/banners/mobile.jpg"
+                                className="flex-1 bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl p-2 text-[#2D1B1B] text-xs focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white outline-hidden"
                               />
                               <input
                                 type="file"
@@ -1396,7 +1542,7 @@ export default function AdminHomepageBuilderPage() {
                                 className="hidden"
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
-                                  if (file) handleImageFileUpload(file, true);
+                                  if (file) handleImageFileUpload(file, 'mobile');
                                 }}
                               />
                               <button
@@ -1410,8 +1556,8 @@ export default function AdminHomepageBuilderPage() {
                                 <span>Upload</span>
                               </button>
                             </div>
-                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                              <span className="text-[10px] font-bold text-[#7A5B64] uppercase tracking-wider mr-0.5">
+                            <div className="flex flex-wrap items-center gap-1 pt-1">
+                              <span className="text-[9px] font-bold text-[#7A5B64] uppercase tracking-wider mr-0.5">
                                 Presets:
                               </span>
                               {[
@@ -1423,7 +1569,7 @@ export default function AdminHomepageBuilderPage() {
                                   key={preset.url}
                                   type="button"
                                   onClick={() => handleUpdateCurrentSlide('mobileImage', preset.url)}
-                                  className={`px-2 py-0.5 text-[10px] rounded-md font-medium border transition-colors cursor-pointer ${
+                                  className={`px-1.5 py-0.5 text-[9px] rounded-md font-medium border transition-colors cursor-pointer ${
                                     currentSlide.mobileImage === preset.url
                                       ? 'bg-[#8C3A4F] text-white border-[#8C3A4F]'
                                       : 'bg-white hover:bg-[#FDF0F4] text-[#45363B] border-[#EAC9D1]'
@@ -2322,11 +2468,21 @@ export default function AdminHomepageBuilderPage() {
                             placeholder="/images/products/herbic-cure/combo.jpg or https://..."
                             className="flex-1 bg-white border border-[#EAC9D1] rounded-xl p-2.5 text-[#2D1B1B] text-xs focus:ring-2 focus:ring-[#8C3A4F]/30 outline-hidden font-mono"
                           />
+                          <input
+                            type="file"
+                            ref={comboFileInputRef}
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleComboImageUpload(file);
+                            }}
+                          />
                           <button
                             type="button"
                             disabled={uploadingImage}
-                            onClick={() => fileInputRef.current?.click()}
-                            className="px-3.5 py-2 bg-[#8C3A4F] hover:bg-[#722E3F] text-white rounded-xl font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0 disabled:opacity-50"
+                            onClick={() => comboFileInputRef.current?.click()}
+                            className="px-3.5 py-2 bg-[#8C3A4F] hover:bg-[#722E3F] text-white rounded-xl font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0 disabled:opacity-50 text-xs"
                           >
                             <Upload className="w-3.5 h-3.5" />
                             <span>Upload Image</span>

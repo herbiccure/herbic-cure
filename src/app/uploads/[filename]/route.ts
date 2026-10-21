@@ -84,6 +84,7 @@ export async function GET(
           'Accept-Ranges': 'bytes',
           'Content-Length': String(chunkSize),
           'Content-Type': contentType,
+          'Cache-Control': 'public, max-age=31536000, immutable',
         },
       });
     }

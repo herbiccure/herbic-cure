@@ -33,6 +33,9 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https:",
       "img-src 'self' blob: data: https:",
       "font-src 'self' data: https:",
+      "media-src 'self' blob: data: https: http:",
+      "frame-src 'self' blob: https://drive.google.com https://*.google.com https://docs.google.com https://*.googleusercontent.com https://www.instagram.com https://*.instagram.com https://*.cdninstagram.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://*.delhivery.com https://*.cashfree.com",
+      "child-src 'self' blob: https://drive.google.com https://*.google.com https://docs.google.com https://*.googleusercontent.com https://www.instagram.com https://*.instagram.com https://*.cdninstagram.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
       "connect-src 'self' https: ws: wss:",
       "frame-ancestors 'none'",
       "base-uri 'self'",
@@ -54,7 +57,14 @@ const nextConfig: NextConfig = {
     '127.0.0.1:3000',
   ],
   experimental: {
-    optimizePackageImports: ['lucide-react', 'sonner', 'better-auth'],
+    optimizePackageImports: [
+      'lucide-react',
+      'sonner',
+      'better-auth',
+      'react-player',
+      '@prisma/client',
+      'date-fns',
+    ],
   },
   async headers() {
     return [
@@ -62,11 +72,20 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: securityHeaders,
       },
+      {
+        source: "/images/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
     ];
   },
   images: {
     formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 86400,
+    minimumCacheTTL: 31536000,
     remotePatterns: [
       {
         protocol: 'https',

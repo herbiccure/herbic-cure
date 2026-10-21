@@ -118,6 +118,12 @@ export default function AdminSocialContentPage() {
     setSaving(true);
 
     try {
+      let finalVideoUrl = videoUrl.trim() || null;
+      const cleanIg = instagramUrl.trim();
+      if (!finalVideoUrl && (cleanIg.includes('/reel/') || cleanIg.includes('/p/') || cleanIg.includes('drive.google.com') || cleanIg.includes('youtube.com') || cleanIg.includes('youtu.be'))) {
+        finalVideoUrl = cleanIg;
+      }
+
       if (editingPostId) {
         // Update existing
         const res = await fetch('/api/admin/social-content', {
@@ -126,8 +132,8 @@ export default function AdminSocialContentPage() {
           body: JSON.stringify({
             id: editingPostId,
             thumbnailUrl: thumbnailUrl.trim(),
-            videoUrl: videoUrl.trim() || null,
-            instagramUrl: instagramUrl.trim() || 'https://www.instagram.com/herbiccure/',
+            videoUrl: finalVideoUrl,
+            instagramUrl: cleanIg || 'https://www.instagram.com/herbiccure/',
             caption: caption.trim(),
             productTitle: productTitle.trim(),
             displayOrder: Number(displayOrder) || 1,
@@ -148,8 +154,8 @@ export default function AdminSocialContentPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             thumbnailUrl: thumbnailUrl.trim(),
-            videoUrl: videoUrl.trim() || null,
-            instagramUrl: instagramUrl.trim() || 'https://www.instagram.com/herbiccure/',
+            videoUrl: finalVideoUrl,
+            instagramUrl: cleanIg || 'https://www.instagram.com/herbiccure/',
             caption: caption.trim(),
             productTitle: productTitle.trim(),
             displayOrder: Number(displayOrder) || posts.length + 1,
@@ -302,8 +308,9 @@ export default function AdminSocialContentPage() {
                 <div className="flex items-center gap-1.5 text-[10px] py-1 px-2.5 rounded-lg bg-emerald-950/60 border border-emerald-800/50 text-emerald-300">
                   <Sparkles className="w-3 h-3 shrink-0" />
                   <span className="truncate">
-                    {videoSourceInfo.type === 'gdrive' && 'Google Drive Link Detected (Auto-embedded for autoplay)'}
+                    {videoSourceInfo.type === 'gdrive' && 'Google Drive Link Detected (Direct Stream & Preview)'}
                     {videoSourceInfo.type === 'youtube' && 'YouTube / Shorts Link Detected (Plays via ReactPlayer)'}
+                    {videoSourceInfo.type === 'instagram' && 'Instagram Reel Detected (Embed player ready)'}
                     {videoSourceInfo.type === 'vimeo' && 'Vimeo Link Detected'}
                     {videoSourceInfo.type === 'direct' && 'Direct Video Stream Detected (HTML5 Autoplay)'}
                   </span>

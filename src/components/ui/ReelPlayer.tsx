@@ -13,6 +13,7 @@ export interface VideoSourceInfo {
   type: 'gdrive' | 'youtube' | 'vimeo' | 'instagram' | 'direct' | 'unknown';
   fileId?: string;
   embedUrl?: string;
+  directStreamUrl?: string;
   cleanUrl: string;
 }
 
@@ -29,10 +30,11 @@ export function parseVideoSource(url: string | null | undefined): VideoSourceInf
   const clean = url.trim();
   if (!clean) return null;
 
-  // 1. Google Drive
-  const driveFileRegex = /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/i;
-  const driveOpenRegex = /drive\.google\.com\/(?:open\?id=|uc\?id=)([a-zA-Z0-9_-]+)/i;
-  const driveMatch = clean.match(driveFileRegex) || clean.match(driveOpenRegex);
+  // 1. Google Drive & Google Docs (all share, preview, uc, and view links)
+  const driveFileRegex = /(?:drive|docs)\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/i;
+  const driveParamRegex = /(?:drive|docs)\.google\.com\/(?:open|uc|download)\?[^#]*\bid=([a-zA-Z0-9_-]+)/i;
+  const driveUsercontentRegex = /drive\.usercontent\.google\.com\/download\?[^#]*\bid=([a-zA-Z0-9_-]+)/i;
+  const driveMatch = clean.match(driveFileRegex) || clean.match(driveParamRegex) || clean.match(driveUsercontentRegex);
 
   if (driveMatch && driveMatch[1]) {
     const fileId = driveMatch[1];
@@ -56,14 +58,14 @@ export function parseVideoSource(url: string | null | undefined): VideoSourceInf
     };
   }
 
-  // 3. Instagram Reels
-  const igRegex = /instagram\.com\/(?:reel|p)\/([a-zA-Z0-9_-]+)/i;
+  // 3. Instagram Reels & Posts
+  const igRegex = /instagram\.com\/(?:[a-zA-Z0-9_.]+\/)?(?:reel|p)\/([a-zA-Z0-9_-]+)/i;
   const igMatch = clean.match(igRegex);
   if (igMatch && igMatch[1]) {
     return {
       type: 'instagram',
       fileId: igMatch[1],
-      embedUrl: `https://www.instagram.com/reel/${igMatch[1]}/embed/captioned/`,
+      embedUrl: `https://www.instagram.com/reel/${igMatch[1]}/embed/`,
       cleanUrl: clean,
     };
   }
@@ -159,16 +161,16 @@ export default function ReelPlayer({
     return null;
   }
 
-  // Type 1: Google Drive embed preview
+  // Type 1: Google Drive (Official Embedded Preview Player in IFrame)
   if (videoInfo.type === 'gdrive' && videoInfo.embedUrl) {
     return (
-      <div className="relative w-full h-full overflow-hidden bg-black">
+      <div className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center">
         <iframe
           src={videoInfo.embedUrl}
           title="Google Drive Video Player"
           allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
           allowFullScreen
-          className={`w-full h-full border-0 absolute inset-0 object-cover scale-[1.02] ${
+          className={`w-full h-full border-0 absolute inset-0 object-cover ${
             controls ? 'pointer-events-auto' : 'pointer-events-none'
           }`}
         />
@@ -179,15 +181,13 @@ export default function ReelPlayer({
   // Type 2: Instagram Reel Embed
   if (videoInfo.type === 'instagram' && videoInfo.embedUrl) {
     return (
-      <div className="relative w-full h-full overflow-hidden bg-black">
+      <div className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center">
         <iframe
           src={videoInfo.embedUrl}
           title="Instagram Reel Player"
           allow="autoplay; encrypted-media; fullscreen"
           allowFullScreen
-          className={`w-full h-full border-0 absolute inset-0 object-cover ${
-            controls ? 'pointer-events-auto' : 'pointer-events-none'
-          }`}
+          className="w-full h-full border-0 absolute inset-0 object-cover pointer-events-auto"
         />
       </div>
     );
@@ -235,6 +235,15 @@ export default function ReelPlayer({
   }
 
   // Type 4: Direct MP4 / WebM / Cloudinary video file
+  // Safety guard: never pass Google Drive / Docs URLs to an HTML5 <video> tag
+  if (
+    videoInfo.cleanUrl.includes('drive.google.com') ||
+    videoInfo.cleanUrl.includes('docs.google.com') ||
+    videoInfo.cleanUrl.includes('googleusercontent.com')
+  ) {
+    return null;
+  }
+
   return (
     <video
       ref={videoRef}

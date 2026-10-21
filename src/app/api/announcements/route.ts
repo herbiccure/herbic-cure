@@ -1,17 +1,20 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 let cachedAnnouncements: any = null;
 let lastCacheTime = 0;
 const CACHE_TTL_MS = 60 * 1000; // 60 seconds memory cache
 
-export async function GET() {
+const CACHE_HEADERS = {
+  'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+};
 
+export async function GET() {
   const now = Date.now();
   if (cachedAnnouncements && now - lastCacheTime < CACHE_TTL_MS) {
-    return NextResponse.json(cachedAnnouncements);
+    return NextResponse.json(cachedAnnouncements, { headers: CACHE_HEADERS });
   }
   try {
     const settings = await prisma.siteSetting.findMany({
@@ -58,7 +61,7 @@ export async function GET() {
       textColor: map['announcement_bar_text_color'] || '#ffffff',
     };
     lastCacheTime = now;
-    return NextResponse.json(cachedAnnouncements);
+    return NextResponse.json(cachedAnnouncements, { headers: CACHE_HEADERS });
 
   } catch (error) {
     console.error('Failed to fetch announcements:', error);
@@ -73,6 +76,6 @@ export async function GET() {
       mode: 'running',
       bg: '#A84358',
       textColor: '#ffffff',
-    });
+    }, { headers: CACHE_HEADERS });
   }
 }

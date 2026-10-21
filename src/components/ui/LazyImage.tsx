@@ -68,7 +68,7 @@ export default function LazyImage({
         sizes={sizes}
         priority={priority}
         loading={priority ? undefined : 'lazy'}
-        unoptimized={typeof imgSrc === 'string' && imgSrc.startsWith('http')}
+        unoptimized={typeof imgSrc === 'string' && imgSrc.startsWith('data:')}
         onLoad={() => setIsLoaded(true)}
         onError={() => {
           if (imgSrc !== fallbackSrc) {

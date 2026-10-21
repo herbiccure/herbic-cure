@@ -8,6 +8,7 @@ import { normalizeImageUrl } from '@/lib/utils';
 
 export interface Slide {
   desktopImage: string;
+  tabletImage?: string;
   mobileImage?: string;
   badge?: string;
   heading: string;
@@ -65,9 +66,7 @@ function HeroSlideImage({
     setImgSrc(normalizeImageUrl(src) || fallback);
   }, [src, fallback]);
 
-  const isBypassOptimize = Boolean(
-    imgSrc.startsWith('http') || imgSrc.startsWith('data:') || imgSrc.startsWith('/uploads/')
-  );
+  const isBypassOptimize = Boolean(imgSrc.startsWith('data:'));
 
   return (
     <Image
@@ -126,39 +125,39 @@ export default function HeroSlider({ slides = defaultSlides }: HeroSliderProps) 
           >
             {/* Background Image Container */}
             <div className="absolute inset-0 w-full h-full">
-              {hasMobileImg ? (
-                <>
-                  {/* Desktop / Tablet Image (>= 640px) */}
-                  <div className="hidden sm:block absolute inset-0 w-full h-full">
-                    <HeroSlideImage
-                      src={slide.desktopImage}
-                      alt={slide.heading || 'Hero Banner'}
-                      priority={index === 0}
-                    />
-                  </div>
-                  {/* Mobile Image (< 640px) */}
-                  <div className="block sm:hidden absolute inset-0 w-full h-full">
-                    <HeroSlideImage
-                      src={slide.mobileImage!}
-                      alt={slide.heading || 'Hero Mobile Banner'}
-                      priority={index === 0}
-                    />
-                  </div>
-                </>
-              ) : (
+              {/* 1. Desktop Image (>= 1024px) */}
+              <div className="hidden lg:block absolute inset-0 w-full h-full">
                 <HeroSlideImage
                   src={slide.desktopImage}
-                  alt={slide.heading || 'Hero Banner'}
+                  alt={slide.heading || 'Hero Desktop Banner'}
                   priority={index === 0}
                 />
-              )}
+              </div>
+
+              {/* 2. iPad / Tablet Image (640px to 1023px) */}
+              <div className="hidden sm:block lg:hidden absolute inset-0 w-full h-full">
+                <HeroSlideImage
+                  src={slide.tabletImage || slide.desktopImage}
+                  alt={slide.heading || 'Hero Tablet Banner'}
+                  priority={index === 0}
+                />
+              </div>
+
+              {/* 3. Mobile Image (< 640px) */}
+              <div className="block sm:hidden absolute inset-0 w-full h-full">
+                <HeroSlideImage
+                  src={slide.mobileImage || slide.tabletImage || slide.desktopImage}
+                  alt={slide.heading || 'Hero Mobile Banner'}
+                  priority={index === 0}
+                />
+              </div>
 
               {/* Smart Vignette Overlay: only darken when text content is present so graphic banners remain 100% bright */}
               {hasTextContent && (
                 <>
-                  {/* Desktop / Tablet side vignette (keeps right-side art clear) */}
+                  {/* Desktop / Tablet side vignette */}
                   <div className="hidden sm:block absolute inset-0 bg-gradient-to-r from-stone-950/85 via-stone-950/40 to-transparent" />
-                  {/* Mobile bottom vignette (keeps top art clear) */}
+                  {/* Mobile bottom vignette */}
                   <div className="block sm:hidden absolute inset-0 bg-gradient-to-t from-stone-950/90 via-stone-950/40 to-transparent" />
                 </>
               )}

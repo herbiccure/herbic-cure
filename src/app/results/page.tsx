@@ -15,14 +15,19 @@ import Image from 'next/image';
 import { prisma } from '@/lib/prisma';
 import { ShieldCheck, Star, ArrowRight } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 
 export default async function ResultsPage() {
-  const results = await prisma.customerResult.findMany({
-    where: { active: true },
-    orderBy: { displayOrder: 'asc' },
-  });
+  let results: any[] = [];
+  try {
+    results = await prisma.customerResult.findMany({
+      where: { active: true },
+      orderBy: { displayOrder: 'asc' },
+    });
+  } catch (err) {
+    console.warn('Results query deferred during build/ISR:', (err as any)?.message || String(err));
+  }
 
   return (
     <div className="bg-[#FCF8F9] min-h-screen py-8 sm:py-16">

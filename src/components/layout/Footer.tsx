@@ -13,12 +13,16 @@ interface FooterProps {
   initialData?: FooterData;
 }
 
+let cachedFooterData: FooterData | null = null;
+
 export default function Footer({
   brandName,
   logoUrl,
   initialData,
 }: FooterProps) {
-  const [data, setData] = useState<FooterData>(initialData || DEFAULT_FOOTER_DATA);
+  const [data, setData] = useState<FooterData>(
+    () => initialData || cachedFooterData || DEFAULT_FOOTER_DATA
+  );
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -32,12 +36,14 @@ export default function Footer({
   };
 
   useEffect(() => {
+    if (cachedFooterData) return;
     let isMounted = true;
     fetch('/api/footer')
       .then((res) => res.json())
       .then((json) => {
         if (!isMounted) return;
         if (json.success && json.data) {
+          cachedFooterData = json.data;
           setData(json.data);
         }
       })

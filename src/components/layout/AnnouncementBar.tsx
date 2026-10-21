@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Truck, Leaf, MessageSquare } from 'lucide-react';
@@ -37,24 +37,38 @@ function renderAnnouncementItem(rawText: string) {
   );
 }
 
+let cachedAnnouncementData: any = null;
+
 export default function AnnouncementBar({
   initialAnnouncements = DEFAULT_ANNOUNCEMENTS,
 }: AnnouncementBarProps) {
-  const [announcements, setAnnouncements] = useState<string[]>(initialAnnouncements);
-  const [enabled, setEnabled] = useState(true);
-  const [speed, setSpeed] = useState<'slow' | 'normal' | 'fast'>('normal');
-  const [mode, setMode] = useState<'running' | 'rotating'>('running');
-  const [bg, setBg] = useState('#A84358');
-  const [textColor, setTextColor] = useState('#ffffff');
+  const [announcements, setAnnouncements] = useState<string[]>(
+    () => cachedAnnouncementData?.announcements || initialAnnouncements
+  );
+  const [enabled, setEnabled] = useState(
+    () => (cachedAnnouncementData ? cachedAnnouncementData.enabled : true)
+  );
+  const [speed, setSpeed] = useState<'slow' | 'normal' | 'fast'>(
+    () => cachedAnnouncementData?.speed || 'normal'
+  );
+  const [mode, setMode] = useState<'running' | 'rotating'>(
+    () => cachedAnnouncementData?.mode || 'running'
+  );
+  const [bg, setBg] = useState(() => cachedAnnouncementData?.bg || '#A84358');
+  const [textColor, setTextColor] = useState(
+    () => cachedAnnouncementData?.textColor || '#ffffff'
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Fetch live settings configured via Admin Panel
+  // Fetch live settings configured via Admin Panel (memoized)
   useEffect(() => {
+    if (cachedAnnouncementData) return;
     let isMounted = true;
     fetch('/api/announcements')
       .then((res) => res.json())
       .then((data) => {
         if (!isMounted) return;
+        cachedAnnouncementData = data;
         if (
           data.announcements &&
           Array.isArray(data.announcements) &&
@@ -68,9 +82,7 @@ export default function AnnouncementBar({
         if (data.bg) setBg(data.bg);
         if (data.textColor) setTextColor(data.textColor);
       })
-      .catch(() => {
-        // Gracefully use default seeded values
-      });
+      .catch(() => {});
 
     return () => {
       isMounted = false;

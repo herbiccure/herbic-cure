@@ -6,6 +6,20 @@ import { prisma } from '@/lib/prisma';
 import ProductCard from '@/components/product/ProductCard';
 
 
+export const revalidate = 120;
+
+export async function generateStaticParams() {
+  try {
+    const collections = await prisma.collection.findMany({
+      where: { active: true },
+      select: { slug: true },
+    });
+    return collections.map((c) => ({ slug: c.slug }));
+  } catch (error) {
+    return [];
+  }
+}
+
 interface CollectionDetailPageProps {
   params: Promise<{ slug: string }>;
 }

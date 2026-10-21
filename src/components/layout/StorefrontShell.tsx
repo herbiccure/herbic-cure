@@ -8,20 +8,32 @@ import Footer from '@/components/layout/Footer';
 import CartDrawer from '@/components/cart/CartDrawer';
 import WhatsAppFloating from '@/components/layout/WhatsAppFloating';
 
+let cachedNavData: { logoUrl?: string; footerLogoUrl?: string; brandName?: string } | null = null;
+
 export default function StorefrontShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith('/admin');
 
-  const [headerLogoUrl, setHeaderLogoUrl] = useState('/images/banners/herbic-cure-logo.png');
-  const [footerLogoUrl, setFooterLogoUrl] = useState('/images/banners/herbic-cure-logo.png');
-  const [brandName, setBrandName] = useState('Herbic Cure');
+  const [headerLogoUrl, setHeaderLogoUrl] = useState(
+    () => cachedNavData?.logoUrl || '/images/banners/herbic-cure-logo.png'
+  );
+  const [footerLogoUrl, setFooterLogoUrl] = useState(
+    () => cachedNavData?.footerLogoUrl || '/images/banners/herbic-cure-logo.png'
+  );
+  const [brandName, setBrandName] = useState(() => cachedNavData?.brandName || 'Herbic Cure');
 
   useEffect(() => {
+    if (cachedNavData) return;
     let isMounted = true;
     fetch('/api/navigation')
       .then((res) => res.json())
       .then((data) => {
         if (!isMounted) return;
+        cachedNavData = {
+          logoUrl: data?.logoUrl,
+          footerLogoUrl: data?.footerLogoUrl,
+          brandName: data?.brandName,
+        };
         if (data?.logoUrl) setHeaderLogoUrl(data.logoUrl);
         if (data?.footerLogoUrl) setFooterLogoUrl(data.footerLogoUrl);
         if (data?.brandName) setBrandName(data.brandName);

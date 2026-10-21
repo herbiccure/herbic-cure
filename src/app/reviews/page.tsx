@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { Star, CheckCircle2 } from 'lucide-react';
 import WriteReviewModal from '@/components/review/WriteReviewModal';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 
 export const metadata: Metadata = {
@@ -17,20 +17,28 @@ export const metadata: Metadata = {
 };
 
 export default async function ReviewsPage() {
-  const [reviews, products] = await Promise.all([
-    prisma.review.findMany({
-      where: { isApproved: true },
-      include: {
-        product: { select: { id: true, name: true, slug: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.product.findMany({
-      where: { active: true },
-      select: { id: true, name: true },
-      orderBy: { displayOrder: 'asc' },
-    }),
-  ]);
+  let reviews: any[] = [];
+  let products: any[] = [];
+  try {
+    const [fetchedReviews, fetchedProducts] = await Promise.all([
+      prisma.review.findMany({
+        where: { isApproved: true },
+        include: {
+          product: { select: { id: true, name: true, slug: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.product.findMany({
+        where: { active: true },
+        select: { id: true, name: true },
+        orderBy: { displayOrder: 'asc' },
+      }),
+    ]);
+    reviews = fetchedReviews;
+    products = fetchedProducts;
+  } catch (err) {
+    console.warn('Reviews query deferred during build/ISR:', (err as any)?.message || String(err));
+  }
 
   const avgRating = reviews.length > 0
     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)

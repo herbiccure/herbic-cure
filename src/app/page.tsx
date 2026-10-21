@@ -26,7 +26,7 @@ import {
   Star,
 } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'Herbic Cure | 100% Ayurvedic Hair Oil & Natural Hair Care Solutions',
@@ -41,60 +41,92 @@ export const metadata: Metadata = {
 // High-speed cached data layer: runs in parallel and caches in server memory
 const getCachedHomePageData = unstable_cache(
   async () => {
-    const [
-      products,
-      categories,
-      results,
-      socialPosts,
-      faqs,
-      homepageSections,
-      reviews,
-    ] = await Promise.all([
-      prisma.product.findMany({
-        where: { active: true },
-        include: {
-          images: {
-            orderBy: { displayOrder: 'asc' },
+    try {
+      const [
+        products,
+        categories,
+        results,
+        socialPosts,
+        faqs,
+        homepageSections,
+        reviews,
+      ] = await Promise.all([
+        prisma.product.findMany({
+          where: { active: true },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            regularPrice: true,
+            salePrice: true,
+            stockQuantity: true,
+            isBestSeller: true,
+            isFeatured: true,
+            isOnSale: true,
+            hasTimer: true,
+            rating: true,
+            reviewCount: true,
+            displayOrder: true,
+            images: {
+              select: {
+                id: true,
+                url: true,
+                alt: true,
+                displayOrder: true,
+              },
+              orderBy: { displayOrder: 'asc' },
+            },
           },
-        },
-        orderBy: { displayOrder: 'asc' },
-      }),
-      prisma.category.findMany({
-        where: { active: true },
-        orderBy: { displayOrder: 'asc' },
-      }),
-      prisma.customerResult.findMany({
-        where: { active: true },
-        orderBy: { displayOrder: 'asc' },
-      }),
-      prisma.socialPost.findMany({
-        where: { active: true },
-        orderBy: { displayOrder: 'asc' },
-      }),
-      prisma.fAQ.findMany({
-        where: { active: true },
-        orderBy: { displayOrder: 'asc' },
-      }),
-      prisma.homepageSection.findMany({
-        where: { active: true },
-        orderBy: { displayOrder: 'asc' },
-      }),
-      prisma.review.findMany({
-        where: { isApproved: true },
-        orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
-        take: 6,
-      }),
-    ]);
+          orderBy: { displayOrder: 'asc' },
+        }),
+        prisma.category.findMany({
+          where: { active: true },
+          orderBy: { displayOrder: 'asc' },
+        }),
+        prisma.customerResult.findMany({
+          where: { active: true },
+          orderBy: { displayOrder: 'asc' },
+        }),
+        prisma.socialPost.findMany({
+          where: { active: true },
+          orderBy: { displayOrder: 'asc' },
+        }),
+        prisma.fAQ.findMany({
+          where: { active: true },
+          orderBy: { displayOrder: 'asc' },
+        }),
+        prisma.homepageSection.findMany({
+          where: { active: true },
+          orderBy: { displayOrder: 'asc' },
+        }),
+        prisma.review.findMany({
+          where: { isApproved: true },
+          orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+          take: 6,
+        }),
+      ]);
 
-    return {
-      products,
-      categories,
-      results,
-      socialPosts,
-      faqs,
-      homepageSections,
-      reviews,
-    };
+      return {
+        products,
+        categories,
+        results,
+        socialPosts,
+        faqs,
+        homepageSections,
+        reviews,
+      };
+    } catch (error) {
+      console.warn('Database connection deferred during build/ISR:', (error as any)?.message || String(error));
+      return {
+        products: [],
+        categories: [],
+        results: [],
+        socialPosts: [],
+        faqs: [],
+        homepageSections: [],
+        reviews: [],
+      };
+    }
   },
   ['herbic-homepage-data-v3'],
   {

@@ -4,28 +4,52 @@ import { prisma } from '@/lib/prisma';
 import ProductCard from '@/components/product/ProductCard';
 import { Tag, Sparkles, ArrowRight } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 
 export default async function OffersPage() {
-  const [coupons, comboProducts] = await Promise.all([
-    prisma.coupon.findMany({
-      where: { active: true, isPublic: true },
-    }),
-    prisma.product.findMany({
-      where: {
-        active: true,
-        OR: [
-          { isOnSale: true },
-          { slug: { contains: 'combo' } },
-          { slug: { contains: 'kit' } },
-        ],
-      },
-      include: {
-        images: { orderBy: { displayOrder: 'asc' } },
-      },
-    }),
-  ]);
+  let coupons: any[] = [];
+  let comboProducts: any[] = [];
+  try {
+    const [fetchedCoupons, fetchedCombos] = await Promise.all([
+      prisma.coupon.findMany({
+        where: { active: true, isPublic: true },
+      }),
+      prisma.product.findMany({
+        where: {
+          active: true,
+          OR: [
+            { isOnSale: true },
+            { slug: { contains: 'combo' } },
+            { slug: { contains: 'kit' } },
+          ],
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          regularPrice: true,
+          salePrice: true,
+          stockQuantity: true,
+          isBestSeller: true,
+          isFeatured: true,
+          isOnSale: true,
+          hasTimer: true,
+          rating: true,
+          reviewCount: true,
+          images: {
+            select: { url: true, alt: true },
+            orderBy: { displayOrder: 'asc' },
+            take: 1,
+          },
+        },
+      }),
+    ]);
+    coupons = fetchedCoupons;
+    comboProducts = fetchedCombos;
+  } catch (err) {
+    console.warn('Offers query deferred during build/ISR:', (err as any)?.message || String(err));
+  }
 
   return (
     <div className="bg-[#FCF8F9] min-h-screen py-10 sm:py-16">

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { prisma } from '@/lib/prisma';
 import ProductCard from '@/components/product/ProductCard';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 120;
 
 
 export const metadata: Metadata = {
@@ -17,14 +17,41 @@ export const metadata: Metadata = {
 };
 
 export default async function CollectionsPage() {
-  const [categories, products] = await Promise.all([
-    prisma.category.findMany({ where: { active: true }, orderBy: { displayOrder: 'asc' } }),
-    prisma.product.findMany({
-      where: { active: true },
-      include: { images: { orderBy: { displayOrder: 'asc' } } },
-      orderBy: { displayOrder: 'asc' },
-    }),
-  ]);
+  let categories: any[] = [];
+  let products: any[] = [];
+  try {
+    const [fetchedCategories, fetchedProducts] = await Promise.all([
+      prisma.category.findMany({ where: { active: true }, orderBy: { displayOrder: 'asc' } }),
+      prisma.product.findMany({
+        where: { active: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          regularPrice: true,
+          salePrice: true,
+          stockQuantity: true,
+          isBestSeller: true,
+          isFeatured: true,
+          isOnSale: true,
+          hasTimer: true,
+          rating: true,
+          reviewCount: true,
+          displayOrder: true,
+          images: {
+            select: { url: true, alt: true },
+            orderBy: { displayOrder: 'asc' },
+            take: 1,
+          },
+        },
+        orderBy: { displayOrder: 'asc' },
+      }),
+    ]);
+    categories = fetchedCategories;
+    products = fetchedProducts;
+  } catch (err) {
+    console.warn('Collections query deferred during build/ISR:', (err as any)?.message || String(err));
+  }
 
   return (
     <div className="min-h-screen bg-[#FCF8F9] py-12 sm:py-16">

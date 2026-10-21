@@ -8,6 +8,19 @@ import type { Metadata } from 'next';
 
 export const revalidate = 120;
 
+export async function generateStaticParams() {
+  try {
+    const products = await prisma.product.findMany({
+      where: { active: true },
+      select: { slug: true },
+    });
+    return products.map((p) => ({ slug: p.slug }));
+  } catch (error) {
+    console.warn('Failed to pre-generate product static params:', error);
+    return [];
+  }
+}
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
@@ -16,14 +29,19 @@ interface Props {
 const getProduct = cache(async (slug: string) => {
   return unstable_cache(
     async () => {
-      return prisma.product.findUnique({
-        where: { slug },
-        include: {
-          images: {
-            orderBy: { displayOrder: 'asc' },
+      try {
+        return await prisma.product.findUnique({
+          where: { slug },
+          include: {
+            images: {
+              orderBy: { displayOrder: 'asc' },
+            },
           },
-        },
-      });
+        });
+      } catch (err) {
+        console.warn(`Database unreachable fetching product ${slug}:`, (err as any)?.message || String(err));
+        return null;
+      }
     },
     [`product-${slug}`],
     { revalidate: 120, tags: ['products', `product-${slug}`] }
@@ -33,13 +51,18 @@ const getProduct = cache(async (slug: string) => {
 const getReviews = cache(async (productId: string) => {
   return unstable_cache(
     async () => {
-      return prisma.review.findMany({
-        where: {
-          productId,
-          isApproved: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      try {
+        return await prisma.review.findMany({
+          where: {
+            productId,
+            isApproved: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+      } catch (err) {
+        console.warn(`Database unreachable fetching reviews for ${productId}:`, (err as any)?.message || String(err));
+        return [];
+      }
     },
     [`reviews-${productId}`],
     { revalidate: 120, tags: ['reviews', `product-${productId}-reviews`] }

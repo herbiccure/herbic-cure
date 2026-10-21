@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { Leaf, Check, Sparkles } from 'lucide-react';
 import HerbImageBadge from '@/components/ui/HerbImageBadge';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 600;
 
 
 export const metadata: Metadata = {
