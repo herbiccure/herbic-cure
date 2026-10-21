@@ -65,14 +65,18 @@ function HeroSlideImage({
     setImgSrc(normalizeImageUrl(src) || fallback);
   }, [src, fallback]);
 
+  const isBypassOptimize = Boolean(
+    imgSrc.startsWith('http') || imgSrc.startsWith('data:') || imgSrc.startsWith('/uploads/')
+  );
+
   return (
     <Image
       src={imgSrc}
       alt={alt}
       fill
       priority={priority}
-      sizes="100vw"
-      unoptimized={Boolean(imgSrc.startsWith('http') || imgSrc.startsWith('data:'))}
+      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1920px"
+      unoptimized={isBypassOptimize}
       onError={() => {
         if (imgSrc !== fallback) {
           setImgSrc(fallback);
@@ -105,10 +109,13 @@ export default function HeroSlider({ slides = defaultSlides }: HeroSliderProps) 
   const activeSlides = slides && slides.length > 0 ? slides : defaultSlides;
 
   return (
-    <div className="relative w-full overflow-hidden bg-stone-950 min-h-[280px] sm:min-h-[420px] md:min-h-[540px] lg:min-h-[640px] flex items-center">
+    <div className="relative w-full overflow-hidden bg-stone-950 h-[360px] xs:h-[420px] sm:h-[460px] md:h-[520px] lg:h-[600px] xl:h-[640px] flex items-center">
       {activeSlides.map((slide, index) => {
         const badgeText = slide.badge ?? 'Authentic Ayurvedic Kshirapak Vidhi';
         const hasMobileImg = Boolean(slide.mobileImage && slide.mobileImage !== slide.desktopImage);
+        const hasHeading = Boolean(slide.heading && slide.heading.trim().length > 0);
+        const hasSubheading = Boolean(slide.subheading && slide.subheading.trim().length > 0);
+        const hasTextContent = hasHeading || hasSubheading;
 
         return (
           <div
@@ -121,19 +128,19 @@ export default function HeroSlider({ slides = defaultSlides }: HeroSliderProps) 
             <div className="absolute inset-0 w-full h-full">
               {hasMobileImg ? (
                 <>
-                  {/* Desktop Image */}
+                  {/* Desktop / Tablet Image (>= 640px) */}
                   <div className="hidden sm:block absolute inset-0 w-full h-full">
                     <HeroSlideImage
                       src={slide.desktopImage}
-                      alt={slide.heading}
+                      alt={slide.heading || 'Hero Banner'}
                       priority={index === 0}
                     />
                   </div>
-                  {/* Mobile Image */}
+                  {/* Mobile Image (< 640px) */}
                   <div className="block sm:hidden absolute inset-0 w-full h-full">
                     <HeroSlideImage
                       src={slide.mobileImage!}
-                      alt={slide.heading}
+                      alt={slide.heading || 'Hero Mobile Banner'}
                       priority={index === 0}
                     />
                   </div>
@@ -141,54 +148,78 @@ export default function HeroSlider({ slides = defaultSlides }: HeroSliderProps) 
               ) : (
                 <HeroSlideImage
                   src={slide.desktopImage}
-                  alt={slide.heading}
+                  alt={slide.heading || 'Hero Banner'}
                   priority={index === 0}
                 />
               )}
 
-              {/* Dark Vignette Gradient Overlays for Readability: dark on left for text, clear on right for image */}
-              <div className="absolute inset-0 bg-gradient-to-r from-stone-950/90 via-stone-950/40 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 via-transparent to-black/20" />
+              {/* Smart Vignette Overlay: only darken when text content is present so graphic banners remain 100% bright */}
+              {hasTextContent && (
+                <>
+                  {/* Desktop / Tablet side vignette (keeps right-side art clear) */}
+                  <div className="hidden sm:block absolute inset-0 bg-gradient-to-r from-stone-950/85 via-stone-950/40 to-transparent" />
+                  {/* Mobile bottom vignette (keeps top art clear) */}
+                  <div className="block sm:hidden absolute inset-0 bg-gradient-to-t from-stone-950/90 via-stone-950/40 to-transparent" />
+                </>
+              )}
             </div>
 
+            {/* Full Slide Click Area (allows easy tap on mobile) */}
+            {slide.ctaUrl && (
+              <Link
+                href={slide.ctaUrl}
+                className="absolute inset-0 z-10"
+                aria-label={slide.heading || 'Hero promotional banner'}
+                tabIndex={-1}
+              />
+            )}
+
             {/* Content Container */}
-            <div className="relative z-20 h-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-5 sm:py-10 flex flex-col justify-center w-full text-white">
-              <div className="max-w-2xl">
-                {badgeText ? (
-                  <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-[#A84358]/90 backdrop-blur-md text-rose-200 border border-rose-500/40 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold tracking-wider uppercase mb-2 sm:mb-4 w-fit shadow-lg shadow-rose-950/40">
-                    <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300" />
-                    <span>{badgeText}</span>
-                  </div>
-                ) : null}
+            {(hasTextContent || slide.ctaText) && (
+              <div className="relative z-20 h-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-6 sm:py-10 flex flex-col justify-end sm:justify-center w-full text-white pointer-events-none">
+                <div className="max-w-2xl pointer-events-auto">
+                  {badgeText && hasHeading ? (
+                    <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-[#A84358]/90 backdrop-blur-md text-rose-200 border border-rose-500/40 px-2.5 sm:px-3.5 py-0.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold tracking-wider uppercase mb-1.5 sm:mb-4 w-fit shadow-lg shadow-rose-950/40">
+                      <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300" />
+                      <span>{badgeText}</span>
+                    </div>
+                  ) : null}
 
-                <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight font-serif leading-[1.15] mb-1.5 sm:mb-4 text-white drop-shadow-md">
-                  {slide.heading}
-                </h1>
+                  {hasHeading && (
+                    <h1 className="text-lg xs:text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight font-serif leading-[1.15] mb-1.5 sm:mb-4 text-white drop-shadow-md">
+                      {slide.heading}
+                    </h1>
+                  )}
 
-                <p className="text-xs sm:text-base md:text-lg text-rose-100/90 font-medium mb-3 sm:mb-8 max-w-xl leading-relaxed drop-shadow-xs line-clamp-2 sm:line-clamp-none">
-                  {slide.subheading}
-                </p>
+                  {hasSubheading && (
+                    <p className="text-[11px] xs:text-xs sm:text-base md:text-lg text-rose-100/90 font-medium mb-3 sm:mb-8 max-w-xl leading-relaxed drop-shadow-xs line-clamp-2 sm:line-clamp-none">
+                      {slide.subheading}
+                    </p>
+                  )}
 
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3.5">
-                  <Link
-                    href={slide.ctaUrl}
-                    className="px-4 sm:px-8 py-2 sm:py-3.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl text-[11px] sm:text-sm font-bold tracking-wider uppercase transition-all duration-200 shadow-xl shadow-amber-950/20 flex items-center gap-1.5 sm:gap-2 active:scale-95"
-                  >
-                    <span>{slide.ctaText}</span>
-                    <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </Link>
+                  {slide.ctaText && slide.ctaUrl && (
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3.5">
+                      <Link
+                        href={slide.ctaUrl}
+                        className="px-4 sm:px-8 py-2 sm:py-3.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl text-[11px] sm:text-sm font-bold tracking-wider uppercase transition-all duration-200 shadow-xl shadow-amber-950/20 flex items-center gap-1.5 sm:gap-2 active:scale-95"
+                      >
+                        <span>{slide.ctaText}</span>
+                        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      </Link>
 
-                  {slide.secondaryCtaText && slide.secondaryCtaUrl && (
-                    <Link
-                      href={slide.secondaryCtaUrl}
-                      className="px-4 sm:px-8 py-2 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/30 rounded-xl text-[11px] sm:text-sm font-bold tracking-wider uppercase transition-all duration-200 active:scale-95"
-                    >
-                      {slide.secondaryCtaText}
-                    </Link>
+                      {slide.secondaryCtaText && slide.secondaryCtaUrl && (
+                        <Link
+                          href={slide.secondaryCtaUrl}
+                          className="px-4 sm:px-8 py-2 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/30 rounded-xl text-[11px] sm:text-sm font-bold tracking-wider uppercase transition-all duration-200 active:scale-95"
+                        >
+                          {slide.secondaryCtaText}
+                        </Link>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
-            </div>
+            )}
           </div>
         );
       })}

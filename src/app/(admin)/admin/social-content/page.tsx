@@ -1,9 +1,10 @@
 'use client';
 
 import ImageUploadField from '@/components/admin/ImageUploadField';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Video, Plus, Trash2, Edit2, ExternalLink, Check, X } from 'lucide-react';
+import ReelPlayer, { parseVideoSource } from '@/components/ui/ReelPlayer';
+import { Video, Plus, Trash2, Edit2, ExternalLink, Check, X, Upload, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SocialPost {
@@ -29,6 +30,10 @@ export default function AdminSocialContentPage() {
   const [productTitle, setProductTitle] = useState('');
   const [displayOrder, setDisplayOrder] = useState<number>(1);
   const [saving, setSaving] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const videoFileInputRef = useRef<HTMLInputElement>(null);
+
+  const videoSourceInfo = parseVideoSource(videoUrl);
 
   const fetchPosts = async () => {
     try {
@@ -45,6 +50,43 @@ export default function AdminSocialContentPage() {
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  const handleVideoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 60 * 1024 * 1024) {
+      toast.error('Video file size exceeds 60MB limit');
+      return;
+    }
+
+    setUploadingVideo(true);
+    const toastId = toast.loading('Uploading video file...');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setVideoUrl(data.url);
+        toast.success('Video uploaded successfully!', { id: toastId });
+      } else {
+        toast.error(data.error || 'Failed to upload video', { id: toastId });
+      }
+    } catch {
+      toast.error('Network error while uploading video', { id: toastId });
+    } finally {
+      setUploadingVideo(false);
+      if (videoFileInputRef.current) {
+        videoFileInputRef.current.value = '';
+      }
+    }
+  };
 
   const handleStartEdit = (post: SocialPost) => {
     setEditingPostId(post.id);
@@ -154,7 +196,7 @@ export default function AdminSocialContentPage() {
       <div>
         <h1 className="text-2xl font-bold font-serif text-white">Instagram Reels / UGC</h1>
         <p className="text-xs text-slate-400 mt-1">
-          Manage UGC video clips and Instagram reels featured in the homepage Reels section. Changes are live on the store immediately.
+          Manage UGC video clips and Instagram reels featured in the homepage Reels section. Videos autoplay smoothly in the storefront.
         </p>
       </div>
 
@@ -198,6 +240,95 @@ export default function AdminSocialContentPage() {
               required
             />
 
+            {/* Video Upload & URL Input */}
+            <div className="space-y-2 border border-slate-800 bg-slate-950/60 p-3.5 rounded-2xl">
+              <div className="flex items-center justify-between">
+                <label className="text-slate-300 font-semibold flex items-center gap-1.5">
+                  <Video className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Reel Video (File Upload or Link)</span>
+                </label>
+                {videoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setVideoUrl('')}
+                    className="text-[10px] text-rose-400 hover:text-rose-300 cursor-pointer"
+                  >
+                    Clear Video
+                  </button>
+                )}
+              </div>
+
+              {/* Direct File Upload Button */}
+              <div className="flex items-center gap-2">
+                <input
+                  ref={videoFileInputRef}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime,video/ogg"
+                  onChange={handleVideoFileUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  disabled={uploadingVideo}
+                  onClick={() => videoFileInputRef.current?.click()}
+                  className="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-medium flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 text-[11px]"
+                >
+                  {uploadingVideo ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-400" />
+                      <span>Uploading Video...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Upload Video (.mp4, .webm, up to 60MB)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="Or paste: Google Drive link, YouTube Shorts, or .mp4 URL"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-[11px] focus:outline-hidden focus:border-rose-500"
+                />
+              </div>
+
+              {/* Format Detection Badge */}
+              {videoSourceInfo && (
+                <div className="flex items-center gap-1.5 text-[10px] py-1 px-2.5 rounded-lg bg-emerald-950/60 border border-emerald-800/50 text-emerald-300">
+                  <Sparkles className="w-3 h-3 shrink-0" />
+                  <span className="truncate">
+                    {videoSourceInfo.type === 'gdrive' && 'Google Drive Link Detected (Auto-embedded for autoplay)'}
+                    {videoSourceInfo.type === 'youtube' && 'YouTube / Shorts Link Detected (Plays via ReactPlayer)'}
+                    {videoSourceInfo.type === 'vimeo' && 'Vimeo Link Detected'}
+                    {videoSourceInfo.type === 'direct' && 'Direct Video Stream Detected (HTML5 Autoplay)'}
+                  </span>
+                </div>
+              )}
+
+              {/* Live Video Preview in Admin */}
+              {videoUrl && (
+                <div className="mt-2 pt-2 border-t border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-1">Live Storefront Preview:</span>
+                  <div className="relative aspect-9/14 w-32 mx-auto rounded-xl overflow-hidden bg-black border border-slate-700 shadow-md">
+                    <ReelPlayer
+                      url={videoUrl}
+                      thumbnailUrl={thumbnailUrl}
+                      playing={true}
+                      muted={true}
+                      controls={false}
+                      loop={true}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div>
               <label className="block text-slate-300 font-semibold mb-1">
                 Featured Product / Tag
@@ -216,23 +347,10 @@ export default function AdminSocialContentPage() {
                 Caption / Description
               </label>
               <textarea
-                rows={3}
+                rows={2}
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
                 placeholder="Night oiling routine with 21 herbs infusion for deep root feeding ✨"
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-hidden focus:border-rose-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">
-                Instagram Reel / Video Link
-              </label>
-              <input
-                type="text"
-                value={instagramUrl}
-                onChange={(e) => setInstagramUrl(e.target.value)}
-                placeholder="https://www.instagram.com/reel/..."
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-hidden focus:border-rose-500"
               />
             </div>
@@ -251,13 +369,13 @@ export default function AdminSocialContentPage() {
               </div>
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">
-                  Direct Video URL (Optional)
+                  Instagram Link
                 </label>
                 <input
                   type="text"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  placeholder="https://...mp4"
+                  value={instagramUrl}
+                  onChange={(e) => setInstagramUrl(e.target.value)}
+                  placeholder="https://www.instagram.com/reel/..."
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-hidden focus:border-rose-500"
                 />
               </div>
@@ -265,7 +383,7 @@ export default function AdminSocialContentPage() {
 
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || uploadingVideo}
               className="w-full py-3 bg-[#8C3A4F] hover:bg-[#722E3F] text-white rounded-xl font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all disabled:opacity-50 cursor-pointer"
             >
               {editingPostId ? (
@@ -326,6 +444,12 @@ export default function AdminSocialContentPage() {
                       <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full text-[9px] font-bold text-amber-300 border border-white/20">
                         #{p.displayOrder}
                       </div>
+                      {p.videoUrl && (
+                        <div className="absolute top-2 right-2 bg-rose-950/80 backdrop-blur-md px-2 py-0.5 rounded-full text-[9px] font-bold text-rose-300 border border-rose-800/40 flex items-center gap-1">
+                          <Video className="w-2.5 h-2.5" />
+                          <span>Video</span>
+                        </div>
+                      )}
                     </div>
                     <div className="p-3 space-y-2">
                       <span className="text-[10px] text-rose-400 font-bold block truncate">

@@ -25,6 +25,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const updated = await saveFooterData(body);
 
+    const { invalidateAllPublicCaches } = await import('@/lib/cache/invalidator');
+    invalidateAllPublicCaches();
+
     return NextResponse.json({
       success: true,
       message: 'Footer content and navigation updated and published successfully!',

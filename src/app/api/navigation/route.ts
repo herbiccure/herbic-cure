@@ -8,7 +8,17 @@ export const revalidate = 0;
 
 const getNavigationSettings = unstable_cache(
   async () => {
-    const [setting, offerSection, logoSetting, brandSetting, feeSetting, thresholdSetting, codSetting] = await Promise.all([
+    const [
+      setting,
+      offerSection,
+      logoSetting,
+      brandSetting,
+      feeSetting,
+      thresholdSetting,
+      codSetting,
+      footerLogoSetting,
+      footerSetting,
+    ] = await Promise.all([
       prisma.siteSetting.findUnique({
         where: { key: 'navbar_offers_enabled' },
       }),
@@ -31,6 +41,12 @@ const getNavigationSettings = unstable_cache(
       prisma.siteSetting.findUnique({
         where: { key: 'cod_available' },
       }),
+      prisma.siteSetting.findUnique({
+        where: { key: 'footer_logo' },
+      }),
+      prisma.siteSetting.findUnique({
+        where: { key: 'footer_settings' },
+      }),
     ]);
 
     const navbarOffersEnabled = setting ? setting.value === 'true' : false;
@@ -41,10 +57,24 @@ const getNavigationSettings = unstable_cache(
     const freeShippingThreshold = thresholdSetting?.value ? Number(thresholdSetting.value) : 499;
     const codAvailable = codSetting ? codSetting.value === 'true' : true;
 
+    let footerLogoUrl = footerLogoSetting?.value?.trim() || '';
+    if (!footerLogoUrl && footerSetting?.value) {
+      try {
+        const parsed = JSON.parse(footerSetting.value);
+        if (parsed?.brand?.logoUrl) {
+          footerLogoUrl = parsed.brand.logoUrl;
+        }
+      } catch {}
+    }
+    if (!footerLogoUrl) {
+      footerLogoUrl = '/images/banners/herbic-cure-logo.png';
+    }
+
     return {
       navbarOffersEnabled,
       offerBannerActive,
       logoUrl,
+      footerLogoUrl,
       brandName,
       standardShippingFee,
       freeShippingThreshold,
@@ -72,6 +102,7 @@ export async function GET() {
         navbarOffersEnabled: false,
         offerBannerActive: false,
         logoUrl: '/images/banners/herbic-cure-logo.png',
+        footerLogoUrl: '/images/banners/herbic-cure-logo.png',
         brandName: 'Herbic Cure',
       },
       {

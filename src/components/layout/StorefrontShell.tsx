@@ -12,7 +12,8 @@ export default function StorefrontShell({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith('/admin');
 
-  const [logoUrl, setLogoUrl] = useState('/images/banners/herbic-cure-logo.png');
+  const [headerLogoUrl, setHeaderLogoUrl] = useState('/images/banners/herbic-cure-logo.png');
+  const [footerLogoUrl, setFooterLogoUrl] = useState('/images/banners/herbic-cure-logo.png');
   const [brandName, setBrandName] = useState('Herbic Cure');
 
   useEffect(() => {
@@ -21,7 +22,8 @@ export default function StorefrontShell({ children }: { children: React.ReactNod
       .then((res) => res.json())
       .then((data) => {
         if (!isMounted) return;
-        if (data?.logoUrl) setLogoUrl(data.logoUrl);
+        if (data?.logoUrl) setHeaderLogoUrl(data.logoUrl);
+        if (data?.footerLogoUrl) setFooterLogoUrl(data.footerLogoUrl);
         if (data?.brandName) setBrandName(data.brandName);
       })
       .catch(() => {});
@@ -37,9 +39,9 @@ export default function StorefrontShell({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen flex flex-col bg-[#FCF8F9] text-[#1a221c]">
       <AnnouncementBar />
-      <Header logoUrl={logoUrl} brandName={brandName} />
+      <Header logoUrl={headerLogoUrl} brandName={brandName} />
       <main className="flex-1">{children}</main>
-      <Footer logoUrl={logoUrl} brandName={brandName} />
+      <Footer logoUrl={footerLogoUrl} brandName={brandName} />
       <CartDrawer />
       <WhatsAppFloating />
     </div>

@@ -173,13 +173,19 @@ function SlidePreviewImage({ src, alt }: { src?: string; alt: string }) {
     setHasError(false);
   }, [src]);
 
+  const isBypass = Boolean(
+    effectiveSrc.startsWith('http') ||
+    effectiveSrc.startsWith('data:') ||
+    effectiveSrc.startsWith('/uploads/')
+  );
+
   return (
     <>
       <Image
         src={effectiveSrc}
         alt={alt}
         fill
-        unoptimized={Boolean(effectiveSrc.startsWith('http') || effectiveSrc.startsWith('data:'))}
+        unoptimized={isBypass}
         className="object-cover object-center opacity-60 transition-opacity duration-300"
         onError={() => setHasError(true)}
       />
@@ -1291,125 +1297,142 @@ export default function AdminHomepageBuilderPage() {
                       </div>
 
                       {/* Image Uploaders */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                        {/* Desktop Image */}
-                        <div className="space-y-2">
-                          <label className="block text-[#45363B] font-semibold">
-                            Desktop Banner Image URL (1920x800 recommended)
-                          </label>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={currentSlide.desktopImage || ''}
-                              onChange={(e) => handleUpdateCurrentSlide('desktopImage', e.target.value)}
-                              placeholder="/images/banners/banner-1.jpg or https://..."
-                              className="flex-1 bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl p-2.5 text-[#2D1B1B] text-xs focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white outline-hidden"
-                            />
-                            <input
-                              type="file"
-                              ref={fileInputRef}
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleImageFileUpload(file, false);
-                              }}
-                            />
-                            <button
-                              type="button"
-                              disabled={uploadingImage}
-                              onClick={() => fileInputRef.current?.click()}
-                              className="px-3 py-2 bg-[#8C3A4F] hover:bg-[#722E3F] text-white rounded-xl font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0 disabled:opacity-50"
-                              title="Upload Desktop Image"
-                            >
-                              <Upload className="w-3.5 h-3.5" />
-                              <span>{uploadingImage ? 'Uploading...' : 'Upload'}</span>
-                            </button>
+                      <div className="space-y-4 pt-2">
+                        {/* Format & Dimension Guidance Banner */}
+                        <div className="p-3 bg-[#F6DFE7]/60 border border-[#EAC9D1] rounded-xl text-xs text-[#543E44] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <span className="font-bold text-[#8C3A4F]">Recommended Banner Dimensions:</span>
+                            <div className="text-[11px] text-[#7A5B64] mt-0.5">
+                              • <strong>Desktop:</strong> 1920 × 700 px (or 1920 × 800 px, 16:9 / 2.4:1)<br />
+                              • <strong>Tablet:</strong> 1200 × 600 px (or 1024 × 576 px, 16:9)<br />
+                              • <strong>Mobile:</strong> 800 × 800 px (1:1 square) or 750 × 900 px (4:5 portrait)
+                            </div>
                           </div>
-                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                            <span className="text-[10px] font-bold text-[#7A5B64] uppercase tracking-wider mr-0.5">
-                              Presets:
-                            </span>
-                            {[
-                              { label: 'Hero 1', url: '/images/banners/herbic-hero-banner-1.jpg' },
-                              { label: 'Hero 2', url: '/images/banners/herbic-hero-banner-2.jpg' },
-                              { label: 'Banner 1', url: '/images/banners/banner-1.png' },
-                              { label: 'Banner 2', url: '/images/banners/banner-2.png' },
-                              { label: 'Banner 3', url: '/images/banners/banner-3.png' },
-                              { label: 'Banner 4', url: '/images/banners/banner-4.png' },
-                            ].map((preset) => (
-                              <button
-                                key={preset.url}
-                                type="button"
-                                onClick={() => handleUpdateCurrentSlide('desktopImage', preset.url)}
-                                className={`px-2 py-0.5 text-[10px] rounded-md font-medium border transition-colors cursor-pointer ${
-                                  currentSlide.desktopImage === preset.url
-                                    ? 'bg-[#8C3A4F] text-white border-[#8C3A4F]'
-                                    : 'bg-white hover:bg-[#FDF0F4] text-[#45363B] border-[#EAC9D1]'
-                                }`}
-                              >
-                                {preset.label}
-                              </button>
-                            ))}
-                          </div>
+                          <span className="text-[10px] text-stone-500 bg-white/80 px-2.5 py-1 rounded-lg border border-[#EAC9D1] shrink-0 self-start sm:self-center font-medium">
+                            Max 15MB • Auto-compressed to WebP
+                          </span>
                         </div>
 
-                        {/* Mobile Image */}
-                        <div className="space-y-2">
-                          <label className="block text-[#45363B] font-semibold">
-                            Mobile Banner Image URL (Optional, 800x800 square)
-                          </label>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={currentSlide.mobileImage || ''}
-                              onChange={(e) => handleUpdateCurrentSlide('mobileImage', e.target.value)}
-                              placeholder="/images/banners/banner-mobile.jpg"
-                              className="flex-1 bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl p-2.5 text-[#2D1B1B] text-xs focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white outline-hidden"
-                            />
-                            <input
-                              type="file"
-                              ref={mobileFileInputRef}
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleImageFileUpload(file, true);
-                              }}
-                            />
-                            <button
-                              type="button"
-                              disabled={uploadingImage}
-                              onClick={() => mobileFileInputRef.current?.click()}
-                              className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-[#45363B] border border-stone-300 rounded-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 disabled:opacity-50"
-                              title="Upload Mobile Image"
-                            >
-                              <Upload className="w-3.5 h-3.5" />
-                              <span>Upload</span>
-                            </button>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                            <span className="text-[10px] font-bold text-[#7A5B64] uppercase tracking-wider mr-0.5">
-                              Presets:
-                            </span>
-                            {[
-                              { label: 'Hero 1', url: '/images/banners/herbic-hero-banner-1.jpg' },
-                              { label: 'Hero 2', url: '/images/banners/herbic-hero-banner-2.jpg' },
-                              { label: 'Banner 1', url: '/images/banners/banner-1.png' },
-                            ].map((preset) => (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Desktop Image */}
+                          <div className="space-y-2">
+                            <label className="block text-[#45363B] font-semibold text-xs">
+                              Desktop / Tablet Banner Image <span className="text-[#8C3A4F] font-normal">(1920x700 recommended)</span>
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={currentSlide.desktopImage || ''}
+                                onChange={(e) => handleUpdateCurrentSlide('desktopImage', e.target.value)}
+                                placeholder="/images/banners/banner-1.jpg or https://..."
+                                className="flex-1 bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl p-2.5 text-[#2D1B1B] text-xs focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white outline-hidden"
+                              />
+                              <input
+                                type="file"
+                                ref={fileInputRef}
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageFileUpload(file, false);
+                                }}
+                              />
                               <button
-                                key={preset.url}
                                 type="button"
-                                onClick={() => handleUpdateCurrentSlide('mobileImage', preset.url)}
-                                className={`px-2 py-0.5 text-[10px] rounded-md font-medium border transition-colors cursor-pointer ${
-                                  currentSlide.mobileImage === preset.url
-                                    ? 'bg-[#8C3A4F] text-white border-[#8C3A4F]'
-                                    : 'bg-white hover:bg-[#FDF0F4] text-[#45363B] border-[#EAC9D1]'
-                                }`}
+                                disabled={uploadingImage}
+                                onClick={() => fileInputRef.current?.click()}
+                                className="px-3 py-2 bg-[#8C3A4F] hover:bg-[#722E3F] text-white rounded-xl font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0 disabled:opacity-50 text-xs"
+                                title="Upload Desktop Image"
                               >
-                                {preset.label}
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>{uploadingImage ? 'Uploading...' : 'Upload'}</span>
                               </button>
-                            ))}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                              <span className="text-[10px] font-bold text-[#7A5B64] uppercase tracking-wider mr-0.5">
+                                Presets:
+                              </span>
+                              {[
+                                { label: 'Hero 1', url: '/images/banners/herbic-hero-banner-1.jpg' },
+                                { label: 'Hero 2', url: '/images/banners/herbic-hero-banner-2.jpg' },
+                                { label: 'Banner 1', url: '/images/banners/banner-1.png' },
+                                { label: 'Banner 2', url: '/images/banners/banner-2.png' },
+                                { label: 'Banner 3', url: '/images/banners/banner-3.png' },
+                                { label: 'Banner 4', url: '/images/banners/banner-4.png' },
+                              ].map((preset) => (
+                                <button
+                                  key={preset.url}
+                                  type="button"
+                                  onClick={() => handleUpdateCurrentSlide('desktopImage', preset.url)}
+                                  className={`px-2 py-0.5 text-[10px] rounded-md font-medium border transition-colors cursor-pointer ${
+                                    currentSlide.desktopImage === preset.url
+                                      ? 'bg-[#8C3A4F] text-white border-[#8C3A4F]'
+                                      : 'bg-white hover:bg-[#FDF0F4] text-[#45363B] border-[#EAC9D1]'
+                                  }`}
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Mobile Image */}
+                          <div className="space-y-2">
+                            <label className="block text-[#45363B] font-semibold text-xs">
+                              Mobile Banner Image <span className="text-[#8C3A4F] font-normal">(Optional: 800x800 square or 750x900)</span>
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={currentSlide.mobileImage || ''}
+                                onChange={(e) => handleUpdateCurrentSlide('mobileImage', e.target.value)}
+                                placeholder="/images/banners/banner-mobile.jpg or https://..."
+                                className="flex-1 bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl p-2.5 text-[#2D1B1B] text-xs focus:ring-2 focus:ring-[#8C3A4F]/30 focus:bg-white outline-hidden"
+                              />
+                              <input
+                                type="file"
+                                ref={mobileFileInputRef}
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageFileUpload(file, true);
+                                }}
+                              />
+                              <button
+                                type="button"
+                                disabled={uploadingImage}
+                                onClick={() => mobileFileInputRef.current?.click()}
+                                className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-[#45363B] border border-stone-300 rounded-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 disabled:opacity-50 text-xs"
+                                title="Upload Mobile Image"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Upload</span>
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                              <span className="text-[10px] font-bold text-[#7A5B64] uppercase tracking-wider mr-0.5">
+                                Presets:
+                              </span>
+                              {[
+                                { label: 'Hero 1', url: '/images/banners/herbic-hero-banner-1.jpg' },
+                                { label: 'Hero 2', url: '/images/banners/herbic-hero-banner-2.jpg' },
+                                { label: 'Banner 1', url: '/images/banners/banner-1.png' },
+                              ].map((preset) => (
+                                <button
+                                  key={preset.url}
+                                  type="button"
+                                  onClick={() => handleUpdateCurrentSlide('mobileImage', preset.url)}
+                                  className={`px-2 py-0.5 text-[10px] rounded-md font-medium border transition-colors cursor-pointer ${
+                                    currentSlide.mobileImage === preset.url
+                                      ? 'bg-[#8C3A4F] text-white border-[#8C3A4F]'
+                                      : 'bg-white hover:bg-[#FDF0F4] text-[#45363B] border-[#EAC9D1]'
+                                  }`}
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       </div>

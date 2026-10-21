@@ -228,5 +228,17 @@ export async function saveFooterData(data: Partial<FooterData>): Promise<FooterD
     create: { key: 'footer_settings', value: JSON.stringify(updated) },
   });
 
+  if (updated.brand?.logoUrl) {
+    await prisma.siteSetting.upsert({
+      where: { key: 'footer_logo' },
+      update: { value: updated.brand.logoUrl },
+      create: { key: 'footer_logo', value: updated.brand.logoUrl },
+    });
+  }
+
   return updated;
+}
+
+export function clearFooterCache(): void {
+  footerCache = null;
 }

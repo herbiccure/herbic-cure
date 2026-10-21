@@ -96,6 +96,8 @@ const DEFAULT_REELS: SocialItem[] = [
   },
 ];
 
+import ReelPlayer from '@/components/ui/ReelPlayer';
+
 export default function SocialReelsSection({
   posts,
   title = 'Herbic Cure On Instagram',
@@ -104,6 +106,7 @@ export default function SocialReelsSection({
   const [activeVideo, setActiveVideo] = useState<SocialItem | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
   const displayPosts = posts && posts.length > 0 ? posts : DEFAULT_REELS;
@@ -113,7 +116,7 @@ export default function SocialReelsSection({
     if (!isAutoPlaying || displayPosts.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % displayPosts.length);
-    }, 4000);
+    }, 4500);
     return () => clearInterval(interval);
   }, [isAutoPlaying, displayPosts.length]);
 
@@ -143,7 +146,10 @@ export default function SocialReelsSection({
     <section
       className="py-7 sm:py-16 bg-stone-900 text-white overflow-hidden"
       onMouseEnter={() => setIsAutoPlaying(false)}
-      onMouseLeave={() => setIsAutoPlaying(true)}
+      onMouseLeave={() => {
+        setIsAutoPlaying(true);
+        setHoveredIndex(null);
+      }}
       onTouchStart={() => setIsAutoPlaying(false)}
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
@@ -198,11 +204,16 @@ export default function SocialReelsSection({
         >
           {displayPosts.map((post, idx) => {
             const isActive = idx === currentIndex;
+            const isHovered = hoveredIndex === idx;
+            const shouldPlay = isActive || isHovered;
             const duration = post.duration || DEFAULT_DURATIONS[idx % DEFAULT_DURATIONS.length];
+
             return (
               <div
                 key={post.id || idx}
                 onClick={() => setActiveVideo(post)}
+                onMouseEnter={() => setHoveredIndex(idx)}
+                onMouseLeave={() => setHoveredIndex(null)}
                 className={`w-[240px] sm:w-[280px] lg:w-auto shrink-0 lg:shrink snap-start group relative aspect-9/14 sm:aspect-9/15 rounded-3xl overflow-hidden bg-stone-950 cursor-pointer border transition-all duration-300 ${
                   isActive
                     ? 'border-amber-400/80 shadow-2xl ring-2 ring-amber-400/30'
@@ -210,14 +221,17 @@ export default function SocialReelsSection({
                 }`}
               >
                 {post.videoUrl ? (
-                  <video
-                    src={post.videoUrl}
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
+                  <div className="absolute inset-0 w-full h-full">
+                    <ReelPlayer
+                      url={post.videoUrl}
+                      thumbnailUrl={post.thumbnailUrl}
+                      playing={shouldPlay}
+                      muted={true}
+                      loop={true}
+                      controls={false}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                  </div>
                 ) : (
                   <ReelThumbnail
                     src={post.thumbnailUrl}
@@ -226,7 +240,7 @@ export default function SocialReelsSection({
                 )}
 
                 {/* Subtle gradient overlay for contrast */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/30 group-hover:from-black/95 transition-colors" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/30 group-hover:from-black/95 transition-colors pointer-events-none" />
 
                 {/* Top Badges (Duration pill with red pulsing dot + "Playing" pill on active) */}
                 <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-10">
@@ -235,20 +249,20 @@ export default function SocialReelsSection({
                     <span>{duration}</span>
                   </span>
 
-                  {isActive && (
+                  {shouldPlay && (
                     <span className="text-[10px] sm:text-[11px] font-bold text-amber-300 bg-[#8C3A4F]/90 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-rose-400/40 shadow-sm flex items-center gap-1 animate-fadeIn">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                      <span>Playing</span>
+                      <span>{isActive ? 'Playing' : 'Preview'}</span>
                     </span>
                   )}
                 </div>
 
-                {/* Center Play Button with ripple effect */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                {/* Center Play Button indicator (fades subtly when playing to keep focus on video) */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                   <div
                     className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 ${
-                      isActive
-                        ? 'bg-white text-[#8C3A4F] scale-105 ring-4 ring-white/30'
+                      shouldPlay
+                        ? 'bg-white/20 backdrop-blur-xs text-white opacity-40 group-hover:opacity-90 group-hover:scale-105'
                         : 'bg-white/90 text-[#8C3A4F] group-hover:bg-[#8C3A4F] group-hover:text-white group-hover:scale-110'
                     }`}
                   >
@@ -257,7 +271,7 @@ export default function SocialReelsSection({
                 </div>
 
                 {/* Bottom Caption & Product */}
-                <div className="absolute bottom-3 left-3 right-3 text-left space-y-1">
+                <div className="absolute bottom-3 left-3 right-3 text-left space-y-1 z-10 pointer-events-none">
                   {post.productTitle && (
                     <span className="inline-block bg-[#A84358]/95 text-rose-100 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider mb-0.5 line-clamp-1 border border-rose-400/30">
                       {post.productTitle}
@@ -291,25 +305,32 @@ export default function SocialReelsSection({
 
         {/* Modal Video Viewer */}
         {activeVideo && (
-          <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="relative w-full max-w-md bg-stone-950 rounded-3xl overflow-hidden border border-stone-800 shadow-2xl">
+          <div
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-fadeIn"
+            onClick={() => setActiveVideo(null)}
+          >
+            <div
+              className="relative w-full max-w-md bg-stone-950 rounded-3xl overflow-hidden border border-stone-800 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 type="button"
                 onClick={() => setActiveVideo(null)}
-                className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black transition-colors"
+                className="absolute top-4 right-4 z-30 w-9 h-9 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black transition-colors cursor-pointer"
                 aria-label="Close video"
               >
                 <X className="w-5 h-5" />
               </button>
 
-              <div className="relative aspect-9/16 w-full bg-black">
+              <div className="relative aspect-9/16 w-full bg-black flex items-center justify-center">
                 {activeVideo.videoUrl ? (
-                  <video
-                    src={activeVideo.videoUrl}
-                    controls
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-cover"
+                  <ReelPlayer
+                    url={activeVideo.videoUrl}
+                    thumbnailUrl={activeVideo.thumbnailUrl}
+                    playing={true}
+                    muted={false}
+                    controls={true}
+                    className="w-full h-full object-contain"
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-center p-6 bg-stone-900">
@@ -330,6 +351,36 @@ export default function SocialReelsSection({
                   </div>
                 )}
               </div>
+
+              {/* Modal footer with product info and external link */}
+              {(activeVideo.caption || activeVideo.productTitle || activeVideo.instagramUrl) && (
+                <div className="p-4 bg-stone-900/90 border-t border-stone-800 flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    {activeVideo.productTitle && (
+                      <span className="text-[10px] uppercase font-bold text-amber-400 block truncate">
+                        {activeVideo.productTitle}
+                      </span>
+                    )}
+                    {activeVideo.caption && (
+                      <p className="text-xs text-stone-200 line-clamp-1">
+                        {activeVideo.caption}
+                      </p>
+                    )}
+                  </div>
+                  {activeVideo.instagramUrl && (
+                    <a
+                      href={activeVideo.instagramUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
+                      title="Open on Instagram"
+                    >
+                      <InstagramIcon className="w-4 h-4" />
+                      <span className="hidden sm:inline">Instagram</span>
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

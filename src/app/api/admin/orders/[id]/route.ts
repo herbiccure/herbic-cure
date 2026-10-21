@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
+import { cancelOrderWithLogistics } from '@/lib/shipping/orderCancellation';
+import { cancelDelhiveryShipment } from '@/lib/shipping/delhivery';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,10 +46,35 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 
     const existingOrder = await prisma.order.findUnique({
       where: { id },
+      include: { items: true },
     });
 
     if (!existingOrder) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    // If order is transitioning to CANCELLED, execute complete cancellation workflow with Delhivery
+    if (orderStatus === 'CANCELLED' && existingOrder.orderStatus !== 'CANCELLED') {
+      const cancelResult = await cancelOrderWithLogistics({
+        orderId: id,
+        reason: eventDescription || 'Cancelled by store administrator',
+        cancelledBy: 'ADMIN',
+      });
+
+      const finalOrder = await prisma.order.findUnique({
+        where: { id },
+        include: {
+          items: true,
+          events: { orderBy: { timestamp: 'desc' } },
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        order: finalOrder,
+        delhivery: cancelResult.delhivery,
+        message: cancelResult.message,
+      });
     }
 
     const updatedOrder = await prisma.order.update({
@@ -76,9 +103,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
 
     return NextResponse.json({ success: true, order: updatedOrder });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update order error:', error);
-    return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Failed to update order' }, { status: 500 });
   }
 }
 
@@ -88,10 +115,20 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     if (authCheck instanceof NextResponse) return authCheck;
 
     const { id } = await context.params;
+    const existing = await prisma.order.findUnique({ where: { id } });
+
+    if (existing?.trackingNumber && existing.orderStatus !== 'CANCELLED') {
+      try {
+        await cancelDelhiveryShipment(existing.trackingNumber, 'Order deleted by admin');
+      } catch (delhErr) {
+        console.warn('Delhivery delete cancel warning:', delhErr);
+      }
+    }
+
     await prisma.order.delete({
       where: { id },
     });
-    return NextResponse.json({ success: true, message: 'Order deleted' });
+    return NextResponse.json({ success: true, message: 'Order deleted and Delhivery shipment cancelled' });
   } catch (error) {
     console.error('Delete order error:', error);
     return NextResponse.json({ error: 'Failed to delete order' }, { status: 500 });

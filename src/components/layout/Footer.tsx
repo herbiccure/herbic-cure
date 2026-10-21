@@ -71,7 +71,10 @@ export default function Footer({
     }
   };
 
-  const activeLogo = logoUrl || data.brand.logoUrl || '/images/banners/herbic-cure-logo.png';
+  const activeLogo =
+    data.brand?.logoUrl && data.brand.logoUrl !== DEFAULT_FOOTER_DATA.brand.logoUrl
+      ? data.brand.logoUrl
+      : (logoUrl || data.brand?.logoUrl || '/images/banners/herbic-cure-logo.png');
   const activeBrand = brandName || data.brand.brandName || 'HERBIC CURE';
 
   return (

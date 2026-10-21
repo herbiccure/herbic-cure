@@ -15,6 +15,16 @@ export async function GET(request: NextRequest) {
     for (const s of settings) {
       map[s.key] = s.value;
     }
+
+    if (!map.footer_logo && map.footer_settings) {
+      try {
+        const parsed = JSON.parse(map.footer_settings);
+        if (parsed?.brand?.logoUrl) {
+          map.footer_logo = parsed.brand.logoUrl;
+        }
+      } catch {}
+    }
+
     return NextResponse.json({ settings: map });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
@@ -35,6 +45,24 @@ export async function POST(request: NextRequest) {
         update: { value: valStr },
         create: { key, value: valStr },
       });
+    }
+
+    // If footer_logo is provided in settings, synchronize into footer_settings brand.logoUrl
+    if (body.footer_logo && typeof body.footer_logo === 'string') {
+      try {
+        const { getFooterData, saveFooterData, clearFooterCache } = await import('@/lib/footer');
+        await saveFooterData({
+          brand: {
+            logoUrl: body.footer_logo,
+            brandName: body.brand_name || undefined as any,
+            tagline: undefined as any,
+            description: undefined as any,
+          },
+        });
+        clearFooterCache();
+      } catch (err) {
+        console.error('Failed to sync footer_logo with footer_settings:', err);
+      }
     }
 
     invalidateAllPublicCaches();

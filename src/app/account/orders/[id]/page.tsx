@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/auth/server';
 import { getUserOrderById } from '@/data/user/orders';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import CancelOrderButton from './CancelOrderButton';
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession();
@@ -38,19 +39,27 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               Placed on {new Date(order.createdAt).toLocaleString('en-IN')}
             </p>
           </div>
-          <div className="sm:text-right">
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-bold ${
-                order.orderStatus === 'DELIVERED'
-                  ? 'bg-emerald-100 text-emerald-800'
-                  : order.orderStatus === 'CANCELLED'
-                  ? 'bg-rose-100 text-rose-800'
-                  : 'bg-amber-100 text-amber-800'
-              }`}
-            >
-              {order.orderStatus}
-            </span>
-            <p className="text-sm font-bold text-stone-900 mt-2">
+          <div className="sm:text-right flex flex-col sm:items-end gap-2">
+            <div className="flex items-center gap-2">
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-bold ${
+                  order.orderStatus === 'DELIVERED'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : order.orderStatus === 'CANCELLED'
+                    ? 'bg-rose-100 text-rose-800'
+                    : 'bg-amber-100 text-amber-800'
+                }`}
+              >
+                {order.orderStatus}
+              </span>
+              <CancelOrderButton
+                orderId={order.id}
+                orderNumber={order.orderNumber}
+                orderStatus={order.orderStatus}
+                trackingNumber={order.trackingNumber}
+              />
+            </div>
+            <p className="text-sm font-bold text-stone-900 mt-1">
               Total: ₹{order.total?.toLocaleString('en-IN')} ({order.paymentMethod})
             </p>
           </div>

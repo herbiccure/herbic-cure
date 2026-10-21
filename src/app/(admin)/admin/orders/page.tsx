@@ -11,6 +11,7 @@ import {
   X,
   Save,
   ExternalLink,
+  AlertTriangle,
 } from 'lucide-react';
 import { fetcher } from '@/lib/fetcher';
 import { AdminDataTable, Column } from '@/components/admin/AdminDataTable';
@@ -149,9 +150,13 @@ export default function AdminOrdersPage() {
         body: JSON.stringify(parsed.data),
       });
 
-      if (!res.ok) throw new Error('Failed to update order');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update order');
 
-      toast.success(`Order ${selectedOrder.orderNumber} updated to ${newStatus}`);
+      toast.success(data.message || `Order ${selectedOrder.orderNumber} updated to ${newStatus}`);
+      if (data.delhivery?.message) {
+        toast.info(`Delhivery Express: ${data.delhivery.message}`);
+      }
       
       // Update local cache & selected order
       mutate(
@@ -530,6 +535,26 @@ export default function AdminOrdersPage() {
                   />
                 </div>
               </div>
+
+              {newStatus === 'CANCELLED' && (
+                <div
+                  className={cn(
+                    'p-3.5 rounded-2xl border text-xs flex items-start gap-2.5 animate-fadeIn',
+                    isLight
+                      ? 'bg-rose-50 border-rose-200 text-rose-900'
+                      : 'bg-rose-950/40 border-rose-800 text-rose-200'
+                  )}
+                >
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="font-bold">Delhivery Express Cancellation Trigger</p>
+                    <p className="text-[11px] opacity-90 leading-relaxed">
+                      Updating to CANCELLED will automatically call the Delhivery API (/api/p/edit) to stop shipment dispatch
+                      {selectedOrder?.trackingNumber ? ` for AWB #${selectedOrder.trackingNumber}` : ''} and restore item quantities back into active inventory.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className={cn('block font-semibold mb-1 text-[11px]', isLight ? 'text-slate-700' : 'text-slate-300')}>

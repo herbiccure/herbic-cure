@@ -372,7 +372,7 @@ export default function AdminFooterPage() {
                       className="w-full bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl p-2.5 text-xs text-[#2D1B1B] outline-hidden"
                     />
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#8C3A4F] text-white hover:bg-[#722E3F] cursor-pointer shadow-xs transition-all">
                         <Upload className="w-3.5 h-3.5" />
                         <span>{uploadingLogo ? 'Uploading...' : 'Upload Logo'}</span>
@@ -384,6 +384,15 @@ export default function AdminFooterPage() {
                           disabled={uploadingLogo}
                         />
                       </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateBrand('logoUrl', '/images/banners/herbic-cure-logo.png');
+                        }}
+                        className="px-3 py-2 rounded-xl text-xs font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 transition-all"
+                      >
+                        Reset to Default
+                      </button>
                       <span className="text-[11px] text-stone-500">Supports transparent PNG, SVG, JPG</span>
                     </div>
 

@@ -35,6 +35,7 @@ export default function AdminSettingsPage() {
 
   const [storeName, setStoreName] = useState('Herbic Cure');
   const [logoUrl, setLogoUrl] = useState(DEFAULT_LOGO_URL);
+  const [footerLogoUrl, setFooterLogoUrl] = useState(DEFAULT_LOGO_URL);
   const [supportEmail, setSupportEmail] = useState('care@herbiccure.com');
   const [supportPhone, setSupportPhone] = useState('+91 8121961219');
   const [codEnabled, setCodEnabled] = useState(true);
@@ -43,10 +44,13 @@ export default function AdminSettingsPage() {
   
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadingFooterLogo, setUploadingFooterLogo] = useState(false);
+  const [uploadFooterError, setUploadFooterError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const footerFileInputRef = useRef<HTMLInputElement>(null);
 
   // Security & Password Change State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -102,6 +106,7 @@ export default function AdminSettingsPage() {
           const s = data.settings;
           if (s.brand_name) setStoreName(s.brand_name);
           if (s.store_logo || s.logo_url) setLogoUrl(s.store_logo || s.logo_url);
+          if (s.footer_logo) setFooterLogoUrl(s.footer_logo);
           if (s.contact_email) setSupportEmail(s.contact_email);
           if (s.contact_phone) setSupportPhone(s.contact_phone);
           if (s.cod_available !== undefined) setCodEnabled(s.cod_available === 'true');
@@ -150,6 +155,44 @@ export default function AdminSettingsPage() {
     setUploadError(null);
   };
 
+  const handleFooterFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingFooterLogo(true);
+    setUploadFooterError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || 'Failed to upload footer logo');
+      }
+
+      setFooterLogoUrl(data.url);
+      setSaved(false);
+    } catch (err: any) {
+      setUploadFooterError(err.message || 'Error uploading footer logo');
+    } finally {
+      setUploadingFooterLogo(false);
+      if (footerFileInputRef.current) {
+        footerFileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleResetFooterLogo = () => {
+    setFooterLogoUrl(DEFAULT_LOGO_URL);
+    setUploadFooterError(null);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -161,6 +204,7 @@ export default function AdminSettingsPage() {
           brand_name: storeName,
           store_logo: logoUrl,
           logo_url: logoUrl,
+          footer_logo: footerLogoUrl,
           contact_email: supportEmail,
           contact_phone: supportPhone,
           cod_available: codEnabled ? 'true' : 'false',
@@ -268,7 +312,7 @@ export default function AdminSettingsPage() {
 
       <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ========================================================================= */}
-        {/* 1. BRAND LOGO & VISUAL IDENTITY (FULL WIDTH)                              */}
+        {/* 1. HEADER LOGO & NAVBAR BRANDING (FULL WIDTH)                              */}
         {/* ========================================================================= */}
         <div
           className={`lg:col-span-2 rounded-3xl border p-6 shadow-sm space-y-6 ${
@@ -282,10 +326,10 @@ export default function AdminSettingsPage() {
               </div>
               <div>
                 <h2 className={`text-base font-bold ${isLight ? 'text-stone-900' : 'text-white'}`}>
-                  Store Logo &amp; Header Branding
+                  1. Header Logo &amp; Navbar Branding
                 </h2>
                 <p className={`text-xs ${isLight ? 'text-stone-500' : 'text-slate-400'}`}>
-                  This logo displays on the main website header, sticky scrolled bar, mobile menu, and footer.
+                  This logo displays on the main website header, sticky scrolled bar, and mobile drawer. Changing this will <strong>NOT</strong> affect your footer logo.
                 </p>
               </div>
             </div>
@@ -293,7 +337,7 @@ export default function AdminSettingsPage() {
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600  border border-emerald-500/20">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Active on Storefront
+                Header Active
               </span>
             </div>
           </div>
@@ -330,7 +374,7 @@ export default function AdminSettingsPage() {
                     unoptimized
                   />
                 ) : (
-                  <span className="text-xs text-stone-400 italic">No logo selected</span>
+                  <span className="text-xs text-stone-400 italic">No header logo selected</span>
                 )}
               </div>
 
@@ -349,13 +393,13 @@ export default function AdminSettingsPage() {
           {/* Logo Canvas Preview */}
           <div className="p-4 rounded-2xl bg-[#FBF5F6] border border-[#EAC9D1] flex flex-col items-center justify-center text-center gap-2">
             <span className="text-[11px] font-bold text-[#7A5B64] uppercase tracking-wider">
-              Logo Canvas Preview (Light Background)
+              Header Logo Canvas Preview
             </span>
             <div className="relative h-16 w-56 flex items-center justify-center bg-white rounded-xl p-2 border border-[#EAC9D1] shadow-2xs">
               {logoUrl ? (
                 <Image
                   src={logoUrl}
-                  alt="Storefront Logo Preview"
+                  alt="Storefront Header Logo Preview"
                   width={180}
                   height={50}
                   className="object-contain max-h-14"
@@ -393,7 +437,7 @@ export default function AdminSettingsPage() {
                   }`}
                 >
                   <Upload className="w-4 h-4" />
-                  <span>{uploadingLogo ? 'Uploading Logo...' : 'Upload Logo From Device'}</span>
+                  <span>{uploadingLogo ? 'Uploading Header Logo...' : 'Upload Header Logo From Device'}</span>
                 </button>
               </div>
 
@@ -423,7 +467,7 @@ export default function AdminSettingsPage() {
             {/* Direct Image URL input */}
             <div>
               <label className={`block font-semibold mb-1 text-xs ${isLight ? 'text-stone-600' : 'text-slate-400'}`}>
-                Or Enter Logo Image URL / Asset Path:
+                Or Enter Header Logo URL / Asset Path:
               </label>
               <div className="flex gap-2">
                 <input
@@ -444,6 +488,168 @@ export default function AdminSettingsPage() {
               <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-500 text-xs rounded-xl flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{uploadError}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 2. FOOTER LOGO & BRAND IDENTITY (SEPARATE FULL WIDTH)                      */}
+        {/* ========================================================================= */}
+        <div
+          className={`lg:col-span-2 rounded-3xl border p-6 shadow-sm space-y-6 ${
+            isLight ? 'bg-white border-stone-200' : 'bg-slate-900 border-slate-800'
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-200/60 ">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#8C3A4F]/10 text-[#8C3A4F] flex items-center justify-center">
+                <ImageIcon className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className={`text-base font-bold ${isLight ? 'text-stone-900' : 'text-white'}`}>
+                  2. Footer Brand Logo (Bottom Website Footer)
+                </h2>
+                <p className={`text-xs ${isLight ? 'text-stone-500' : 'text-slate-400'}`}>
+                  This logo displays specifically in the website footer brand column. Changing this will <strong>NOT</strong> affect your header logo.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600  border border-emerald-500/20">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                Footer Active
+              </span>
+              <Link
+                href="/admin/footer"
+                className="px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1"
+              >
+                <span>Footer CMS Studio</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Interactive Simulation: How it looks in the real footer */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${isLight ? 'text-stone-600' : 'text-slate-300'}`}>
+                <Eye className="w-3.5 h-3.5 text-[#8C3A4F]" />
+                Live Storefront Footer Simulation
+              </span>
+              <span className="text-[11px] text-stone-400">
+                Real-time footer canvas
+              </span>
+            </div>
+
+            {/* Mock Footer Brand Box matching real footer background #F6DFE7 */}
+            <div className="rounded-2xl border border-[#EAC9D1] bg-[#F6DFE7] shadow-sm overflow-hidden p-5 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 text-[#2D1B1B]">
+              <div className="space-y-3 max-w-md">
+                <div className="relative h-14 sm:h-16 w-44 sm:w-52 flex items-center justify-center p-1 bg-white/70 backdrop-blur-xs rounded-xl border border-[#EAC9D1]">
+                  {footerLogoUrl ? (
+                    <Image
+                      src={footerLogoUrl}
+                      alt="Footer Brand Logo"
+                      width={200}
+                      height={56}
+                      className="object-contain max-h-14 sm:max-h-16"
+                      unoptimized
+                    />
+                  ) : (
+                    <span className="text-xs text-stone-400 italic">No footer logo selected</span>
+                  )}
+                </div>
+                <p className="text-xs text-[#543E44] font-medium leading-relaxed">
+                  Inspired by Himalayan Herbs • Handcrafted traditional Kshirapak Vidhi for root nourishment and healthy hair vitality.
+                </p>
+              </div>
+
+              <div className="p-3 bg-white/80 rounded-xl border border-[#EAC9D1] text-[11px] text-[#7A5B64] space-y-1">
+                <div className="font-bold text-[#45363B]">Footer Column Preview</div>
+                <div>✓ Appears above copyright line</div>
+                <div>✓ Preserves transparent PNG transparency</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Controls: Upload & URL */}
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+              {/* File Upload Button */}
+              <div className="sm:col-span-5">
+                <input
+                  type="file"
+                  ref={footerFileInputRef}
+                  onChange={handleFooterFileUpload}
+                  accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                  className="hidden"
+                  id="footer-logo-file-input"
+                />
+                <button
+                  type="button"
+                  disabled={uploadingFooterLogo}
+                  onClick={() => footerFileInputRef.current?.click()}
+                  className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                    uploadingFooterLogo
+                      ? 'opacity-60 cursor-not-allowed bg-stone-100 border-stone-300 text-stone-600'
+                      : isLight
+                      ? 'bg-rose-50 border-rose-200 text-[#8C3A4F] hover:bg-rose-100 hover:border-rose-300'
+                      : 'bg-rose-950/40 border-rose-800/60 text-rose-300 hover:bg-rose-900/60'
+                  }`}
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>{uploadingFooterLogo ? 'Uploading Footer Logo...' : 'Upload Footer Logo From Device'}</span>
+                </button>
+              </div>
+
+              {/* Reset Button */}
+              <div className="sm:col-span-3">
+                <button
+                  type="button"
+                  onClick={handleResetFooterLogo}
+                  className={`w-full py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                    isLight
+                      ? 'bg-stone-50 border-stone-200 text-stone-700 hover:bg-stone-100'
+                      : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset to Default</span>
+                </button>
+              </div>
+
+              <div className="sm:col-span-4 text-right">
+                <span className="text-[11px] text-stone-400">
+                  Recommended: Transparent PNG or SVG (250x70px)
+                </span>
+              </div>
+            </div>
+
+            {/* Direct Image URL input */}
+            <div>
+              <label className={`block font-semibold mb-1 text-xs ${isLight ? 'text-stone-600' : 'text-slate-400'}`}>
+                Or Enter Footer Logo URL / Asset Path:
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={footerLogoUrl}
+                  onChange={(e) => setFooterLogoUrl(e.target.value)}
+                  placeholder="/images/banners/herbic-cure-logo.png or https://..."
+                  className={`w-full rounded-xl px-3.5 py-2 text-xs border outline-none font-mono ${
+                    isLight
+                      ? 'bg-stone-50 border-stone-300 text-stone-900 focus:border-rose-600'
+                      : 'bg-slate-800 border-slate-700 text-white focus:border-rose-500'
+                  }`}
+                />
+              </div>
+            </div>
+
+            {uploadFooterError && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-500 text-xs rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{uploadFooterError}</span>
               </div>
             )}
           </div>
