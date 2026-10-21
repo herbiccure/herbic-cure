@@ -426,7 +426,19 @@ export default function AdminHomepageBuilderPage() {
       try {
         const parsed = JSON.parse(sec.contentJson || '{}');
         if (Array.isArray(parsed.slides) && parsed.slides.length > 0) {
-          setHeroSlides(parsed.slides);
+          const cleanedSlides: Slide[] = parsed.slides.map((s: any) => ({
+            desktopImage: s.desktopImage || '/images/banners/herbic-hero-banner-1.jpg',
+            tabletImage: s.tabletImage || '',
+            mobileImage: s.mobileImage || '',
+            badge: s.badge || '',
+            heading: s.heading || '',
+            subheading: s.subheading || '',
+            ctaText: s.ctaText || '',
+            ctaUrl: s.ctaUrl || '',
+            secondaryCtaText: s.secondaryCtaText || '',
+            secondaryCtaUrl: s.secondaryCtaUrl || '',
+          }));
+          setHeroSlides(cleanedSlides);
         } else {
           setHeroSlides([
             {
@@ -591,20 +603,24 @@ export default function AdminHomepageBuilderPage() {
     setSelectedSlideIndex(target);
   };
 
-  const handleUpdateCurrentSlide = (field: keyof Slide, value: string) => {
+  const handleUpdateSlideAt = (index: number, field: keyof Slide, value: string) => {
     setHeroSlides((prev) => {
       const copy = [...prev];
-      if (!copy[selectedSlideIndex]) return prev;
+      if (!copy[index]) return prev;
       const finalVal = (field === 'desktopImage' || field === 'tabletImage' || field === 'mobileImage') ? normalizeImageUrl(value) : value;
-      copy[selectedSlideIndex] = {
-        ...copy[selectedSlideIndex],
+      copy[index] = {
+        ...copy[index],
         [field]: finalVal,
       };
       return copy;
     });
   };
 
-  const handleImageFileUpload = async (file: File, target: 'desktop' | 'tablet' | 'mobile') => {
+  const handleUpdateCurrentSlide = (field: keyof Slide, value: string) => {
+    handleUpdateSlideAt(selectedSlideIndex, field, value);
+  };
+
+  const handleImageFileUpload = async (file: File, target: 'desktop' | 'tablet' | 'mobile', slideIdx = selectedSlideIndex) => {
     if (!file) return;
     setUploadingImage(true);
     const toastId = toast.loading(`Uploading ${target} banner image...`);
@@ -618,13 +634,13 @@ export default function AdminHomepageBuilderPage() {
       const data = await res.json();
       if (res.ok && data.url) {
         if (target === 'desktop') {
-          handleUpdateCurrentSlide('desktopImage', data.url);
+          handleUpdateSlideAt(slideIdx, 'desktopImage', data.url);
           toast.success('Desktop banner uploaded successfully!', { id: toastId });
         } else if (target === 'tablet') {
-          handleUpdateCurrentSlide('tabletImage', data.url);
+          handleUpdateSlideAt(slideIdx, 'tabletImage', data.url);
           toast.success('iPad / Tablet banner uploaded successfully!', { id: toastId });
         } else if (target === 'mobile') {
-          handleUpdateCurrentSlide('mobileImage', data.url);
+          handleUpdateSlideAt(slideIdx, 'mobileImage', data.url);
           toast.success('Mobile banner uploaded successfully!', { id: toastId });
         }
       } else {
@@ -702,7 +718,8 @@ export default function AdminHomepageBuilderPage() {
         console.warn('Failed to convert base64 image URL to clean endpoint:', err);
       }
 
-      return trimmed;
+      // If conversion failed, never persist huge raw base64 strings that exceed Next.js body limits
+      return '/images/banners/herbic-hero-banner-1.jpg';
     };
 
     // If it's the hero section, serialize our visual slide state
@@ -1462,7 +1479,8 @@ export default function AdminHomepageBuilderPage() {
                                 className="hidden"
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
-                                  if (file) handleImageFileUpload(file, 'desktop');
+                                  if (file) handleImageFileUpload(file, 'desktop', selectedSlideIndex);
+                                  e.target.value = '';
                                 }}
                               />
                               <button
@@ -1473,7 +1491,7 @@ export default function AdminHomepageBuilderPage() {
                                 title="Upload Desktop Image"
                               >
                                 <Upload className="w-3.5 h-3.5" />
-                                <span>Upload</span>
+                                <span>{uploadingImage ? 'Uploading...' : 'Upload'}</span>
                               </button>
                             </div>
                             <div className="flex flex-wrap items-center gap-1 pt-1">
@@ -1523,7 +1541,8 @@ export default function AdminHomepageBuilderPage() {
                                 className="hidden"
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
-                                  if (file) handleImageFileUpload(file, 'tablet');
+                                  if (file) handleImageFileUpload(file, 'tablet', selectedSlideIndex);
+                                  e.target.value = '';
                                 }}
                               />
                               <button
@@ -1534,7 +1553,7 @@ export default function AdminHomepageBuilderPage() {
                                 title="Upload Tablet Image"
                               >
                                 <Upload className="w-3.5 h-3.5" />
-                                <span>Upload</span>
+                                <span>{uploadingImage ? 'Uploading...' : 'Upload'}</span>
                               </button>
                             </div>
                             <div className="flex flex-wrap items-center gap-1 pt-1">
@@ -1582,7 +1601,8 @@ export default function AdminHomepageBuilderPage() {
                                 className="hidden"
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
-                                  if (file) handleImageFileUpload(file, 'mobile');
+                                  if (file) handleImageFileUpload(file, 'mobile', selectedSlideIndex);
+                                  e.target.value = '';
                                 }}
                               />
                               <button
@@ -1593,7 +1613,7 @@ export default function AdminHomepageBuilderPage() {
                                 title="Upload Mobile Image"
                               >
                                 <Upload className="w-3.5 h-3.5" />
-                                <span>Upload</span>
+                                <span>{uploadingImage ? 'Uploading...' : 'Upload'}</span>
                               </button>
                             </div>
                             <div className="flex flex-wrap items-center gap-1 pt-1">

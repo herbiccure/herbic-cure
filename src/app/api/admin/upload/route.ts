@@ -16,6 +16,11 @@ const ALLOWED_IMAGE_TYPES = new Set([
   'image/svg+xml',
   'image/gif',
   'image/x-icon',
+  'image/avif',
+  'image/bmp',
+  'image/tiff',
+  'image/heic',
+  'image/heif',
 ]);
 
 const ALLOWED_VIDEO_TYPES = new Set([
@@ -157,6 +162,11 @@ export async function POST(request: NextRequest) {
           mimeType === 'image/jpeg' ||
           mimeType === 'image/jpg' ||
           mimeType === 'image/webp' ||
+          mimeType === 'image/avif' ||
+          mimeType === 'image/bmp' ||
+          mimeType === 'image/tiff' ||
+          mimeType === 'image/heic' ||
+          mimeType === 'image/heif' ||
           (mimeType === 'image/png' && originalBuffer.length > 400 * 1024)
         ) {
           pipeline = pipeline.webp({ quality: 85, effort: 4 });
@@ -166,6 +176,10 @@ export async function POST(request: NextRequest) {
           ext = '.png';
         } else if (mimeType === 'image/gif') {
           ext = '.gif';
+        } else {
+          pipeline = pipeline.webp({ quality: 85, effort: 4 });
+          finalMimeType = 'image/webp';
+          ext = '.webp';
         }
 
         processedBuffer = await pipeline.toBuffer();
