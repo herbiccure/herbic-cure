@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
+import { prisma } from '@/lib/prisma';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
@@ -261,16 +262,24 @@ export async function POST(request: NextRequest) {
     }
 
     // -------------------------------------------------------------
-    // 5. Option D: Serverless Data URI fallback (safe, compact WebP)
+    // 5. Option D: Database Media Storage (for serverless/ephemeral environments)
     // -------------------------------------------------------------
-    const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || !savedToDisk);
-
-    let publicUrl = `/uploads/${filename}`;
-    // If on serverless where public/ writes are ephemeral and no Cloud CDN is configured,
-    // use the sharp-compressed Data URI (< 400KB) so the image renders permanently
-    if (isServerless && !isVideo && processedBuffer.length <= 3 * 1024 * 1024) {
-      publicUrl = `data:${finalMimeType};base64,${processedBuffer.toString('base64')}`;
+    try {
+      await prisma.media.create({
+        data: {
+          name: filename,
+          url: `data:${finalMimeType};base64,${processedBuffer.toString('base64')}`,
+          alt: file.name,
+          sizeBytes: processedBuffer.length,
+          mimeType: finalMimeType,
+        },
+      });
+    } catch (dbErr) {
+      console.warn('Could not save media record to DB:', dbErr);
     }
+
+    // URL is always a clean endpoint (/uploads/filename) to keep JSON payloads small and prevent 413 errors
+    const publicUrl = `/uploads/${filename}`;
 
     return NextResponse.json({
       success: true,
@@ -280,7 +289,7 @@ export async function POST(request: NextRequest) {
       mimeType: finalMimeType,
       width: imgWidth,
       height: imgHeight,
-      provider: isServerless ? 'embedded' : 'local',
+      provider: savedToDisk ? 'local' : 'database',
     });
   } catch (error: any) {
     console.error('File upload failed:', error);

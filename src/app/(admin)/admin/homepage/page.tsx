@@ -672,14 +672,49 @@ export default function AdminHomepageBuilderPage() {
 
     let finalContentJson = editingSection.contentJson;
 
+    // Helper to ensure an image is a clean relative or external URL, never a heavy base64 string
+    const sanitizeSlideImageUrl = async (url?: string | null): Promise<string | undefined> => {
+      if (!url || typeof url !== 'string') return undefined;
+      const trimmed = url.trim();
+      if (!trimmed) return undefined;
+
+      // If it's already a clean path or URL, just normalize it
+      if (!trimmed.startsWith('data:')) {
+        return normalizeImageUrl(trimmed) || undefined;
+      }
+
+      // If it's a raw base64 data URI (e.g. from an earlier upload), persist it to get a clean /uploads/... URL
+      try {
+        const fetchRes = await fetch(trimmed);
+        const blob = await fetchRes.blob();
+        const file = new File([blob], `banner_${Date.now()}.webp`, { type: blob.type || 'image/webp' });
+        const formData = new FormData();
+        formData.append('file', file);
+        const uploadRes = await fetch('/api/admin/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadRes.ok && uploadData.url) {
+          return uploadData.url;
+        }
+      } catch (err) {
+        console.warn('Failed to convert base64 image URL to clean endpoint:', err);
+      }
+
+      return trimmed;
+    };
+
     // If it's the hero section, serialize our visual slide state
     if (editingSection.sectionType === 'HERO' || editingSection.sectionType === 'HERO_SLIDER') {
-      const sanitizedSlides = heroSlides.map((s) => ({
-        ...s,
-        desktopImage: normalizeImageUrl(s.desktopImage) || '/images/banners/herbic-hero-banner-1.jpg',
-        tabletImage: s.tabletImage ? normalizeImageUrl(s.tabletImage) : undefined,
-        mobileImage: s.mobileImage ? normalizeImageUrl(s.mobileImage) : undefined,
-      }));
+      const sanitizedSlides = await Promise.all(
+        heroSlides.map(async (s) => ({
+          ...s,
+          desktopImage: (await sanitizeSlideImageUrl(s.desktopImage)) || '/images/banners/herbic-hero-banner-1.jpg',
+          tabletImage: await sanitizeSlideImageUrl(s.tabletImage),
+          mobileImage: await sanitizeSlideImageUrl(s.mobileImage),
+        }))
+      );
       finalContentJson = JSON.stringify({ slides: sanitizedSlides, trustBadges }, null, 2);
     }
 
@@ -728,12 +763,17 @@ export default function AdminHomepageBuilderPage() {
           contentJson: finalContentJson,
         }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         await fetchSections();
         setEditingSection(null);
         toast.success('Homepage section saved successfully!');
       } else {
-        toast.error('Failed to save section changes');
+        if (res.status === 401) {
+          toast.error('Admin session expired. Please refresh and log in again.');
+        } else {
+          toast.error(data.error || 'Failed to save section changes');
+        }
       }
     } catch {
       toast.error('Network error saving section');

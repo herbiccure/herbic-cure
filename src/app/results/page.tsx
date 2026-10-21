@@ -13,7 +13,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { prisma } from '@/lib/prisma';
-import { ShieldCheck, Star, ArrowRight } from 'lucide-react';
+import { ShieldCheck, ArrowRight } from 'lucide-react';
 
 import { normalizeImageUrl } from '@/lib/utils';
 
@@ -109,13 +109,8 @@ export default async function ResultsPage() {
 
                 <div className="p-2.5 sm:p-5 lg:p-6 flex-1 flex flex-col justify-between space-y-2.5 sm:space-y-4">
                   <div>
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="mb-1">
                       <h3 className="font-bold text-stone-900 text-xs sm:text-sm truncate">{r.customerName}</h3>
-                      <div className="flex text-amber-400 shrink-0">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current" />
-                        ))}
-                      </div>
                     </div>
 
                     {r.productTitle && (

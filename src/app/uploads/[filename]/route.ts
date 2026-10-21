@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +41,34 @@ export async function GET(
     }
 
     if (!targetPath) {
+      // Check database Media fallback for serverless environments
+      try {
+        const media = await prisma.media.findFirst({
+          where: { name: filename },
+        });
+
+        if (media?.url) {
+          if (media.url.startsWith('data:')) {
+            const matches = media.url.match(/^data:([^;]+);base64,(.+)$/);
+            if (matches) {
+              const contentType = matches[1];
+              const buffer = Buffer.from(matches[2], 'base64');
+              return new NextResponse(buffer, {
+                headers: {
+                  'Content-Type': contentType,
+                  'Content-Length': String(buffer.length),
+                  'Cache-Control': 'public, max-age=31536000, immutable',
+                },
+              });
+            }
+          } else if (media.url.startsWith('http')) {
+            return NextResponse.redirect(media.url, 307);
+          }
+        }
+      } catch (dbErr) {
+        console.warn('Media database fallback lookup failed:', dbErr);
+      }
+
       return new NextResponse('File not found', { status: 404 });
     }
 

@@ -162,13 +162,20 @@ export async function PUT(request: NextRequest) {
           contentJson: contentJson !== undefined ? contentJson : undefined,
         },
       });
-      invalidateHomepageCache();
+
+      try {
+        invalidateHomepageCache();
+      } catch (cacheErr) {
+        console.warn('Cache invalidation deferred:', cacheErr);
+      }
+
       return NextResponse.json({ success: true, section: updated });
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to update section' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Failed to update homepage section:', error);
+    return NextResponse.json({ error: error?.message || 'Failed to update section' }, { status: 500 });
   }
 }
 
