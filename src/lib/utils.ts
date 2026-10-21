@@ -14,8 +14,12 @@ export function normalizeImageUrl(url?: string | null): string {
   if (!url || typeof url !== 'string') return '';
   const trimmed = url.trim();
 
-  // Match Google Drive preview or share URLs
-  const driveMatch = trimmed.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:.*&)?id=)([a-zA-Z0-9_-]+)/);
+  // Match Google Drive preview, share, or uc URLs
+  const driveMatch =
+    trimmed.match(/(?:drive|docs)\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/i) ||
+    trimmed.match(/(?:drive|docs)\.google\.com\/(?:open|uc|download)\?[^#]*\bid=([a-zA-Z0-9_-]+)/i) ||
+    trimmed.match(/drive\.usercontent\.google\.com\/download\?[^#]*\bid=([a-zA-Z0-9_-]+)/i);
+
   if (driveMatch && driveMatch[1]) {
     return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
   }

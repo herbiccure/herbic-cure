@@ -3,6 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { Sparkles, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { normalizeImageUrl } from '@/lib/utils';
 
 interface ResultItem {
   id: string;
@@ -77,19 +78,25 @@ export default function CustomerResultsSection({ results = [] }: { results?: Res
             >
               <div>
                 {/* Visual Before / After or Highlight Card */}
-                <div className="relative aspect-4/3 rounded-xl sm:rounded-2xl overflow-hidden bg-stone-100 mb-2 sm:mb-4 border border-stone-100">
-                  <Image
-                    src={item.afterImage || '/images/products/herbic-cure/herbic-cure-shampoo-healthy-hair.jpg'}
-                    alt={item.customerName}
-                    fill
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    className="object-cover object-center"
-                  />
-                  <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 bg-[#A84358]/95 text-white text-[8px] sm:text-[11px] font-bold px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full backdrop-blur-xs flex items-center gap-0.5 sm:gap-1 shadow-xs">
-                    <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-rose-300 shrink-0" />
-                    <span>Verified Result</span>
-                  </div>
-                </div>
+                {(() => {
+                  const normalizedSrc = normalizeImageUrl(item.afterImage) || '/images/products/herbic-cure/herbic-cure-shampoo-healthy-hair.jpg';
+                  return (
+                    <div className="relative aspect-4/3 rounded-xl sm:rounded-2xl overflow-hidden bg-stone-100 mb-2 sm:mb-4 border border-stone-100">
+                      <Image
+                        src={normalizedSrc}
+                        alt={item.customerName}
+                        fill
+                        unoptimized={normalizedSrc.includes('googleusercontent.com') || normalizedSrc.includes('drive.google.com')}
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        className="object-cover object-center"
+                      />
+                      <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 bg-[#A84358]/95 text-white text-[8px] sm:text-[11px] font-bold px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full backdrop-blur-xs flex items-center gap-0.5 sm:gap-1 shadow-xs">
+                        <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-rose-300 shrink-0" />
+                        <span>Verified Result</span>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="flex items-center gap-1.5 mb-1 sm:mb-2">
                   <span className="font-bold text-xs sm:text-sm text-stone-900 leading-snug">

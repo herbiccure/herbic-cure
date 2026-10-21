@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
+import { normalizeImageUrl } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,8 +34,8 @@ export async function POST(request: NextRequest) {
       data: {
         customerName: String(customerName).trim().slice(0, 100),
         productTitle: productTitle ? String(productTitle).trim().slice(0, 200) : null,
-        beforeImage: beforeImage ? String(beforeImage).trim() : null,
-        afterImage: String(afterImage).trim(),
+        beforeImage: beforeImage ? normalizeImageUrl(String(beforeImage).trim()) : null,
+        afterImage: normalizeImageUrl(String(afterImage).trim()),
         caption: caption ? String(caption).trim().slice(0, 500) : null,
       },
     });

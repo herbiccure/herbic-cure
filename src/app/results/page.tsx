@@ -15,8 +15,24 @@ import Image from 'next/image';
 import { prisma } from '@/lib/prisma';
 import { ShieldCheck, Star, ArrowRight } from 'lucide-react';
 
+import { normalizeImageUrl } from '@/lib/utils';
+
 export const revalidate = 60;
 
+function getProductLink(title?: string | null): string {
+  if (!title) return '/products';
+  const lower = title.toLowerCase();
+  if (lower.includes('kit') || lower.includes('comb')) {
+    return '/products/herbic-cure-complete-hair-therapy-kit';
+  }
+  if (lower.includes('shampoo')) {
+    return '/products/herbic-cure-shampoo-with-conditioner-q1';
+  }
+  if (lower.includes('oil') || lower.includes('21 herbs')) {
+    return '/products/herbic-cure-21-herbs-fusion-hair-oil-q2';
+  }
+  return '/products';
+}
 
 export default async function ResultsPage() {
   let results: any[] = [];
@@ -46,79 +62,90 @@ export default async function ResultsPage() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
-          {results.map((r) => (
-            <div
-              key={r.id}
-              className="bg-white rounded-2xl sm:rounded-3xl overflow-hidden border border-stone-200 shadow-xs sm:shadow-sm flex flex-col justify-between hover:shadow-xl transition-all"
-            >
-              <div className="grid grid-cols-2 gap-1 bg-stone-200 p-0.5 sm:p-1">
-                {r.beforeImage && (
-                  <div className="relative w-full aspect-4/5 rounded-l-xl sm:rounded-l-2xl overflow-hidden bg-stone-300">
+          {results.map((r) => {
+            const beforeSrc = normalizeImageUrl(r.beforeImage);
+            const afterSrc = normalizeImageUrl(r.afterImage) || '/images/products/herbic-cure/herbic-cure-shampoo-healthy-hair.jpg';
+            const productHref = getProductLink(r.productTitle);
+
+            return (
+              <div
+                key={r.id}
+                className="bg-white rounded-2xl sm:rounded-3xl overflow-hidden border border-stone-200 shadow-xs sm:shadow-sm flex flex-col justify-between hover:shadow-xl transition-all"
+              >
+                <div className="grid grid-cols-2 gap-1 bg-stone-200 p-0.5 sm:p-1">
+                  {beforeSrc && (
+                    <div className="relative w-full aspect-4/5 rounded-l-xl sm:rounded-l-2xl overflow-hidden bg-stone-300">
+                      <Image
+                        src={beforeSrc}
+                        alt={`${r.customerName} Before`}
+                        fill
+                        unoptimized={beforeSrc.includes('googleusercontent.com') || beforeSrc.includes('drive.google.com')}
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 200px"
+                        className="object-cover"
+                      />
+                      <span className="absolute top-1.5 left-1.5 bg-stone-900/80 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-xs uppercase tracking-wide">
+                        Before
+                      </span>
+                    </div>
+                  )}
+                  <div
+                    className={`relative w-full aspect-4/5 rounded-r-xl sm:rounded-r-2xl overflow-hidden bg-stone-300 ${
+                      !beforeSrc ? 'col-span-2' : ''
+                    }`}
+                  >
                     <Image
-                      src={r.beforeImage}
-                      alt={`${r.customerName} Before`}
+                      src={afterSrc}
+                      alt={`${r.customerName} After`}
                       fill
+                      unoptimized={afterSrc.includes('googleusercontent.com') || afterSrc.includes('drive.google.com')}
                       sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 200px"
                       className="object-cover"
                     />
-                    <span className="absolute top-1.5 left-1.5 bg-stone-900/80 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-xs uppercase tracking-wide">
-                      Before
+                    <span className="absolute top-1.5 right-1.5 bg-rose-700 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-xs uppercase tracking-wide">
+                      After
                     </span>
                   </div>
-                )}
-                <div
-                  className={`relative w-full aspect-4/5 rounded-r-xl sm:rounded-r-2xl overflow-hidden bg-stone-300 ${
-                    !r.beforeImage ? 'col-span-2' : ''
-                  }`}
-                >
-                  <Image
-                    src={r.afterImage}
-                    alt={`${r.customerName} After`}
-                    fill
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 200px"
-                    className="object-cover"
-                  />
-                  <span className="absolute top-1.5 right-1.5 bg-rose-700 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-xs uppercase tracking-wide">
-                    After
-                  </span>
                 </div>
-              </div>
 
-              <div className="p-2.5 sm:p-5 lg:p-6 flex-1 flex flex-col justify-between space-y-2.5 sm:space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-bold text-stone-900 text-xs sm:text-sm truncate">{r.customerName}</h3>
-                    <div className="flex text-amber-400 shrink-0">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current" />
-                      ))}
+                <div className="p-2.5 sm:p-5 lg:p-6 flex-1 flex flex-col justify-between space-y-2.5 sm:space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-bold text-stone-900 text-xs sm:text-sm truncate">{r.customerName}</h3>
+                      <div className="flex text-amber-400 shrink-0">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current" />
+                        ))}
+                      </div>
                     </div>
+
+                    {r.productTitle && (
+                      <Link
+                        href={productHref}
+                        className="text-[10px] sm:text-xs font-semibold text-[#A84358] hover:underline truncate block"
+                      >
+                        {r.productTitle}
+                      </Link>
+                    )}
+
+                    <p className="text-[11px] sm:text-sm text-stone-600 italic mt-1.5 leading-snug line-clamp-3">
+                      &ldquo;{r.caption}&rdquo;
+                    </p>
                   </div>
 
-                  {r.productTitle && (
-                    <p className="text-[10px] sm:text-xs font-semibold text-[#A84358] truncate">
-                      {r.productTitle}
-                    </p>
-                  )}
-
-                  <p className="text-[11px] sm:text-sm text-stone-600 italic mt-1.5 leading-snug line-clamp-3">
-                    &ldquo;{r.caption}&rdquo;
-                  </p>
-                </div>
-
-                <div className="pt-2 sm:pt-3 border-t border-stone-100 flex items-center justify-between text-[10px] sm:text-xs">
-                  <span className="text-rose-700 font-bold truncate">Verified Review</span>
-                  <Link
-                    href="/products"
-                    className="font-bold text-[#A84358] hover:underline flex items-center gap-0.5 shrink-0"
-                  >
-                    <span>Shop</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </Link>
+                  <div className="pt-2 sm:pt-3 border-t border-stone-100 flex items-center justify-between text-[10px] sm:text-xs">
+                    <span className="text-rose-700 font-bold truncate">Verified Review</span>
+                    <Link
+                      href={productHref}
+                      className="font-bold text-[#A84358] hover:underline flex items-center gap-0.5 shrink-0"
+                    >
+                      <span>Shop</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ import ImageUploadField from '@/components/admin/ImageUploadField';
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Sparkles, Plus, Trash2 } from 'lucide-react';
+import { normalizeImageUrl } from '@/lib/utils';
 
 export default function AdminCustomerResultsPage() {
   const [results, setResults] = useState<any[]>([]);
@@ -42,8 +43,8 @@ export default function AdminCustomerResultsPage() {
         body: JSON.stringify({
           customerName,
           productTitle,
-          beforeImage: beforeImage || null,
-          afterImage,
+          beforeImage: beforeImage ? normalizeImageUrl(beforeImage) : null,
+          afterImage: normalizeImageUrl(afterImage),
           caption,
         }),
       });
@@ -169,14 +170,38 @@ export default function AdminCustomerResultsPage() {
               >
                 <div className="flex items-start gap-4">
                   <div className="flex gap-1 shrink-0">
-                    {r.beforeImage && (
+                      {r.beforeImage && (
+                        <div className="relative w-14 h-16 rounded-lg overflow-hidden bg-slate-800 border border-slate-700">
+                          {(() => {
+                            const bSrc = normalizeImageUrl(r.beforeImage);
+                            return (
+                              <Image
+                                src={bSrc}
+                                alt="Before"
+                                fill
+                                unoptimized={bSrc.includes('googleusercontent.com') || bSrc.includes('drive.google.com')}
+                                sizes="56px"
+                                className="object-cover"
+                              />
+                            );
+                          })()}
+                        </div>
+                      )}
                       <div className="relative w-14 h-16 rounded-lg overflow-hidden bg-slate-800 border border-slate-700">
-                        <Image src={r.beforeImage} alt="Before" fill sizes="56px" className="object-cover" />
+                        {(() => {
+                          const aSrc = normalizeImageUrl(r.afterImage);
+                          return (
+                            <Image
+                              src={aSrc}
+                              alt="After"
+                              fill
+                              unoptimized={aSrc.includes('googleusercontent.com') || aSrc.includes('drive.google.com')}
+                              sizes="56px"
+                              className="object-cover"
+                            />
+                          );
+                        })()}
                       </div>
-                    )}
-                    <div className="relative w-14 h-16 rounded-lg overflow-hidden bg-slate-800 border border-slate-700">
-                      <Image src={r.afterImage} alt="After" fill sizes="56px" className="object-cover" />
-                    </div>
                   </div>
 
                   <div>
