@@ -57,7 +57,7 @@ export default function CheckoutPage() {
     city: '',
     state: '',
     pincode: '',
-    paymentMethod: 'COD' as 'COD' | 'CASHFREE' | 'ONLINE' | 'UPI' | 'CARD',
+    paymentMethod: 'COD' as 'COD' | 'RAZORPAY' | 'ONLINE' | 'UPI' | 'CARD',
   });
 
   React.useEffect(() => {
@@ -155,26 +155,72 @@ export default function CheckoutPage() {
         const data = await res.json();
         clearCart();
 
-        // If Cashfree payment session returned
-        if (data.cashfreePaymentSessionId) {
-          toast.success('Order initiated! Opening secure Cashfree checkout...');
+        // If Razorpay payment session returned
+        if (data.razorpayOrderId) {
+          toast.success('Opening secure Razorpay checkout...');
           try {
-            if (typeof (window as any).Cashfree !== 'undefined') {
-              const cfMode =
-                process.env.NEXT_PUBLIC_CASHFREE_ENV === 'production' ? 'production' : 'sandbox';
-              const cashfree = (window as any).Cashfree({ mode: cfMode });
-              await cashfree.checkout({
-                paymentSessionId: data.cashfreePaymentSessionId,
-                redirectTarget: '_self',
-              });
+            if (typeof (window as any).Razorpay !== 'undefined') {
+              const options = {
+                key: data.razorpayKeyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                amount: data.razorpayAmount,
+                currency: data.razorpayCurrency || 'INR',
+                name: 'Herbic Cure',
+                description: '21 Herbs Ayurvedic Hair Care',
+                order_id: data.razorpayOrderId,
+                prefill: {
+                  name: formData.name,
+                  email: formData.email,
+                  contact: formData.phone,
+                },
+                theme: {
+                  color: '#8C3A4F',
+                },
+                handler: async function (response: any) {
+                  try {
+                    const verifyRes = await fetch('/api/payment/razorpay/verify', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        orderId: data.orderId,
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature,
+                      }),
+                    });
+
+                    if (verifyRes.ok) {
+                      toast.success('Payment verified successfully!');
+                      router.push('/order-success?orderId=' + data.orderId);
+                    } else {
+                      const vErr = await verifyRes.json().catch(() => ({}));
+                      toast.error(vErr.error || 'Payment verification failed');
+                      router.push('/checkout?error=Payment+verification+failed');
+                    }
+                  } catch (vEx) {
+                    console.error('Payment verification error:', vEx);
+                    router.push('/order-success?orderId=' + data.orderId);
+                  }
+                },
+                modal: {
+                  ondismiss: function () {
+                    toast.info('Payment window closed. You can complete your order anytime.');
+                    setLoading(false);
+                  },
+                },
+              };
+
+              const rzp = new (window as any).Razorpay(options);
+              rzp.open();
               return;
             } else {
-              window.location.href = '/api/payment/cashfree/verify?order_id=' + data.orderId;
+              toast.error('Razorpay SDK is loading, please try again in a moment.');
+              setLoading(false);
               return;
             }
           } catch (sdkErr) {
-            console.error('Cashfree SDK invocation error:', sdkErr);
-            window.location.href = '/order-success?orderId=' + data.orderId;
+            console.error('Razorpay SDK invocation error:', sdkErr);
+            toast.error('Failed to launch Razorpay payment.');
+            setLoading(false);
             return;
           }
         }
@@ -217,8 +263,8 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-[#FCF8F9] py-8 sm:py-12">
-      {/* Load Cashfree Web SDK */}
-      <Script src="https://sdk.cashfree.com/js/v3/cashfree.js" strategy="lazyOnload" />
+      {/* Load Razorpay Web SDK */}
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
 
       <div className="w-full max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top Header & Breadcrumb */}
@@ -534,7 +580,8 @@ export default function CheckoutPage() {
 
                   <label
                     className={'flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ' + (
-                      formData.paymentMethod === 'CASHFREE' ||
+                      formData.paymentMethod === 'RAZORPAY' ||
+                      formData.paymentMethod === 'ONLINE' ||
                       formData.paymentMethod === 'UPI' ||
                       formData.paymentMethod === 'CARD'
                         ? 'border-[#8C3A4F] bg-[#FCF4F7] ring-2 ring-[#8C3A4F]/20 shadow-xs'
@@ -544,13 +591,14 @@ export default function CheckoutPage() {
                     <input
                       type="radio"
                       name="paymentMethod"
-                      value="CASHFREE"
+                      value="RAZORPAY"
                       checked={
-                        formData.paymentMethod === 'CASHFREE' ||
+                        formData.paymentMethod === 'RAZORPAY' ||
+                        formData.paymentMethod === 'ONLINE' ||
                         formData.paymentMethod === 'UPI' ||
                         formData.paymentMethod === 'CARD'
                       }
-                      onChange={() => setFormData({ ...formData, paymentMethod: 'CASHFREE' })}
+                      onChange={() => setFormData({ ...formData, paymentMethod: 'RAZORPAY' })}
                       className="accent-[#8C3A4F] mt-0.5"
                     />
                     <div className="flex-1">

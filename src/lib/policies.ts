@@ -82,7 +82,7 @@ We collect personal information solely to fulfill your orders, provide logistica
 ### 3. Payment Security & Zero Payment Card Retention
 > [!NOTE]
 > **Zero Financial Credential Storage:**
-> Herbic Cure **DOES NOT** store, view, or retain debit card numbers, credit card details, CVVs, or net banking passwords. All financial transactions are tokenized and processed exclusively through RBI-authorized, PCI-DSS Level 1 certified payment gateways (such as Razorpay, Cashfree, or PayU).
+> Herbic Cure **DOES NOT** store, view, or retain debit card numbers, credit card details, CVVs, or net banking passwords. All financial transactions are tokenized and processed exclusively through RBI-authorized, PCI-DSS Level 1 certified payment gateways (such as Razorpay).
 
 ### 4. Legal Grounds for Data Processing
 We process your personal data under the following legitimate and statutory bases:

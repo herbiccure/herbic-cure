@@ -1,23 +1,14 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createCashfreeOrder } from '@/lib/payment/cashfree';
+import { createRazorpayOrder } from '@/lib/payment/razorpay';
 import { enforceRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const rateLimitError = enforceRateLimit(req, 'cashfree_create_order', 15, 60 * 1000);
+    const rateLimitError = enforceRateLimit(req, 'razorpay_create_order', 15, 60 * 1000);
     if (rateLimitError) return rateLimitError;
-
-    const session = await getServerSession();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Authentication required to initiate payment' },
-        { status: 401 }
-      );
-    }
 
     const body = await req.json().catch(() => null);
     const { orderId } = body || {};
@@ -29,7 +20,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Look up the order in database
+    // Look up order in database
     const order = await prisma.order.findFirst({
       where: {
         OR: [{ id: orderId }, { orderNumber: orderId }],
@@ -43,26 +34,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create Cashfree Payment Order
-    const cashfreeOrder = await createCashfreeOrder({
-      orderId: order.orderNumber,
-      orderAmount: order.total,
+    if (order.paymentStatus === 'PAID') {
+      return NextResponse.json(
+        { error: 'Order has already been paid' },
+        { status: 400 }
+      );
+    }
+
+    // Create authoritative Razorpay order
+    const rzOrder = await createRazorpayOrder({
+      orderNumber: order.orderNumber,
+      amount: order.total,
       customerName: order.customerName,
       customerEmail: order.customerEmail,
       customerPhone: order.customerPhone,
-      customerId: order.customerId || order.userId || undefined,
+      notes: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+      },
     });
 
     return NextResponse.json({
       success: true,
-      paymentSessionId: cashfreeOrder.paymentSessionId,
       orderId: order.orderNumber,
-      environment: cashfreeOrder.environment,
+      razorpayOrderId: rzOrder.razorpayOrderId,
+      amount: rzOrder.amount,
+      currency: rzOrder.currency,
+      keyId: rzOrder.keyId,
     });
   } catch (error: any) {
-    console.error('Cashfree create-order API error:', error);
+    console.error('Razorpay create-order API error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to initiate Cashfree payment session' },
+      { error: error.message || 'Failed to initialize Razorpay payment order' },
       { status: 500 }
     );
   }

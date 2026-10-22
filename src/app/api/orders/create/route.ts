@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { checkoutSchema } from '@/lib/validations';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { createDelhiveryShipment } from '@/lib/shipping/delhivery';
-import { createCashfreeOrder } from '@/lib/payment/cashfree';
+import { createRazorpayOrder } from '@/lib/payment/razorpay';
 
 export const dynamic = 'force-dynamic';
 
@@ -305,31 +305,39 @@ export async function POST(req: NextRequest) {
       return order;
     });
 
-    // 8. If Online / Cashfree Payment, create Cashfree checkout session
-    let cashfreeSession: { paymentSessionId: string; orderId: string } | null = null;
+    // 8. If Online / Razorpay Payment, create Razorpay order session
+    let razorpaySession: {
+      razorpayOrderId: string;
+      amount: number;
+      currency: string;
+      keyId: string;
+    } | null = null;
     const isOnlinePayment = paymentMethod !== 'COD';
 
     if (isOnlinePayment) {
       try {
-        const origin = req.nextUrl.origin || 'http://localhost:3000';
-        const cfOrder = await createCashfreeOrder({
-          orderId: createdOrder.orderNumber,
-          orderAmount: createdOrder.total,
-          customerId: matchedCustomerId || matchedUserId || `CUST-${createdOrder.orderNumber}`,
-          customerPhone: phone,
-          customerEmail: authoritativeEmail,
+        const rzOrder = await createRazorpayOrder({
+          orderNumber: createdOrder.orderNumber,
+          amount: createdOrder.total,
           customerName: name,
-          returnUrl: `${origin}/api/payment/cashfree/verify?order_id={order_id}`,
+          customerEmail: authoritativeEmail,
+          customerPhone: phone,
+          notes: {
+            orderId: createdOrder.id,
+            orderNumber: createdOrder.orderNumber,
+          },
         });
 
-        if (cfOrder?.paymentSessionId) {
-          cashfreeSession = {
-            paymentSessionId: cfOrder.paymentSessionId,
-            orderId: cfOrder.orderId,
+        if (rzOrder?.razorpayOrderId) {
+          razorpaySession = {
+            razorpayOrderId: rzOrder.razorpayOrderId,
+            amount: rzOrder.amount,
+            currency: rzOrder.currency,
+            keyId: rzOrder.keyId,
           };
         }
-      } catch (cfErr) {
-        console.error('Cashfree order initialization error:', cfErr);
+      } catch (rzErr) {
+        console.error('Razorpay order initialization error:', rzErr);
       }
     }
 
@@ -342,8 +350,10 @@ export async function POST(req: NextRequest) {
       carrier: createdOrder.carrier,
       trackingNumber: createdOrder.trackingNumber,
       trackingUrl: createdOrder.trackingUrl,
-      cashfreePaymentSessionId: cashfreeSession?.paymentSessionId || null,
-      cashfreeOrderId: cashfreeSession?.orderId || null,
+      razorpayOrderId: razorpaySession?.razorpayOrderId || null,
+      razorpayAmount: razorpaySession?.amount || null,
+      razorpayCurrency: razorpaySession?.currency || null,
+      razorpayKeyId: razorpaySession?.keyId || null,
     });
   } catch (error: any) {
     console.error('Order creation error:', error);

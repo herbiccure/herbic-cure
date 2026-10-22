@@ -36,7 +36,7 @@ export interface DelhiveryShipmentOrder {
     pincode: string;
   };
   total?: number;
-  paymentMethod: string; // 'COD' or 'ONLINE' / 'CASHFREE'
+  paymentMethod: string; // 'COD' or 'ONLINE' / 'RAZORPAY'
   items: Array<{
     productName?: string; name?: string; sku?: string;
     quantity: number;
