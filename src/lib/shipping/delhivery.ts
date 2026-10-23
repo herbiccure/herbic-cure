@@ -29,21 +29,33 @@ export interface DelhiveryShipmentOrder {
   customerName: string;
   customerPhone: string;
   customerEmail: string;
-  customerAddress?: string; city?: string; state?: string; pincode?: string; totalAmount?: number; shippingAddress?: {
+  customerAddress?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  totalAmount?: number;
+  shippingAddress?: {
     address: string;
     city: string;
     state: string;
     pincode: string;
   };
   total?: number;
-  paymentMethod: string; // 'COD' or 'ONLINE' / 'RAZORPAY'
+  shippingFee?: number;
+  paymentMethod: string; // 'COD' or 'ONLINE' / 'RAZORPAY' / 'Prepaid'
   items: Array<{
-    productName?: string; name?: string; sku?: string;
+    productName?: string;
+    name?: string;
+    sku?: string;
     quantity: number;
     price: number;
   }>;
   totalQuantity?: number;
   waybill?: string;
+  length?: number;
+  width?: number;
+  height?: number;
+  weight?: number;
 }
 
 export interface DelhiveryManifestResult {
@@ -170,6 +182,32 @@ export async function createDelhiveryShipment(
   const destState = order.shippingAddress?.state || order.state || 'Delhi';
   const orderTotal = Math.round(order.total || order.totalAmount || 0);
 
+  // Requirement 1: Exact product names
+  const itemDescriptions = (order.items || []).map((item) => {
+    const name = (item.name || item.productName || '').trim();
+    if (!name) return 'Herbic Cure Formulation';
+    return item.quantity > 1 ? `${name} (Qty: ${item.quantity})` : name;
+  });
+
+  // Requirement 2: Delivery charges should come separately as a product (When customer selects COD)
+  // Requirement 3: In Prepaid, only product name should come and no Delivery charges
+  if (isCod) {
+    const fee = order.shippingFee !== undefined ? Number(order.shippingFee) : 0;
+    if (fee > 0) {
+      itemDescriptions.push(`Delivery Charges (₹${fee})`);
+    } else {
+      itemDescriptions.push('Delivery Charges');
+    }
+  }
+
+  const productsDesc = (itemDescriptions.length > 0 ? itemDescriptions.join(', ') : 'Herbic Cure Formulation').slice(0, 250);
+  const totalShipmentQuantity = totalQty + (isCod ? 1 : 0);
+
+  // Requirement 4: Dimension of box should by default 18×10×8 cm (Length x Width x Height)
+  const boxLength = String(order.length || 18);
+  const boxWidth = String(order.width || 10);
+  const boxHeight = String(order.height || 8);
+
   // If live Delhivery API Key is available
   if (DELHIVERY_CONFIG.apiKey) {
     try {
@@ -191,7 +229,7 @@ export async function createDelhiveryShipment(
             return_add: '',
             return_state: '',
             return_country: '',
-            products_desc: 'Herbic Cure Ayurvedic 21 Herbs Formulations',
+            products_desc: productsDesc,
             hsn_code: '33059011',
             cod_amount: isCod ? String(orderTotal) : '0',
             order_date: new Date().toISOString(),
@@ -199,12 +237,12 @@ export async function createDelhiveryShipment(
             seller_add: 'Herbic Cure Apothecary Labs, India',
             seller_name: DELHIVERY_CONFIG.clientName,
             seller_inv: order.orderNumber,
-            quantity: String(totalQty || 1),
+            quantity: String(totalShipmentQuantity || 1),
             waybill: order.waybill || '',
-            shipment_width: '10',
-            shipment_height: '10',
-            shipment_length: '15',
-            weight: '500',
+            shipment_width: boxWidth,
+            shipment_height: boxHeight,
+            shipment_length: boxLength,
+            weight: String(order.weight || 500),
           },
         ],
         pickup_location: {
@@ -260,8 +298,39 @@ export async function createDelhiveryShipment(
     waybill: simulatedWaybill,
     trackingUrl: `https://www.delhivery.com/track/package/${simulatedWaybill}`,
     status: 'MANIFESTED',
-    message: 'Shipment registered with Delhivery Express network',
+    message: `Shipment registered with Delhivery Express (${productsDesc} | Dimensions: ${boxLength}x${boxWidth}x${boxHeight} cm)`,
   };
+}
+
+/**
+ * Helper to determine if a Delhivery tracking status or event represents cancellation
+ */
+export function isDelhiveryCancelled(status?: string | null, scans?: DelhiveryScanEvent[]): boolean {
+  const s = (status || '').trim().toLowerCase();
+  if (
+    s === 'cancelled' ||
+    s === 'canceled' ||
+    s.includes('cancel') ||
+    s.includes('rto') ||
+    s.includes('returned') ||
+    s.includes('undelivered') ||
+    s.includes('disposed')
+  ) {
+    return true;
+  }
+  if (scans && scans.length > 0) {
+    return scans.some((scan) => {
+      const scanStatus = (scan.status || '').toLowerCase();
+      const scanDesc = (scan.description || '').toLowerCase();
+      return (
+        scanStatus.includes('cancel') ||
+        scanDesc.includes('cancelled') ||
+        scanDesc.includes('canceled') ||
+        scanDesc.includes('rto')
+      );
+    });
+  }
+  return false;
 }
 
 /**

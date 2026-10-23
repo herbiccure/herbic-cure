@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
           state: parsedAddress.state || '',
           pincode: parsedAddress.pincode || '',
           totalAmount: order.total,
+          shippingFee: order.shippingFee,
           paymentMethod: 'Prepaid',
           items: order.items.map((it) => ({
             name: it.productName,

@@ -193,6 +193,7 @@ export async function POST(req: NextRequest) {
         state,
         pincode,
         totalAmount: calculatedFinalTotal,
+        shippingFee: calculatedShippingFee,
         paymentMethod: paymentMethod === 'COD' ? 'COD' : 'Prepaid',
         items: verifiedOrderItems.map((item) => ({
           name: item.productName,

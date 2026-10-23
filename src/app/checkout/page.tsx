@@ -23,6 +23,21 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { checkoutSchema } from '@/lib/schemas/checkout';
 
+function cleanIndianMobile(val: string): string {
+  if (!val) return '';
+  // Keep only digits
+  let digits = val.replace(/\D/g, '');
+  // If user pasted with India country code prefix (+91 or 91)
+  if (digits.length === 12 && digits.startsWith('91')) {
+    digits = digits.slice(2);
+  } else if (digits.length === 11 && digits.startsWith('0')) {
+    // If user entered leading 0
+    digits = digits.slice(1);
+  }
+  // Allow at most 10 digits
+  return digits.slice(0, 10);
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const {
@@ -39,6 +54,7 @@ export default function CheckoutPage() {
 
   const [loading, setLoading] = useState(false);
   const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
 
   // Delhivery live pincode serviceability state
   const [pincodeChecking, setPincodeChecking] = useState(false);
@@ -51,7 +67,7 @@ export default function CheckoutPage() {
 
   const [formData, setFormData] = useState({
     name: customer?.name || '',
-    phone: customer?.phone || '',
+    phone: cleanIndianMobile(customer?.phone || ''),
     email: customer?.email || '',
     address: '',
     city: '',
@@ -66,7 +82,7 @@ export default function CheckoutPage() {
         ...prev,
         name: prev.name || customer.name || '',
         email: prev.email || customer.email || '',
-        phone: prev.phone || customer.phone || '',
+        phone: prev.phone || cleanIndianMobile(customer.phone || ''),
       }));
     }
   }, [customer]);
@@ -121,8 +137,49 @@ export default function CheckoutPage() {
   const currentShippingFee = isFreeShipping ? 0 : standardShippingFee;
   const currentFinalTotal = Math.max(0, subtotal - discountAmount + currentShippingFee);
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const cleaned = cleanIndianMobile(e.target.value);
+    setFormData((prev) => ({ ...prev, phone: cleaned }));
+  };
+
+  const handlePhoneKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Allow navigational keys, backspace, delete, tab, and copy/paste/select-all combos
+    const allowedKeys = [
+      'Backspace',
+      'Delete',
+      'Tab',
+      'Escape',
+      'Enter',
+      'ArrowLeft',
+      'ArrowRight',
+      'ArrowUp',
+      'ArrowDown',
+      'Home',
+      'End',
+    ];
+    if (allowedKeys.includes(e.key) || e.ctrlKey || e.metaKey) {
+      return;
+    }
+    // Block any non-digit character from being entered
+    if (!/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  const isPhoneValid = /^[6-9]\d{9}$/.test(formData.phone);
+  const phoneErrorMessage =
+    phoneTouched && formData.phone.length > 0 && !/^[6-9]/.test(formData.phone)
+      ? 'Mobile number must start with 6, 7, 8, or 9'
+      : phoneTouched && formData.phone.length > 0 && formData.phone.length < 10
+      ? `Please enter all 10 digits (${10 - formData.phone.length} more needed)`
+      : phoneTouched && formData.phone.length === 0
+      ? 'Please enter your 10-digit mobile number'
+      : null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    setPhoneTouched(true);
 
     if (items.length === 0) {
       toast.error('Your shopping bag is empty');
@@ -414,17 +471,51 @@ export default function CheckoutPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-[#45363B] mb-1.5">
-                    Phone Number (SMS &amp; WhatsApp Tracking) <span className="text-[#8C3A4F]">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="10-digit mobile number"
-                    className="w-full bg-[#FAF5F7] hover:bg-white focus:bg-white border border-[#E2CBD2] rounded-xl px-4 py-3 text-xs text-[#2D1B1B] placeholder:text-[#9E828A] focus:border-[#8C3A4F] focus:ring-2 focus:ring-[#8C3A4F]/20 outline-none transition-all"
-                  />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-[#45363B]">
+                      Mobile Number (SMS &amp; WhatsApp Tracking) <span className="text-[#8C3A4F]">*</span>
+                    </label>
+                    <span
+                      className={`text-[10px] font-mono transition-colors ${
+                        isPhoneValid
+                          ? 'text-emerald-700 font-semibold'
+                          : formData.phone.length > 0
+                          ? 'text-[#7A5B64]'
+                          : 'text-[#9E828A]'
+                      }`}
+                    >
+                      {formData.phone.length}/10 digits
+                    </span>
+                  </div>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3.5 text-xs font-semibold text-[#7A5B64] select-none pointer-events-none">
+                      +91
+                    </span>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      required
+                      maxLength={10}
+                      autoComplete="tel-national"
+                      value={formData.phone}
+                      onChange={handlePhoneChange}
+                      onKeyDown={handlePhoneKeyDown}
+                      onBlur={() => setPhoneTouched(true)}
+                      placeholder="9876543210"
+                      className={`w-full bg-[#FAF5F7] hover:bg-white focus:bg-white border rounded-xl pl-12 pr-4 py-3 text-xs text-[#2D1B1B] placeholder:text-[#9E828A] outline-none transition-all font-mono tracking-wider ${
+                        phoneErrorMessage
+                          ? 'border-rose-400 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
+                          : isPhoneValid
+                          ? 'border-emerald-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
+                          : 'border-[#E2CBD2] focus:border-[#8C3A4F] focus:ring-2 focus:ring-[#8C3A4F]/20'
+                      }`}
+                    />
+                  </div>
+                  {phoneErrorMessage && (
+                    <p className="text-[10px] text-rose-600 mt-1 font-medium">
+                      {phoneErrorMessage}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -501,10 +592,16 @@ export default function CheckoutPage() {
                   </label>
                   <input
                     type="text"
+                    inputMode="numeric"
                     required
                     maxLength={6}
                     value={formData.pincode}
-                    onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        pincode: e.target.value.replace(/\D/g, '').slice(0, 6),
+                      })
+                    }
                     placeholder="6-digit PIN"
                     className="w-full bg-[#FAF5F7] hover:bg-white focus:bg-white border border-[#E2CBD2] rounded-xl px-4 py-3 text-xs text-[#2D1B1B] placeholder:text-[#9E828A] focus:border-[#8C3A4F] focus:ring-2 focus:ring-[#8C3A4F]/20 outline-none transition-all"
                   />

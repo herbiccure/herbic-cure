@@ -12,6 +12,7 @@ import {
   Save,
   ExternalLink,
   AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import { fetcher } from '@/lib/fetcher';
 import { AdminDataTable, Column } from '@/components/admin/AdminDataTable';
@@ -116,13 +117,50 @@ export default function AdminOrdersPage() {
   const [newCarrier, setNewCarrier] = useState('');
   const [eventDesc, setEventDesc] = useState('');
   const [saving, setSaving] = useState(false);
+  const [syncingDelhivery, setSyncingDelhivery] = useState(false);
 
   const openModal = (o: OrderItem) => {
     setSelectedOrder(o);
     setNewStatus(o.orderStatus);
     setNewTracking(o.trackingNumber || '');
-    setNewCarrier(o.carrier || 'Shiprocket Express');
+    setNewCarrier(o.carrier || 'Delhivery');
     setEventDesc('');
+  };
+
+  const handleSyncDelhivery = async () => {
+    if (!selectedOrder?.id) return;
+    setSyncingDelhivery(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${selectedOrder.id}/sync-delhivery`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to sync with Delhivery');
+
+      if (data.isCancelled) {
+        toast.warning(
+          `Delhivery Status: CANCELLED. Order #${selectedOrder.orderNumber} is marked CANCELLED and items restored to stock.`
+        );
+        setNewStatus('CANCELLED');
+      } else {
+        toast.success(data.message || `Delhivery status: ${data.tracking?.status || 'IN_TRANSIT'}`);
+      }
+
+      if (data.order) {
+        setSelectedOrder(data.order);
+        setNewStatus(data.order.orderStatus);
+        mutate(
+          {
+            orders: orders.map((o) => (o.id === data.order.id ? { ...o, ...data.order } : o)),
+          },
+          false
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error syncing with Delhivery');
+    } finally {
+      setSyncingDelhivery(false);
+    }
   };
 
   const handleUpdateOrder = async (e: React.FormEvent) => {
@@ -467,11 +505,25 @@ export default function AdminOrdersPage() {
                 isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-800/80 border-slate-700'
               )}
             >
-              <div className="flex items-center gap-2">
-                <Truck className="w-4 h-4 text-rose-600" />
-                <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
-                  Update Order &amp; Tracking Info
-                </h4>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-rose-600" />
+                  <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
+                    Update Order &amp; Tracking Info
+                  </h4>
+                </div>
+                {selectedOrder.trackingNumber && (
+                  <button
+                    type="button"
+                    onClick={handleSyncDelhivery}
+                    disabled={syncingDelhivery}
+                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                    title="Check live status from Delhivery (automatically cancels order in admin if cancelled in Delhivery)"
+                  >
+                    <RefreshCw className={cn('w-3.5 h-3.5', syncingDelhivery && 'animate-spin')} />
+                    <span>{syncingDelhivery ? 'Checking Delhivery...' : 'Sync Delhivery Status'}</span>
+                  </button>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
