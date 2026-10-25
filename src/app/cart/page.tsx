@@ -119,7 +119,7 @@ export default function CartPage() {
             <span className="flex items-center gap-1.5">
               <Truck className="w-4 h-4 text-[#A84358]" />
               {neededForFreeShipping > 0 ? (
-                <>Add ₹{neededForFreeShipping} more to qualify for FREE Express Shipping!</>
+                <>Add ₹{neededForFreeShipping} more to qualify for FREE COD Shipping! (Prepaid is 100% Free)</>
               ) : (
                 <><Sparkles className="w-4 h-4 text-emerald-600 inline shrink-0 mr-1" /> Congratulations! You have unlocked FREE Express Delivery across India!</>
               )}
@@ -269,14 +269,10 @@ export default function CartPage() {
                     <span>-₹{discountAmount}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span>Estimated Delivery</span>
-                  <span>
-                    {shippingFee === 0 ? (
-                      <strong className="text-[#A84358] uppercase">FREE</strong>
-                    ) : (
-                      `₹${shippingFee}`
-                    )}
+                  <span className="text-emerald-700 font-bold uppercase text-xs">
+                    FREE
                   </span>
                 </div>
                 <div className="pt-3 border-t border-stone-200 flex justify-between text-base font-extrabold text-stone-900">

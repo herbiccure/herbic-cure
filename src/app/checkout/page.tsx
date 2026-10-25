@@ -73,7 +73,7 @@ export default function CheckoutPage() {
     city: '',
     state: '',
     pincode: '',
-    paymentMethod: 'COD' as 'COD' | 'RAZORPAY' | 'ONLINE' | 'UPI' | 'CARD',
+    paymentMethod: 'RAZORPAY' as 'COD' | 'RAZORPAY' | 'ONLINE' | 'UPI' | 'CARD',
   });
 
   React.useEffect(() => {

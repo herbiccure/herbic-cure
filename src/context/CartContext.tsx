@@ -146,9 +146,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Free shipping over threshold (dynamic from admin settings, default 499)
-  const shippingFee = subtotal >= freeShippingThreshold || subtotal === 0 ? 0 : standardShippingFee;
-  const finalTotal = Math.max(0, subtotal - discountAmount + shippingFee);
+  // In the cart preview stage, all orders default to 0 shipping charges (Prepaid Free Delivery).
+  // Standard courier fee (standardShippingFee) is only applied at checkout if the customer selects COD.
+  const shippingFee = 0;
+  const finalTotal = Math.max(0, subtotal - discountAmount);
 
   const applyCoupon = (coupon: { code: string; discountValue: number; discountType: string }) => {
     setAppliedCoupon(coupon);

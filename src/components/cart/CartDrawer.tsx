@@ -108,7 +108,7 @@ export default function CartDrawer() {
             {neededForFreeShipping > 0 ? (
               <p className="text-xs text-rose-950 font-medium mb-1.5 flex items-center justify-between">
                 <span>
-                  Add <strong className="text-[#A84358]">₹{neededForFreeShipping}</strong> more for <strong>FREE Delivery</strong>!
+                  Add <strong className="text-[#A84358]">₹{neededForFreeShipping}</strong> more for <strong>FREE COD Delivery</strong>! (Prepaid is 100% Free)
                 </span>
                 <span className="text-rose-700">{progressPercent}%</span>
               </p>
@@ -272,14 +272,10 @@ export default function CartDrawer() {
                     <span>-₹{discountAmount}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span>Shipping</span>
-                  <span>
-                    {shippingFee === 0 ? (
-                      <strong className="text-[#A84358] uppercase">FREE</strong>
-                    ) : (
-                      `₹${shippingFee}`
-                    )}
+                  <span className="text-emerald-700 font-bold uppercase text-xs">
+                    FREE
                   </span>
                 </div>
                 <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-bold text-gray-900">
