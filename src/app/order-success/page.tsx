@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { prisma } from '@/lib/prisma';
 import OrderSuccessClient from './OrderSuccessClient';
-import { CheckCircle2, Truck, Package, ArrowRight, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Truck, Package, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
 
 
 interface OrderSuccessPageProps {
@@ -52,38 +52,70 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
     address = { addressLine1: order.shippingAddress };
   }
 
+  const isPrepaid = order.paymentMethod !== 'COD';
+  const isPaid = order.paymentStatus === 'PAID';
+  const isOrderConfirmed = !isPrepaid || isPaid;
+
   return (
     <div className="bg-[#FCF8F9] min-h-screen py-12 sm:py-16">
       <OrderSuccessClient />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {/* Success Banner */}
+        {/* Banner: Confirmed vs Payment Pending */}
         <div className="bg-white p-6 sm:p-10 rounded-3xl border border-stone-200 text-center shadow-sm space-y-4">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-rose-100 text-[#A84358] rounded-full flex items-center justify-center animate-scaleIn">
-            <CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12 stroke-[2.5]" />
+          <div
+            className={`w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full flex items-center justify-center animate-scaleIn ${
+              isOrderConfirmed ? 'bg-rose-100 text-[#A84358]' : 'bg-amber-100 text-amber-700'
+            }`}
+          >
+            {isOrderConfirmed ? (
+              <CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12 stroke-[2.5]" />
+            ) : (
+              <Clock className="w-10 h-10 sm:w-12 sm:h-12 stroke-[2.5]" />
+            )}
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-extrabold font-serif text-stone-900">
-            Thank You! Your Order is Confirmed
+            {isOrderConfirmed
+              ? 'Thank You! Your Order is Confirmed'
+              : 'Payment Incomplete / Awaiting Confirmation'}
           </h1>
 
           <p className="text-xs sm:text-sm text-stone-600 max-w-lg mx-auto">
-            Order <strong className="text-[#A84358] font-mono">{order.orderNumber}</strong> has been successfully placed.
-            {order.customerEmail && !order.customerEmail.includes('@herbiccure.com') ? (
-              <> We have sent the confirmation invoice to <strong>{order.customerEmail}</strong>.</>
+            {isOrderConfirmed ? (
+              <>
+                Order <strong className="text-[#A84358] font-mono">{order.orderNumber}</strong> has been successfully placed.
+                {order.customerEmail && !order.customerEmail.includes('@herbiccure.com') ? (
+                  <> We have sent the confirmation invoice to <strong>{order.customerEmail}</strong>.</>
+                ) : (
+                  <> Order updates &amp; live tracking will be sent to your mobile <strong>{order.customerPhone}</strong> via SMS &amp; WhatsApp.</>
+                )}
+              </>
             ) : (
-              <> Order updates &amp; live tracking will be sent to your mobile <strong>{order.customerPhone}</strong> via SMS &amp; WhatsApp.</>
+              <>
+                Payment for Order <strong className="text-[#A84358] font-mono">{order.orderNumber}</strong> has not yet been received. If your account was debited, the order will automatically confirm once Razorpay sends payment confirmation.
+              </>
             )}
           </p>
 
           <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href={`/track-order?orderId=${encodeURIComponent(order.orderNumber)}`}
-              className="px-6 py-3 bg-[#A84358] hover:bg-[#45363B] text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-md transition-all"
-            >
-              <Truck className="w-4 h-4" />
-              <span>Track Your Package</span>
-            </Link>
+            {isOrderConfirmed ? (
+              <Link
+                href={`/track-order?orderId=${encodeURIComponent(order.orderNumber)}`}
+                className="px-6 py-3 bg-[#A84358] hover:bg-[#45363B] text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-md transition-all"
+              >
+                <Truck className="w-4 h-4" />
+                <span>Track Your Package</span>
+              </Link>
+            ) : (
+              <Link
+                href="/checkout"
+                className="px-6 py-3 bg-[#A84358] hover:bg-[#45363B] text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-md transition-all"
+              >
+                <ArrowRight className="w-4 h-4" />
+                <span>Return to Checkout</span>
+              </Link>
+            )}
 
             <Link
               href="/products"

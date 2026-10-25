@@ -185,46 +185,106 @@ export async function POST(req: NextRequest) {
     }
 
     const orderNumber = `HC-${Date.now().toString().slice(-6)}`;
+    const isOnlinePayment = paymentMethod !== 'COD';
 
-    // 6.1 Dispatch / Manifest shipment via Delhivery Logistics
-    let delhiveryAwb = '';
-    let delhiveryTrackingUrl = '';
-    try {
-      const delhiveryRes = await createDelhiveryShipment({
-        orderNumber,
-        customerName: name,
-        customerPhone: phone,
-        customerEmail: authoritativeEmail,
-        customerAddress: address,
-        city,
-        state,
-        pincode,
-        totalAmount: calculatedFinalTotal,
-        shippingFee: calculatedShippingFee,
-        paymentMethod: paymentMethod === 'COD' ? 'COD' : 'Prepaid',
-        items: verifiedOrderItems.map((item) => ({
-          name: item.productName,
-          sku: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-        })),
-      });
+    // 6. If Online / Razorpay payment, create Razorpay gateway order FIRST
+    // If Razorpay gateway credentials fail or are invalid, fail fast before writing to DB
+    let razorpaySession: {
+      razorpayOrderId: string;
+      amount: number;
+      currency: string;
+      keyId: string;
+    } | null = null;
 
-      if (delhiveryRes?.waybill) {
-        delhiveryAwb = delhiveryRes.waybill;
-        delhiveryTrackingUrl =
-          delhiveryRes.trackingUrl || `https://www.delhivery.com/track/package/${delhiveryAwb}`;
+    if (isOnlinePayment) {
+      try {
+        const rzOrder = await createRazorpayOrder({
+          orderNumber,
+          amount: calculatedFinalTotal,
+          customerName: name,
+          customerEmail: authoritativeEmail,
+          customerPhone: phone,
+          notes: {
+            orderNumber,
+          },
+        });
+
+        if (!rzOrder?.razorpayOrderId) {
+          throw new Error('Razorpay did not return a valid order ID');
+        }
+
+        razorpaySession = {
+          razorpayOrderId: rzOrder.razorpayOrderId,
+          amount: rzOrder.amount,
+          currency: rzOrder.currency,
+          keyId: rzOrder.keyId,
+        };
+      } catch (rzErr: any) {
+        console.error('Razorpay order creation failed:', rzErr);
+        const isAuthError =
+          rzErr?.statusCode === 401 ||
+          String(rzErr?.message || '').includes('401') ||
+          String(rzErr?.error?.description || '').toLowerCase().includes('auth') ||
+          String(rzErr?.message || '').toLowerCase().includes('auth');
+
+        const userMessage = isAuthError
+          ? 'Razorpay Authentication Failed: RAZORPAY_KEY_SECRET in .env is invalid. Please copy your Secret Key from your Razorpay Dashboard (Settings > API Keys).'
+          : (rzErr?.message || 'Failed to initialize online payment session with Razorpay');
+
+        return NextResponse.json(
+          { error: userMessage },
+          { status: 400 }
+        );
       }
-    } catch (delhiveryErr) {
-      console.warn('Delhivery shipment initiation error, using resilient AWB fallback:', delhiveryErr);
     }
 
-    if (!delhiveryAwb) {
-      delhiveryAwb = `DLH${Date.now().toString().slice(-8)}${Math.floor(100 + Math.random() * 900)}`;
-      delhiveryTrackingUrl = `https://www.delhivery.com/track/package/${delhiveryAwb}`;
+    // 6.1 Dispatch / Manifest shipment via Delhivery Logistics ONLY for COD orders
+    // For prepaid orders, Delhivery shipment is manifested upon payment verification
+    let delhiveryAwb = '';
+    let delhiveryTrackingUrl = '';
+
+    if (!isOnlinePayment) {
+      try {
+        const delhiveryRes = await createDelhiveryShipment({
+          orderNumber,
+          customerName: name,
+          customerPhone: phone,
+          customerEmail: authoritativeEmail,
+          customerAddress: address,
+          city,
+          state,
+          pincode,
+          totalAmount: calculatedFinalTotal,
+          shippingFee: calculatedShippingFee,
+          paymentMethod: 'COD',
+          items: verifiedOrderItems.map((item) => ({
+            name: item.productName,
+            sku: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        });
+
+        if (delhiveryRes?.waybill) {
+          delhiveryAwb = delhiveryRes.waybill;
+          delhiveryTrackingUrl =
+            delhiveryRes.trackingUrl || `https://www.delhivery.com/track/package/${delhiveryAwb}`;
+        }
+      } catch (delhiveryErr) {
+        console.warn('Delhivery shipment initiation error, using resilient AWB fallback:', delhiveryErr);
+      }
+
+      if (!delhiveryAwb) {
+        delhiveryAwb = `DLH${Date.now().toString().slice(-8)}${Math.floor(100 + Math.random() * 900)}`;
+        delhiveryTrackingUrl = `https://www.delhivery.com/track/package/${delhiveryAwb}`;
+      }
     }
 
     // 7. Atomic Database Transaction: Order Creation + Stock Decrement + Coupon Usage
+    // COD orders start as CONFIRMED.
+    // Prepaid orders start as PENDING and only become CONFIRMED when Razorpay payment is verified!
+    const initialOrderStatus = isOnlinePayment ? 'PENDING' : 'CONFIRMED';
+
     const createdOrder = await prisma.$transaction(async (tx) => {
       // Create the verified order
       const order = await tx.order.create({
@@ -242,11 +302,11 @@ export async function POST(req: NextRequest) {
           total: calculatedFinalTotal,
           couponCode: couponCode ? couponCode.trim().toUpperCase() : null,
           paymentMethod,
-          paymentStatus: 'PENDING', // Verified: Never auto-mark as PAID without gateway verification
-          orderStatus: 'CONFIRMED',
+          paymentStatus: 'PENDING',
+          orderStatus: initialOrderStatus,
           carrier: 'Delhivery',
-          trackingNumber: delhiveryAwb,
-          trackingUrl: delhiveryTrackingUrl,
+          trackingNumber: delhiveryAwb || null,
+          trackingUrl: delhiveryTrackingUrl || null,
           items: {
             create: verifiedOrderItems,
           },
@@ -312,42 +372,6 @@ export async function POST(req: NextRequest) {
 
       return order;
     });
-
-    // 8. If Online / Razorpay Payment, create Razorpay order session
-    let razorpaySession: {
-      razorpayOrderId: string;
-      amount: number;
-      currency: string;
-      keyId: string;
-    } | null = null;
-    const isOnlinePayment = paymentMethod !== 'COD';
-
-    if (isOnlinePayment) {
-      try {
-        const rzOrder = await createRazorpayOrder({
-          orderNumber: createdOrder.orderNumber,
-          amount: createdOrder.total,
-          customerName: name,
-          customerEmail: authoritativeEmail,
-          customerPhone: phone,
-          notes: {
-            orderId: createdOrder.id,
-            orderNumber: createdOrder.orderNumber,
-          },
-        });
-
-        if (rzOrder?.razorpayOrderId) {
-          razorpaySession = {
-            razorpayOrderId: rzOrder.razorpayOrderId,
-            amount: rzOrder.amount,
-            currency: rzOrder.currency,
-            keyId: rzOrder.keyId,
-          };
-        }
-      } catch (rzErr) {
-        console.error('Razorpay order initialization error:', rzErr);
-      }
-    }
 
     return NextResponse.json({
       success: true,

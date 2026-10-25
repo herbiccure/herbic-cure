@@ -213,10 +213,17 @@ export default function CheckoutPage() {
 
       if (res.ok) {
         const data = await res.json();
-        clearCart();
 
-        // If Razorpay payment session returned
-        if (data.razorpayOrderId) {
+        // If Razorpay online payment
+        if (formData.paymentMethod !== 'COD') {
+          if (!data.razorpayOrderId) {
+            toast.error(
+              data.error || 'Payment gateway initialization failed. Please check your credentials or try COD.'
+            );
+            setLoading(false);
+            return;
+          }
+
           toast.success('Opening secure Razorpay checkout...');
           try {
             if (typeof (window as any).Razorpay !== 'undefined') {
@@ -248,32 +255,40 @@ export default function CheckoutPage() {
                       }),
                     });
 
+                    const vData = await verifyRes.json().catch(() => ({}));
+
                     if (verifyRes.ok) {
+                      clearCart();
                       toast.success('Payment verified successfully!');
                       router.push('/order-success?orderId=' + data.orderId);
                     } else {
-                      const vErr = await verifyRes.json().catch(() => ({}));
-                      toast.error(vErr.error || 'Payment verification failed');
-                      router.push('/checkout?error=Payment+verification+failed');
+                      toast.error(vData.error || 'Payment verification failed. Your card was not charged.');
+                      setLoading(false);
                     }
                   } catch (vEx) {
-                    console.error('Payment verification error:', vEx);
-                    router.push('/order-success?orderId=' + data.orderId);
+                    console.error('Payment verification network error:', vEx);
+                    toast.error('Network error during payment verification. Please check your order status.');
+                    setLoading(false);
                   }
                 },
                 modal: {
                   ondismiss: function () {
-                    toast.info('Payment window closed. You can complete your order anytime.');
+                    toast.info('Payment window closed. Your items are still in your cart.');
                     setLoading(false);
                   },
                 },
               };
 
               const rzp = new (window as any).Razorpay(options);
+              rzp.on('payment.failed', function (resp: any) {
+                console.error('Razorpay payment failed:', resp.error);
+                toast.error(resp.error?.description || 'Payment was declined or failed.');
+                setLoading(false);
+              });
               rzp.open();
               return;
             } else {
-              toast.error('Razorpay SDK is loading, please try again in a moment.');
+              toast.error('Razorpay payment SDK is loading, please try again in a moment.');
               setLoading(false);
               return;
             }
@@ -285,6 +300,8 @@ export default function CheckoutPage() {
           }
         }
 
+        // COD orders only reach here
+        clearCart();
         toast.success('Order confirmed successfully!');
         router.push(
           '/order-success?orderId=' + (data.orderId || ('HC-' + Date.now().toString().slice(-6)))
