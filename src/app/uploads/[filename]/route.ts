@@ -70,6 +70,24 @@ export async function GET(
         logger.debug('media.db_lookup_fallback', { error: (dbErr as any)?.message });
       }
 
+      // If missing image was requested, serve branded fallback image with 200 OK
+      // This prevents Next.js Image Optimization (_next/image) from failing with 400 Bad Request
+      const ext = path.extname(filename).toLowerCase();
+      if (['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'].includes(ext)) {
+        const fallbackPath = path.join(process.cwd(), 'public', 'images', 'banners', 'banner-1.png');
+        if (fs.existsSync(fallbackPath)) {
+          const fallbackBuf = fs.readFileSync(fallbackPath);
+          return new NextResponse(fallbackBuf, {
+            status: 200,
+            headers: {
+              'Content-Type': 'image/png',
+              'Content-Length': String(fallbackBuf.length),
+              'Cache-Control': 'public, max-age=3600',
+            },
+          });
+        }
+      }
+
       return new NextResponse('File not found', { status: 404 });
     }
 

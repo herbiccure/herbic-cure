@@ -10,12 +10,22 @@ export const revalidate = 120;
 
 export async function generateStaticParams() {
   try {
-    const collections = await prisma.collection.findMany({
-      where: { active: true },
-      select: { slug: true },
-    });
-    return collections.map((c) => ({ slug: c.slug }));
-  } catch (error) {
+    const [collections, categories] = await Promise.all([
+      prisma.collection.findMany({
+        where: { active: true },
+        select: { slug: true },
+      }),
+      prisma.category.findMany({
+        where: { active: true },
+        select: { slug: true },
+      }),
+    ]);
+    const slugs = new Set([
+      ...collections.map((c) => c.slug),
+      ...categories.map((c) => c.slug),
+    ]);
+    return Array.from(slugs).map((slug) => ({ slug }));
+  } catch {
     return [];
   }
 }
@@ -32,30 +42,39 @@ export async function generateMetadata({ params }: CollectionDetailPageProps): P
     where: { slug },
   });
 
-  if (!collection) {
+  const category = !collection
+    ? await prisma.category.findUnique({
+        where: { slug },
+      })
+    : null;
+
+  const item = collection || category;
+
+  if (!item) {
     return {
       title: 'Collection Not Found | Herbic Cure',
       robots: { index: false, follow: false },
     };
   }
 
-  const title = `${collection.name} | Herbic Cure Herbal Collections`;
+  const title = `${item.name} | Herbic Cure Herbal Collections`;
   const description =
-    collection.description ||
-    `Discover Herbic Cure ${collection.name}. Authentic Ayurvedic formulations made with 21 rare herbs for scalp and hair vitality.`;
-  const imageUrl = collection.bannerImage || collection.image || '/images/banners/banner-1.png';
+    item.description ||
+    `Discover Herbic Cure ${item.name}. Authentic Ayurvedic formulations made with 21 rare herbs for scalp and hair vitality.`;
+  const imageUrl =
+    collection?.bannerImage || collection?.image || (category as any)?.image || '/images/banners/banner-1.png';
 
   return {
     title,
     description,
     alternates: {
-      canonical: `/collections/${collection.slug}`,
+      canonical: `/collections/${item.slug}`,
     },
     openGraph: {
       title,
       description,
-      url: `/collections/${collection.slug}`,
-      images: [{ url: imageUrl, alt: collection.name }],
+      url: `/collections/${item.slug}`,
+      images: [{ url: imageUrl, alt: item.name }],
     },
     twitter: {
       card: 'summary_large_image',
@@ -81,19 +100,41 @@ export default async function CollectionDetailPage({ params }: CollectionDetailP
     },
   });
 
+  let category: any = null;
+  let categoryProducts: any[] = [];
+
   if (!collection) {
-    notFound();
+    category = await prisma.category.findUnique({
+      where: { slug },
+    });
+
+    if (!category) {
+      notFound();
+    }
+
+    categoryProducts = await prisma.product.findMany({
+      where: { categoryId: category.id, active: true },
+      include: { images: { orderBy: { displayOrder: 'asc' } } },
+      orderBy: { displayOrder: 'asc' },
+    });
   }
 
-  const products = collection.products.map((p) => p.product).filter((p) => p.active);
+  const item = collection || category;
+  const products = collection
+    ? collection.products.map((p) => p.product).filter((p) => p.active)
+    : categoryProducts;
+
+  const bannerImg = collection
+    ? (collection.bannerImage || collection.image || '/images/banners/banner-1.png')
+    : (category?.image || '/images/banners/banner-1.png');
 
   return (
     <div className="bg-[#FCF8F9] min-h-screen pb-16">
       {/* Full-width Responsive Banner */}
       <div className="relative w-full min-h-[260px] sm:min-h-[320px] md:min-h-[380px] bg-stone-950 flex items-center overflow-hidden">
         <Image
-          src={collection.bannerImage || collection.image || '/images/banners/banner-1.png'}
-          alt={collection.name}
+          src={bannerImg}
+          alt={item.name}
           fill
           priority
           sizes="100vw"
@@ -107,18 +148,19 @@ export default async function CollectionDetailPage({ params }: CollectionDetailP
             <span>/</span>
             <Link href="/collections" className="hover:underline hover:text-white transition-colors">Collections</Link>
             <span>/</span>
-            <span className="text-white font-bold">{collection.name}</span>
+            <span className="text-white font-bold">{item.name}</span>
           </nav>
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold font-serif text-white tracking-tight drop-shadow-sm">
-            {collection.name}
+            {item.name}
           </h1>
-          {collection.description && (
+          {item.description && (
             <p className="text-xs sm:text-sm md:text-base text-rose-100/90 mt-2 max-w-2xl leading-relaxed">
-              {collection.description}
+              {item.description}
             </p>
           )}
         </div>
       </div>
+
 
       {/* Products Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">

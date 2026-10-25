@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useSyncExternalStore } from 'react';
+
+const emptySubscribe = () => () => {};
 import dynamic from 'next/dynamic';
 
 // Dynamically import ReactPlayer to prevent SSR hydration mismatches
@@ -114,15 +116,11 @@ export default function ReelPlayer({
   onError,
   playsInline = true,
 }: ReelPlayerProps) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [hasError, setHasError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const videoInfo = parseVideoSource(url);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Programmatic autoplay enforcement for HTML5 direct videos
   useEffect(() => {
@@ -169,7 +167,6 @@ export default function ReelPlayer({
           src={videoInfo.embedUrl}
           title="Google Drive Video Player"
           allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-          allowFullScreen
           className={`w-full h-full border-0 absolute inset-0 object-cover ${
             controls ? 'pointer-events-auto' : 'pointer-events-none'
           }`}
@@ -186,7 +183,6 @@ export default function ReelPlayer({
           src={videoInfo.embedUrl}
           title="Instagram Reel Player"
           allow="autoplay; encrypted-media; fullscreen"
-          allowFullScreen
           className="w-full h-full border-0 absolute inset-0 object-cover pointer-events-auto"
         />
       </div>
