@@ -21,7 +21,7 @@ import {
   Sliders,
   Sparkles,
 } from 'lucide-react';
-import { FooterData, DEFAULT_FOOTER_DATA, FooterLink } from '@/lib/footer';
+import { FooterData, DEFAULT_FOOTER_DATA, FooterLink } from '@/types/footer';
 
 export default function AdminFooterPage() {
   const [data, setData] = useState<FooterData>(DEFAULT_FOOTER_DATA);

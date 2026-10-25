@@ -25,6 +25,18 @@ Herbic Cure uses a high-performance, zero-leak, zero-noise structured logging ar
 - Default in Production: `info`
 - Default in Development: `debug`
 
+### Where to Log From (Server Logger vs. Client Reporting vs. Server Actions)
+
+1. **Server-Side Code (Route Handlers, Server Components, Backend Libs)**:
+   - Import `{ logger } from '@/lib/logger';` (enforced via `server-only`).
+   - Writes structured JSON to stdout/stderr with deep redaction, correlation IDs, and rate throttling.
+2. **Client-Side Code (Components with `'use client'`, Hooks, Contexts)**:
+   - Import `{ reportClientError, reportClientMessage } from '@/lib/client-report';`.
+   - Reports exceptions to Sentry client SDK without pulling server-only code, Node APIs, or secrets into the browser.
+3. **Important Client-Side Business Events (Checkout failures, fraud alerts)**:
+   - Dispatch an authenticated Server Action or API route.
+   - Server validates payload via Zod, checks session/rate limits, and emits the log from the server boundary.
+
 ---
 
 ## 3. "Log or Don't Log" Decision Matrix

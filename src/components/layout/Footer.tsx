@@ -4,8 +4,8 @@ import { toast } from 'sonner';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Check, Phone, Mail, Clock, ChevronDown } from 'lucide-react';
-import { FooterData, DEFAULT_FOOTER_DATA } from '@/lib/footer';
+import { ArrowRight, Check, Phone, Mail, ChevronDown } from 'lucide-react';
+import { FooterData, DEFAULT_FOOTER_DATA } from '@/types/footer';
 
 interface FooterProps {
   brandName?: string;

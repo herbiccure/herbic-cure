@@ -19,7 +19,7 @@ import {
   Sparkles,
   Check,
 } from 'lucide-react';
-import { DEFAULT_POLICIES, PolicyData } from '@/lib/policies';
+import { DEFAULT_POLICIES, PolicyData } from '@/types/policies';
 import { useAdminTheme } from '@/components/admin/AdminThemeProvider';
 
 const POLICY_TABS = [

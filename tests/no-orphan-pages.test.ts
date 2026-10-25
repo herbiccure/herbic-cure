@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import sitemap from '../src/app/sitemap';
 import fs from 'fs';
 import path from 'path';
+import { DEFAULT_FOOTER_DATA } from '../src/types/footer';
 
 describe('Phase 2: On-Page Architecture & Internal Link Graph', () => {
   it('guarantees zero orphan pages across the entire sitemap catalog', async () => {
@@ -29,6 +30,15 @@ describe('Phase 2: On-Page Architecture & Internal Link Graph', () => {
         layoutLinks.add(match[1]);
       }
     }
+
+    // Also include default dynamic links from the Footer configuration
+    DEFAULT_FOOTER_DATA.columns.forEach((col) => {
+      col.links.forEach((link) => {
+        if (link.url.startsWith('/')) {
+          layoutLinks.add(link.url);
+        }
+      });
+    });
 
     // 2. Dynamic Hub Links
     // All /products/[slug] are linked from /products catalog grid and Regimen cross-sells

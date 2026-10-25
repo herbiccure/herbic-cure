@@ -30,7 +30,7 @@ import {
   Search,
   Eye,
 } from 'lucide-react';
-import { AboutPageData, DEFAULT_ABOUT_DATA } from '@/lib/about';
+import { AboutPageData, DEFAULT_ABOUT_DATA } from '@/types/about';
 
 const ICON_OPTIONS = [
   { value: 'shield', label: 'Shield (Protection / Authenticity)', icon: ShieldCheck },

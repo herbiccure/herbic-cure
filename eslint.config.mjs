@@ -18,6 +18,42 @@ const eslintConfig = defineConfig([
   },
   {
     files: [
+      "src/components/**/*.{ts,tsx}",
+      "src/context/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@/lib/logger",
+              message:
+                "Server logger cannot be imported in client components. Use '@/lib/client-report' or a Server Action instead.",
+            },
+            {
+              name: "@/lib/prisma",
+              message: "Prisma client cannot be imported in client components.",
+            },
+            {
+              name: "@prisma/client",
+              message: "Prisma client cannot be imported in client components.",
+            },
+            {
+              name: "@/lib/cache/redis",
+              message: "Redis client cannot be imported in client components.",
+            },
+            {
+              name: "server-only",
+              message: "'server-only' cannot be imported in client components.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: [
       "scripts/**/*.{ts,js}",
       "prisma/**/*.{ts,js}",
       "tests/**/*.{ts,js}",

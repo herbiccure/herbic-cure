@@ -28,3 +28,10 @@
    - Logs go to `process.stdout` / `process.stderr` for native Vercel runtime ingestion.
    - Never write logs or telemetry counters to Upstash Redis or Supabase.
    - Permanent records (financial transactions, audit history) belong in dedicated Prisma tables (`AuditLog`, `ShipmentEvent`), not logs.
+
+6. **Client/Server Boundary Isolation (MANDATORY)**:
+   - Client components (`'use client'`) must NEVER import `src/lib/logger.ts`, `@/lib/prisma`, `@prisma/client`, `@/lib/cache/redis`, or any module containing `import 'server-only'`.
+   - Client-side error reporting belongs in `@/lib/client-report` using Sentry's client SDK.
+   - Shared data models, types, and fallback defaults must reside in neutral files under `src/types/` (never mixed with server database logic or logger calls).
+
+
