@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cancelOrderWithLogistics } from '@/lib/shipping/orderCancellation';
 import { isDelhiveryCancelled } from '@/lib/shipping/delhivery';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,12 +39,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Empty or invalid webhook payload' }, { status: 400 });
     }
 
-    console.log('Delhivery Webhook received event:', JSON.stringify(body).slice(0, 500));
-
     // Normalize incoming payload which can be an array or a single object or nested under Shipment
     const rawShipments = Array.isArray(body)
       ? body
       : body.shipments || body.Shipments || body.packages || [body];
+
+    logger.info('shipping.webhook.received', {
+      packageCount: rawShipments.length,
+    });
 
     const results: Array<{ orderNumber?: string; waybill?: string; action: string; message: string }> = [];
 
@@ -149,7 +152,7 @@ export async function POST(request: NextRequest) {
       details: results,
     });
   } catch (error: any) {
-    console.error('Delhivery webhook processing error:', error);
+    logger.error('shipping.webhook.failed', { error: error?.message || 'Internal webhook error' });
     return NextResponse.json(
       { error: error?.message || 'Internal webhook error' },
       { status: 500 }

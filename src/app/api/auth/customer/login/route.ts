@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { signSessionToken } from '@/lib/auth/session';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,9 +73,10 @@ export async function POST(request: NextRequest) {
       maxAge: 30 * 24 * 60 * 60, // 30 days
     });
 
+    logger.info('auth.customer.login.success', { userId: customer.id });
     return response;
-  } catch (error) {
-    console.error('Customer login error:', error);
+  } catch (error: any) {
+    logger.error('auth.customer.login.failed', { error: error?.message || 'Server login error' });
     return NextResponse.json({ error: 'Server login error' }, { status: 500 });
   }
 }

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
 import { prisma } from '@/lib/prisma';
@@ -78,10 +79,10 @@ async function uploadToCloudinary(
     }
 
     const errText = await res.text();
-    console.warn('Cloudinary upload returned non-200:', errText);
+    logger.warn('admin.upload.cloudinary_failed', { statusText: errText });
     return null;
   } catch (err) {
-    console.warn('Cloudinary upload exception:', err);
+    logger.warn('admin.upload.cloudinary_exception', { error: (err as any)?.message });
     return null;
   }
 }
@@ -184,7 +185,7 @@ export async function POST(request: NextRequest) {
 
         processedBuffer = await pipeline.toBuffer();
       } catch (sharpErr) {
-        console.warn('Sharp optimization fallback:', sharpErr);
+        logger.debug('admin.upload.sharp_fallback', { error: (sharpErr as any)?.message });
         processedBuffer = originalBuffer;
       }
     } else {
@@ -255,7 +256,7 @@ export async function POST(request: NextRequest) {
           });
         }
       } catch (sbErr) {
-        console.warn('Supabase storage upload error:', sbErr);
+        logger.warn('admin.upload.supabase_failed', { error: (sbErr as any)?.message });
       }
     }
 
@@ -272,7 +273,7 @@ export async function POST(request: NextRequest) {
       fs.writeFileSync(fullFilePath, processedBuffer);
       savedToDisk = true;
     } catch (fsErr) {
-      console.warn('Filesystem write unavailable (serverless environment):', fsErr);
+      logger.debug('admin.upload.fs_unavailable', { error: (fsErr as any)?.message });
     }
 
     // -------------------------------------------------------------
@@ -289,7 +290,7 @@ export async function POST(request: NextRequest) {
         },
       });
     } catch (dbErr) {
-      console.warn('Could not save media record to DB:', dbErr);
+      logger.warn('admin.upload.db_record_failed', { error: (dbErr as any)?.message });
     }
 
     // URL is always a clean endpoint (/uploads/filename) to keep JSON payloads small and prevent 413 errors
@@ -306,7 +307,7 @@ export async function POST(request: NextRequest) {
       provider: savedToDisk ? 'local' : 'database',
     });
   } catch (error: any) {
-    console.error('File upload failed:', error);
+    logger.error('admin.upload.failed', { error });
     return NextResponse.json(
       { error: error?.message || 'Failed to process file upload' },
       { status: 500 }

@@ -1,7 +1,8 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { verifyGuestAccessToken } from '@/lib/auth/guest-token';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,8 +99,8 @@ export async function GET(request: NextRequest) {
         events,
       },
     });
-  } catch (error) {
-    console.error('Track order error:', error);
+  } catch (error: any) {
+    logger.error('order.track.failed', { error: error?.message || 'Failed to look up shipment' });
     return NextResponse.json({ error: 'Failed to look up shipment' }, { status: 500 });
   }
 }

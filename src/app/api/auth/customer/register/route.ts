@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { signSessionToken } from '@/lib/auth/session';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,9 +67,10 @@ export async function POST(request: NextRequest) {
       maxAge: 30 * 24 * 60 * 60,
     });
 
+    logger.info('auth.customer.register.success', { userId: customerPayload.id });
     return response;
-  } catch (error) {
-    console.error('Customer register error:', error);
+  } catch (error: any) {
+    logger.error('auth.customer.register.failed', { error: error?.message || 'Failed to create customer account' });
     return NextResponse.json({ error: 'Failed to create customer account' }, { status: 500 });
   }
 }

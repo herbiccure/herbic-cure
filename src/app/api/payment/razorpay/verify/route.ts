@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyRazorpayPaymentSignature } from '@/lib/payment/razorpay';
 import { createDelhiveryShipment } from '@/lib/shipping/delhivery';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!isValid) {
-      console.warn(`Invalid Razorpay signature for order ${orderId}, payment ${razorpay_payment_id}`);
+      logger.warn('payment.signature.invalid', { orderId, paymentId: razorpay_payment_id });
       return NextResponse.json(
         { error: 'Invalid payment signature. Verification failed.' },
         { status: 400 }
@@ -113,10 +114,16 @@ export async function POST(req: NextRequest) {
             },
           });
         }
-      } catch (shipErr) {
-        console.warn('Delhivery dispatch post-payment notification:', shipErr);
+      } catch (shipErr: any) {
+        logger.warn('shipping.dispatch.post_payment_warning', { orderId: order.orderNumber, error: shipErr?.message });
       }
     }
+
+    logger.info('payment.verified', {
+      orderId: order.orderNumber,
+      paymentId: razorpay_payment_id,
+      amount: order.total,
+    });
 
     return NextResponse.json({
       success: true,
@@ -125,7 +132,7 @@ export async function POST(req: NextRequest) {
       paymentId: razorpay_payment_id,
     });
   } catch (error: any) {
-    console.error('Razorpay verification error:', error);
+    logger.error('payment.verify.failed', { error: error?.message || 'Payment verification failed' });
     return NextResponse.json(
       { error: error.message || 'Payment verification failed' },
       { status: 500 }

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import React, { cache } from 'react';
 import { notFound } from 'next/navigation';
 import { unstable_cache } from 'next/cache';
@@ -16,7 +17,7 @@ export async function generateStaticParams() {
     });
     return products.map((p) => ({ slug: p.slug }));
   } catch (error) {
-    console.warn('Failed to pre-generate product static params:', error);
+    logger.debug('products.static_params_failed', { error: (error as any)?.message });
     return [];
   }
 }
@@ -39,7 +40,7 @@ const getProduct = cache(async (slug: string) => {
           },
         });
       } catch (err) {
-        console.warn(`Database unreachable fetching product ${slug}:`, (err as any)?.message || String(err));
+        logger.debug('products.fetch_deferred', { slug, error: (err as any)?.message });
         return null;
       }
     },
@@ -60,7 +61,7 @@ const getReviews = cache(async (productId: string) => {
           orderBy: { createdAt: 'desc' },
         });
       } catch (err) {
-        console.warn(`Database unreachable fetching reviews for ${productId}:`, (err as any)?.message || String(err));
+        logger.debug('products.reviews_deferred', { productId, error: (err as any)?.message });
         return [];
       }
     },

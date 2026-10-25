@@ -162,7 +162,7 @@ export default function Header({
           setSearchResults(data.products || []);
         }
       } catch (err) {
-        console.error('Search fetch error:', err);
+        // Search fetch aborted
       } finally {
         setIsSearching(false);
       }

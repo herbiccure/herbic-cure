@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 export interface FooterLink {
   id: string;
   label: string;
@@ -175,8 +177,8 @@ export async function getFooterData(): Promise<FooterData> {
       footerCache = merged;
       return merged;
     }
-  } catch (error) {
-    console.warn('Footer data database fallback used:', (error as any)?.message || String(error));
+  } catch (error: any) {
+    logger.debug('footer.fallback_used', { error: error?.message });
   }
 
   return DEFAULT_FOOTER_DATA;

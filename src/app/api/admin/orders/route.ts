@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,8 +23,8 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ orders });
-  } catch (error) {
-    console.error('Admin get orders error:', error);
+  } catch (error: any) {
+    logger.error('admin.orders.fetch_failed', { error: error?.message || 'Failed to fetch orders' });
     return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
   }
 }

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import type { Metadata } from 'next';
 import React from 'react';
 import Link from 'next/link';
@@ -116,7 +117,7 @@ const getCachedHomePageData = unstable_cache(
         reviews,
       };
     } catch (error) {
-      console.warn('Database connection deferred during build/ISR:', (error as any)?.message || String(error));
+      logger.debug('homepage.query_deferred', { error: (error as any)?.message });
       return {
         products: [],
         categories: [],
@@ -196,7 +197,7 @@ export default async function HomePage() {
         heroSlides = parsed.slides;
       }
     } catch (e) {
-      console.error('Failed to parse hero slides', e);
+      logger.warn('homepage.hero_slides_parse_failed', { error: (e as any)?.message });
     }
   }
 

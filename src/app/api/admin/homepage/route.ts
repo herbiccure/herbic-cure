@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, section: created });
   } catch (error: any) {
-    console.error('Failed to create section:', error);
+    logger.error('admin.homepage.create_failed', { error });
     return NextResponse.json({ error: error?.message || 'Failed to create section' }, { status: 500 });
   }
 }
@@ -166,7 +167,7 @@ export async function PUT(request: NextRequest) {
       try {
         invalidateHomepageCache();
       } catch (cacheErr) {
-        console.warn('Cache invalidation deferred:', cacheErr);
+        logger.debug('admin.homepage.cache_invalidation_deferred', { error: (cacheErr as any)?.message });
       }
 
       return NextResponse.json({ success: true, section: updated });
@@ -174,7 +175,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Failed to update homepage section:', error);
+    logger.error('admin.homepage.update_failed', { error });
     return NextResponse.json({ error: error?.message || 'Failed to update section' }, { status: 500 });
   }
 }
@@ -199,7 +200,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, deletedId: id });
   } catch (error: any) {
-    console.error('Failed to delete section:', error);
+    logger.error('admin.homepage.delete_failed', { error });
     return NextResponse.json({ error: error?.message || 'Failed to delete section' }, { status: 500 });
   }
 }

@@ -6,6 +6,7 @@
 
 import crypto from 'crypto';
 import Razorpay from 'razorpay';
+import { logger } from '@/lib/logger';
 
 export interface RazorpayConfig {
   keyId: string;
@@ -129,7 +130,7 @@ export function verifyRazorpayPaymentSignature(params: VerifyPaymentParams): boo
   const { keySecret } = getRazorpayConfig();
 
   if (!keySecret) {
-    console.error('Razorpay verification error: RAZORPAY_KEY_SECRET is not configured.');
+    logger.error('payment.config.missing_secret');
     return false;
   }
 
@@ -154,8 +155,8 @@ export function verifyRazorpayPaymentSignature(params: VerifyPaymentParams): boo
     }
 
     return crypto.timingSafeEqual(expectedBuf, actualBuf);
-  } catch (err) {
-    console.error('Razorpay signature verification exception:', err);
+  } catch (err: any) {
+    logger.warn('payment.signature.verification_error', { error: err?.message });
     return false;
   }
 }
@@ -172,7 +173,7 @@ export function verifyRazorpayWebhookSignature(
   const secret = webhookSecret || keySecret;
 
   if (!secret) {
-    console.error('Razorpay webhook verification error: Webhook secret not configured.');
+    logger.error('payment.webhook.missing_secret');
     return false;
   }
 
@@ -194,8 +195,8 @@ export function verifyRazorpayWebhookSignature(
     }
 
     return crypto.timingSafeEqual(expectedBuf, actualBuf);
-  } catch (err) {
-    console.error('Razorpay webhook signature verification exception:', err);
+  } catch (err: any) {
+    logger.warn('payment.webhook.signature_error', { error: err?.message });
     return false;
   }
 }

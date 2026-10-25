@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
 import { trackDelhiveryShipment, isDelhiveryCancelled } from '@/lib/shipping/delhivery';
 import { cancelOrderWithLogistics } from '@/lib/shipping/orderCancellation';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       message: `Delhivery live status: ${tracking.status || 'IN_TRANSIT'}. Expected Delivery: ${tracking.expectedDeliveryDate ? new Date(tracking.expectedDeliveryDate).toLocaleDateString('en-IN') : '2-4 days'}`,
     });
   } catch (error: any) {
-    console.error('Delhivery live sync error:', error);
+    logger.error('admin.order.sync_delhivery_failed', { error: error?.message || 'Failed to sync with Delhivery' });
     return NextResponse.json(
       { error: error?.message || 'Failed to sync with Delhivery logistics server' },
       { status: 500 }

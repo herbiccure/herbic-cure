@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import type { Metadata } from 'next';
 import React from 'react';
 import Link from 'next/link';
@@ -50,7 +51,7 @@ export default async function CollectionsPage() {
     categories = fetchedCategories;
     products = fetchedProducts;
   } catch (err) {
-    console.warn('Collections query deferred during build/ISR:', (err as any)?.message || String(err));
+    logger.debug('collections.query_deferred', { error: (err as any)?.message });
   }
 
   return (

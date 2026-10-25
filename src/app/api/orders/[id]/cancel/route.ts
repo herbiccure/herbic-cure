@@ -4,6 +4,7 @@ import { getServerSession } from '@/lib/auth/server';
 import { verifySessionToken, CustomerSessionPayload, AdminSessionPayload } from '@/lib/auth/session';
 import { cancelOrderWithLogistics } from '@/lib/shipping/orderCancellation';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       restockedItemsCount: cancelResult.restockedItemsCount,
     });
   } catch (error: any) {
-    console.error('Order cancellation endpoint error:', error);
+    logger.error('order.cancel.failed', { error: error?.message || 'Failed to cancel order' });
     return NextResponse.json(
       { error: error?.message || 'Failed to cancel order' },
       { status: 500 }

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
 import { cancelOrderWithLogistics } from '@/lib/shipping/orderCancellation';
 import { cancelDelhiveryShipment } from '@/lib/shipping/delhivery';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,8 +30,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     return NextResponse.json({ order });
-  } catch (error) {
-    console.error('Fetch order error:', error);
+  } catch (error: any) {
+    logger.error('admin.order.fetch_failed', { error: error?.message || 'Failed to fetch order' });
     return NextResponse.json({ error: 'Failed to fetch order' }, { status: 500 });
   }
 }
@@ -104,7 +105,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, order: updatedOrder });
   } catch (error: any) {
-    console.error('Update order error:', error);
+    logger.error('admin.order.update_failed', { error: error?.message || 'Failed to update order' });
     return NextResponse.json({ error: error?.message || 'Failed to update order' }, { status: 500 });
   }
 }
@@ -120,8 +121,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     if (existing?.trackingNumber && existing.orderStatus !== 'CANCELLED') {
       try {
         await cancelDelhiveryShipment(existing.trackingNumber, 'Order deleted by admin');
-      } catch (delhErr) {
-        console.warn('Delhivery delete cancel warning:', delhErr);
+      } catch (delhErr: any) {
+        logger.warn('shipping.delhivery.delete_cancel_warning', { error: delhErr?.message });
       }
     }
 
@@ -129,8 +130,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       where: { id },
     });
     return NextResponse.json({ success: true, message: 'Order deleted and Delhivery shipment cancelled' });
-  } catch (error) {
-    console.error('Delete order error:', error);
+  } catch (error: any) {
+    logger.error('admin.order.delete_failed', { error: error?.message || 'Failed to delete order' });
     return NextResponse.json({ error: 'Failed to delete order' }, { status: 500 });
   }
 }

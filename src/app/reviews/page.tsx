@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import type { Metadata } from 'next';
 import React from 'react';
 import Link from 'next/link';
@@ -37,7 +38,7 @@ export default async function ReviewsPage() {
     reviews = fetchedReviews;
     products = fetchedProducts;
   } catch (err) {
-    console.warn('Reviews query deferred during build/ISR:', (err as any)?.message || String(err));
+    logger.debug('reviews.query_deferred', { error: (err as any)?.message });
   }
 
   const avgRating = reviews.length > 0

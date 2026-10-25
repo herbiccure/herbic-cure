@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import type { Metadata } from 'next';
 import React from 'react';
 import Image from 'next/image';
@@ -24,7 +25,7 @@ export default async function IngredientsPage() {
       orderBy: { displayOrder: 'asc' },
     });
   } catch (err) {
-    console.warn('Could not fetch ingredients at build/render time:', err);
+    logger.debug('ingredients.query_deferred', { error: (err as any)?.message });
   }
 
   return (

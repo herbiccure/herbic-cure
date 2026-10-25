@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 const envSchema = z.object({
   DATABASE_URL: z.string().default('file:./dev.db'),
@@ -13,7 +14,7 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error('Environment validation error:', parsed.error.format());
+  logger.error('system.env.validation_failed', { errors: parsed.error.format() });
 }
 
 export const env = parsed.success

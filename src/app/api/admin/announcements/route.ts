@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -51,7 +52,7 @@ export async function GET() {
       textColor: map['announcement_bar_text_color'] || '#ffffff',
     });
   } catch (error) {
-    console.error('Failed to fetch admin announcements:', error);
+    logger.error('admin.announcements.fetch_failed', { error });
     return NextResponse.json({ error: 'Failed to fetch announcements' }, { status: 500 });
   }
 }
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Failed to update admin announcements:', error);
+    logger.error('admin.announcements.update_failed', { error });
     return NextResponse.json({ error: 'Failed to update announcements' }, { status: 500 });
   }
 }

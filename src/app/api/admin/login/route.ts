@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth/auth';
 import { isAdminRole } from '@/lib/permissions/guard';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { signSessionToken } from '@/lib/auth/session';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,9 +118,10 @@ export async function POST(request: NextRequest) {
       maxAge: 7 * 24 * 60 * 60,
     });
 
+    logger.info('auth.admin.login.success', { userId: user.id, role: user.role });
     return nextRes;
-  } catch (error) {
-    console.error('Admin login error:', error);
+  } catch (error: any) {
+    logger.error('auth.admin.login.failed', { error: error?.message || 'Internal authentication error' });
     return NextResponse.json({ error: 'Internal authentication error' }, { status: 500 });
   }
 }

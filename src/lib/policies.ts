@@ -1,4 +1,5 @@
 // Dynamic server import prevents @prisma/client from bundling into client components
+import { logger } from '@/lib/logger';
 
 export interface PolicyData {
   slug: string;
@@ -210,8 +211,8 @@ export async function getPolicyData(slug: string): Promise<PolicyData> {
       policyCache.set(slug, result);
       return result;
     }
-  } catch (error) {
-    console.warn(`Policy fallback used for '${slug}' (database deferred):`, (error as any)?.message || String(error));
+  } catch (error: any) {
+    logger.debug('policies.fallback_used', { slug, error: error?.message });
   }
 
   return fallback;

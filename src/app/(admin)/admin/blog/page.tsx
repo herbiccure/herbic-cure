@@ -77,7 +77,6 @@ export default function AdminBlogPage() {
       const data = await res.json();
       if (data.posts) setPosts(data.posts);
     } catch (e) {
-      console.error('Failed to fetch blog posts:', e);
     } finally {
       setLoading(false);
     }

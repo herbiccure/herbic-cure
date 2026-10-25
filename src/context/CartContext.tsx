@@ -58,8 +58,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (savedCoupon) {
         setAppliedCoupon(JSON.parse(savedCoupon));
       }
-    } catch (e) {
-      console.error('Failed to load cart from storage', e);
+    } catch {
+      // Graceful fallback for restricted storage (private browsing)
     }
 
     // Fetch dynamic store shipping settings from admin
@@ -81,8 +81,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (isMounted) {
       try {
         localStorage.setItem('herbic_cart', JSON.stringify(items));
-      } catch (e) {
-        console.error('Failed to persist cart', e);
+      } catch {
+        // Storage quota exceeded or private browsing
       }
     }
   }, [items, isMounted]);
@@ -95,8 +95,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         } else {
           localStorage.removeItem('herbic_coupon');
         }
-      } catch (e) {
-        console.error('Failed to persist coupon', e);
+      } catch {
+        // Storage quota exceeded or private browsing
       }
     }
   }, [appliedCoupon, isMounted]);

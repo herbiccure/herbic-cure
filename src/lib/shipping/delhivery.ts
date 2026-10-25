@@ -4,6 +4,7 @@
  */
 
 import axios from 'axios';
+import { logger } from '@/lib/logger';
 
 export interface DelhiveryConfig {
   apiKey: string;
@@ -110,6 +111,29 @@ export function getPickupLocation(): string {
   );
 }
 
+export function getPickupAddress(): string {
+  return (
+    process.env.DELHIVERY_PICKUP_ADDRESS ||
+    'Naralasetti vari palem, Bapatla'
+  );
+}
+
+export function getPickupCity(): string {
+  return process.env.DELHIVERY_PICKUP_CITY || 'Bapatla';
+}
+
+export function getPickupState(): string {
+  return process.env.DELHIVERY_PICKUP_STATE || 'Andhra Pradesh';
+}
+
+export function getPickupPin(): string {
+  return (process.env.DELHIVERY_PICKUP_PIN || '522101').replace(/\D/g, '');
+}
+
+export function getPickupPhone(): string {
+  return (process.env.DELHIVERY_PICKUP_PHONE || '8688888114').replace(/\D/g, '').slice(-10);
+}
+
 function getBaseUrl(): string {
   if (process.env.DELHIVERY_BASE_URL) {
     return process.env.DELHIVERY_BASE_URL.replace(/\/+$/, '');
@@ -171,8 +195,8 @@ export async function checkPincodeServiceability(
           };
         }
       }
-    } catch (err) {
-      console.warn('Delhivery pincode check fallback:', err);
+    } catch (err: any) {
+      logger.debug('shipping.pincode.fallback', { pincode: cleanPin, error: err?.message });
     }
   }
 
@@ -386,7 +410,7 @@ export async function requestDelhiveryPickup(
           data?.error ||
           data?.remarks ||
           `Delhivery API returned HTTP ${res.status}: ${res.statusText}`;
-        console.warn('Delhivery pickup request failed HTTP status:', res.status, errorMsg);
+        logger.warn('shipping.pickup.http_error', { status: res.status, error: errorMsg });
         return {
           success: false,
           status: 'FAILED',
@@ -440,7 +464,7 @@ export async function requestDelhiveryPickup(
         };
       }
     } catch (err: any) {
-      console.warn('Delhivery pickup request exception:', err?.message || 'Network error');
+      logger.warn('shipping.pickup.exception', { error: err?.message || 'Network error' });
       return {
         success: false,
         status: 'FAILED',
@@ -562,20 +586,23 @@ export async function createDelhiveryShipment(
             cod_amount: codAmount,
             order_date: new Date().toISOString(),
             total_amount: String(orderTotal),
-            seller_add: 'Herbic Cure Apothecary Labs, India',
-            seller_name: DELHIVERY_CONFIG.clientName,
-            seller_inv: order.orderNumber,
             quantity: String(physicalQuantity), // Strictly physical items only!
             waybill: order.waybill || '',
             shipment_width: boxWidth,
             shipment_height: boxHeight,
             shipment_length: boxLength,
             weight: String(order.weight || 500),
+            pickup_location: getPickupLocation(),
           },
         ],
-        // Use registered warehouse name only without hardcoded fake Jaipur address/phone
+        // Complete registered warehouse pickup location matching Delhivery One
         pickup_location: {
           name: getPickupLocation(),
+          add: getPickupAddress(),
+          city: getPickupCity(),
+          state: getPickupState(),
+          pin_code: getPickupPin(),
+          phone: getPickupPhone(),
         },
       };
 
@@ -607,7 +634,7 @@ export async function createDelhiveryShipment(
           data?.error ||
           data?.message ||
           `Delhivery manifest request failed with HTTP ${res.status}`;
-        console.warn('Delhivery manifest API rejected HTTP status:', res.status, errorMsg);
+        logger.warn('shipping.manifest.rejected_status', { status: res.status, error: errorMsg });
         return {
           success: false,
           waybill: '',
@@ -637,7 +664,7 @@ export async function createDelhiveryShipment(
 
       // If package status is Fail or no waybill was returned
       const failureReason = remarks || 'Package manifest rejected by Delhivery';
-      console.warn('Delhivery package creation failed:', failureReason);
+      logger.warn('shipping.manifest.package_failed', { reason: failureReason });
       return {
         success: false,
         waybill: '',
@@ -647,7 +674,7 @@ export async function createDelhiveryShipment(
         rawResponse: data,
       };
     } catch (err: any) {
-      console.warn('Delhivery manifest live API exception:', err.message);
+      logger.warn('shipping.manifest.exception', { error: err.message });
       return {
         success: false,
         waybill: '',
@@ -759,7 +786,7 @@ export async function trackDelhiveryShipment(
         }
       }
     } catch (err: any) {
-      console.warn('Delhivery live track lookup:', err.message);
+      logger.debug('shipping.track.lookup_fallback', { error: err.message });
     }
   }
 
@@ -850,7 +877,7 @@ export async function cancelDelhiveryShipment(
       );
 
       const data = response.data;
-      console.log('Delhivery cancellation response for AWB', cleanWbn, data);
+      logger.info('shipping.cancellation.response', { waybill: cleanWbn, status: data?.status });
 
       const isSuccess =
         response.status === 200 &&
@@ -878,7 +905,7 @@ export async function cancelDelhiveryShipment(
         errorData?.error ||
         err?.message ||
         'Delhivery cancellation request failed';
-      console.warn('Delhivery cancellation API error for AWB', cleanWbn, errorMsg);
+      logger.warn('shipping.cancellation.failed', { waybill: cleanWbn, error: errorMsg });
 
       return {
         success: false,

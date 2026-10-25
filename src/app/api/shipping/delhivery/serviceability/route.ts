@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { checkPincodeServiceability } from '@/lib/shipping/delhivery';
 
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     const result = await checkPincodeServiceability(pincode);
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error('Delhivery serviceability check error:', error);
+    logger.error('shipping.delhivery.serviceability_failed', { error });
     return NextResponse.json(
       { error: 'Failed to verify pincode serviceability' },
       { status: 500 }

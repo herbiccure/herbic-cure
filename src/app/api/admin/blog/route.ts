@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     });
     return NextResponse.json({ posts });
   } catch (error) {
-    console.error('Fetch blog error:', error);
+    logger.error('admin.blog.fetch_failed', { error });
     return NextResponse.json({ error: 'Failed to fetch blog posts' }, { status: 500 });
   }
 }
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, post: created });
   } catch (error: any) {
-    console.error('Create/update blog post error:', error);
+    logger.error('admin.blog.save_failed', { error });
     return NextResponse.json({ error: error.message || 'Failed to save blog post' }, { status: 500 });
   }
 }
@@ -89,7 +90,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Delete blog post error:', error);
+    logger.error('admin.blog.delete_failed', { error });
     return NextResponse.json({ error: 'Failed to delete blog post' }, { status: 500 });
   }
 }

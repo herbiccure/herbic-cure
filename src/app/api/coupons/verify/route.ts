@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { enforceRateLimit } from '@/lib/rateLimit';
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Coupon verification error:', error);
+    logger.error('coupon.verify_failed', { error });
     return NextResponse.json({ error: 'Server error verifying coupon' }, { status: 500 });
   }
 }

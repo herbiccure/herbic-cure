@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import type { MetadataRoute } from 'next';
 import prisma from '@/lib/prisma';
 
@@ -141,7 +142,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     return [...staticPages, ...productEntries, ...categoryEntries, ...blogEntries];
   } catch (error) {
-    console.warn('Deferred sitemap database query:', (error as any)?.message || String(error));
+    logger.debug('sitemap.query_deferred', { error: (error as any)?.message });
     return staticPages;
   }
 }

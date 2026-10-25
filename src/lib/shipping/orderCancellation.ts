@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { cancelDelhiveryShipment, DelhiveryCancelResult } from '@/lib/shipping/delhivery';
+import { logger } from '@/lib/logger';
 
 export interface CancelOrderResult {
   success: boolean;
@@ -52,7 +53,7 @@ export async function cancelOrderWithLogistics({
     try {
       delhiveryResult = await cancelDelhiveryShipment(order.trackingNumber, reason);
     } catch (err: any) {
-      console.warn('Delhivery cancellation service warning:', err.message);
+      logger.warn('shipping.cancellation.service_warning', { error: err.message, orderId });
       delhiveryResult = {
         success: false,
         waybill: order.trackingNumber,
@@ -86,8 +87,8 @@ export async function cancelOrderWithLogistics({
             },
           });
           restockedCount += item.quantity;
-        } catch (stockErr) {
-          console.warn(`Failed to restock product ${item.productId}:`, stockErr);
+        } catch (stockErr: any) {
+          logger.warn('order.restock.failed', { productId: item.productId, error: stockErr?.message });
         }
       }
     }
@@ -106,6 +107,13 @@ export async function cancelOrderWithLogistics({
         location: 'Delhivery Logistics Center',
       },
     });
+  });
+
+  logger.info('order.cancelled', {
+    orderId,
+    orderNumber: order.orderNumber,
+    restockedItemsCount: restockedCount,
+    cancelledBy,
   });
 
   return {

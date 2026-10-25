@@ -5,6 +5,7 @@ import { checkoutSchema } from '@/lib/validations';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { createDelhiveryShipment } from '@/lib/shipping/delhivery';
 import { createRazorpayOrder } from '@/lib/payment/razorpay';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -220,7 +221,7 @@ export async function POST(req: NextRequest) {
           keyId: rzOrder.keyId,
         };
       } catch (rzErr: any) {
-        console.error('Razorpay order creation failed:', rzErr);
+        logger.warn('payment.razorpay.create_order_failed', { error: rzErr?.message });
         const isAuthError =
           rzErr?.statusCode === 401 ||
           String(rzErr?.message || '').includes('401') ||
@@ -270,8 +271,8 @@ export async function POST(req: NextRequest) {
           delhiveryTrackingUrl =
             delhiveryRes.trackingUrl || `https://www.delhivery.com/track/package/${delhiveryAwb}`;
         }
-      } catch (delhiveryErr) {
-        console.warn('Delhivery shipment initiation error, using resilient AWB fallback:', delhiveryErr);
+      } catch (delhiveryErr: any) {
+        logger.warn('shipping.delhivery.initiation_fallback', { orderNumber, error: delhiveryErr?.message });
       }
 
       if (!delhiveryAwb) {
@@ -373,6 +374,12 @@ export async function POST(req: NextRequest) {
       return order;
     });
 
+    logger.info('order.created', {
+      orderNumber: createdOrder.orderNumber,
+      total: createdOrder.total,
+      paymentMethod: createdOrder.paymentMethod,
+    });
+
     return NextResponse.json({
       success: true,
       orderId: createdOrder.orderNumber,
@@ -388,7 +395,7 @@ export async function POST(req: NextRequest) {
       razorpayKeyId: razorpaySession?.keyId || null,
     });
   } catch (error: any) {
-    console.error('Order creation error:', error);
+    logger.error('order.create.failed', { error: error?.message || 'Failed to process order' });
     return NextResponse.json(
       { error: error.message || 'Failed to securely process order' },
       { status: 500 }

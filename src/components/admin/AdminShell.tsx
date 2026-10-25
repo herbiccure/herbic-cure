@@ -152,7 +152,7 @@ export function AdminShell({ children, userRole, isAuthenticated = true }: Admin
       await fetch('/api/admin/logout', { method: 'POST' });
       window.location.href = '/admin/login';
     } catch (e) {
-      console.error('Logout error', e);
+      // Logout fallback
       window.location.href = '/admin/login';
     }
   };

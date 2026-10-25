@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/auth/server';
@@ -95,7 +96,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Error fetching reviews:', error);
+    logger.error('reviews.fetch_failed', { error });
     return NextResponse.json(
       { error: error.message || 'Failed to fetch reviews' },
       { status: 500 }
@@ -219,7 +220,7 @@ export async function POST(req: NextRequest) {
       review,
     });
   } catch (error: any) {
-    console.error('Error submitting review:', error);
+    logger.error('reviews.submit_failed', { error });
     return NextResponse.json(
       { error: error.message || 'Failed to submit review' },
       { status: 500 }

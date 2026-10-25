@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { enforceRateLimit } from '@/lib/rateLimit';
@@ -138,7 +139,7 @@ export async function GET(request: NextRequest) {
       products: scored.slice(0, 8),
     });
   } catch (error) {
-    console.error('Search API error:', error);
+    logger.error('search.failed', { error });
     return NextResponse.json({ products: [] });
   }
 }

@@ -1,5 +1,6 @@
 import { authenticator } from 'otplib';
 import crypto from 'crypto';
+import { logger } from '@/lib/logger';
 
 // Configure authenticator options
 // Step: 300 seconds (5 minutes validity)
@@ -157,8 +158,8 @@ export function verifyPhoneOtp(
     }
 
     return { valid: true };
-  } catch (err) {
-    console.error('OTP verification parse error:', err);
+  } catch (err: any) {
+    logger.warn('auth.otp.verification_parse_error', { error: err?.message });
     return { valid: false, error: 'Failed to verify OTP code. Please try again.' };
   }
 }

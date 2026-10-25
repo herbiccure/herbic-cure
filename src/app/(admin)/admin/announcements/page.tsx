@@ -74,7 +74,6 @@ export default function AdminAnnouncementsPage() {
         if (data.textColor) setTextColor(data.textColor);
       })
       .catch((err) => {
-        console.error('Failed to load announcements:', err);
       })
       .finally(() => {
         setLoading(false);

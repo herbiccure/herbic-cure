@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { generatePhoneOtp, checkOtpRateLimit } from '@/lib/otp';
 import { sendSmsOtp } from '@/lib/sms';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,8 +93,8 @@ export async function POST(request: NextRequest) {
       expiresIn: otpResult.expiresIn,
       devOtp: smsResult.devOtp, // Returned in dev/simulated mode for instant testing
     });
-  } catch (error) {
-    console.error('Send OTP error:', error);
+  } catch (error: any) {
+    logger.error('auth.otp.send_failed', { error: error?.message || 'Failed to dispatch verification code' });
     return NextResponse.json(
       { error: 'Failed to dispatch verification code. Please try again.' },
       { status: 500 }

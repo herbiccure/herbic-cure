@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { trackDelhiveryShipment } from '@/lib/shipping/delhivery';
 
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     const trackingResult = await trackDelhiveryShipment(waybill);
     return NextResponse.json(trackingResult);
   } catch (error: any) {
-    console.error('Delhivery tracking error:', error);
+    logger.error('shipping.delhivery.tracking_failed', { error });
     return NextResponse.json(
       { error: 'Failed to retrieve Delhivery shipment updates' },
       { status: 500 }

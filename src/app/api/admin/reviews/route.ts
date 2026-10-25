@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, review });
   } catch (error: any) {
-    console.error('Failed to create review:', error);
+    logger.error('admin.reviews.create_failed', { error });
     return NextResponse.json({ error: error?.message || 'Failed to create review' }, { status: 500 });
   }
 }

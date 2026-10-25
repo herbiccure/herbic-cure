@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
@@ -363,7 +364,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Analytics API error:', error);
+    logger.error('admin.analytics.fetch_failed', { error });
     return NextResponse.json(
       { error: 'Failed to calculate analytics', details: error.message },
       { status: 500 }

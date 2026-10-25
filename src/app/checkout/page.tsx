@@ -266,7 +266,7 @@ export default function CheckoutPage() {
                       setLoading(false);
                     }
                   } catch (vEx) {
-                    console.error('Payment verification network error:', vEx);
+                    // Verification network error handled via toast
                     toast.error('Network error during payment verification. Please check your order status.');
                     setLoading(false);
                   }
@@ -281,7 +281,7 @@ export default function CheckoutPage() {
 
               const rzp = new (window as any).Razorpay(options);
               rzp.on('payment.failed', function (resp: any) {
-                console.error('Razorpay payment failed:', resp.error);
+                // Payment failure handled via toast
                 toast.error(resp.error?.description || 'Payment was declined or failed.');
                 setLoading(false);
               });
@@ -293,7 +293,7 @@ export default function CheckoutPage() {
               return;
             }
           } catch (sdkErr) {
-            console.error('Razorpay SDK invocation error:', sdkErr);
+            // SDK error handled via toast
             toast.error('Failed to launch Razorpay payment.');
             setLoading(false);
             return;

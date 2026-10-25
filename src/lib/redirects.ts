@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 
 export interface RedirectLookupResult {
   destination: string;
@@ -22,8 +23,8 @@ export async function getRedirect(sourcePath: string): Promise<RedirectLookupRes
       destination: redirect.destination,
       statusCode: redirect.statusCode,
     };
-  } catch (error) {
-    console.error(`Error looking up redirect for ${sourcePath}:`, error);
+  } catch (error: any) {
+    logger.warn('redirect.lookup.failed', { sourcePath, error: error?.message });
     return null;
   }
 }
@@ -39,7 +40,7 @@ export async function createOrUpdateRedirect(
 ): Promise<void> {
   // Prevent direct self-referencing loops
   if (source.trim() === destination.trim()) {
-    console.warn(`Prevented self-referencing redirect loop: ${source} -> ${destination}`);
+    logger.debug('redirect.self_loop_prevented', { source, destination });
     return;
   }
 
@@ -56,8 +57,8 @@ export async function createOrUpdateRedirect(
       where: { destination: source },
       data: { destination },
     });
-  } catch (error) {
-    console.error(`Failed to register redirect ${source} -> ${destination}:`, error);
+  } catch (error: any) {
+    logger.error('redirect.register.failed', { source, destination, error: error?.message });
   }
 }
 

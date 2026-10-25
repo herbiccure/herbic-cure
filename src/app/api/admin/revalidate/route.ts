@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
 import { invalidateAllPublicCaches } from '@/lib/cache/invalidator';
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error('Revalidation error:', error);
+    logger.error('admin.revalidate.failed', { error });
     return NextResponse.json(
       { error: error?.message || 'Failed to revalidate cache' },
       { status: 500 }

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { verifyPhoneOtp } from '@/lib/otp';
 import { signSessionToken } from '@/lib/auth/session';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -100,8 +101,8 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error) {
-    console.error('Verify OTP error:', error);
+  } catch (error: any) {
+    logger.error('auth.otp.verify_failed', { error: error?.message || 'Failed to complete registration' });
     return NextResponse.json(
       { error: 'Failed to complete registration. Please try again.' },
       { status: 500 }

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getFooterData, saveFooterData } from '@/lib/footer';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
@@ -9,7 +10,7 @@ export async function GET() {
     const data = await getFooterData();
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
-    console.error('Error fetching admin footer data:', error);
+    logger.error('admin.footer.fetch_failed', { error });
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to fetch footer data' },
       { status: 500 }
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
       data: updated,
     });
   } catch (error: any) {
-    console.error('Error saving footer data:', error);
+    logger.error('admin.footer.save_failed', { error });
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to save footer data' },
       { status: 500 }

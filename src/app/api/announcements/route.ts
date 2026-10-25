@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -64,7 +65,7 @@ export async function GET() {
     return NextResponse.json(cachedAnnouncements, { headers: CACHE_HEADERS });
 
   } catch (error) {
-    console.error('Failed to fetch announcements:', error);
+    logger.error('announcements.fetch_failed', { error });
     return NextResponse.json({
       announcements: [
         "Experience the power of South India's best natural Hair Oils",

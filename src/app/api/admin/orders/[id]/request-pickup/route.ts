@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
 import { createAuditLogEntry } from '@/data/admin/audit';
 import { requestDelhiveryPickup } from '@/lib/shipping/delhivery';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -178,7 +179,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
   } catch (error: any) {
-    console.error('Request pickup route error:', error);
+    logger.error('admin.order.request_pickup_failed', { error: error?.message || 'Failed to request pickup' });
     return NextResponse.json(
       { error: error?.message || 'Failed to request pickup' },
       { status: 500 }

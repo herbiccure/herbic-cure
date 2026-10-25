@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyRazorpayWebhookSignature } from '@/lib/payment/razorpay';
 import { createDelhiveryShipment } from '@/lib/shipping/delhivery';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     const isValid = verifyRazorpayWebhookSignature(rawBody, signature);
     if (!isValid) {
-      console.warn('Invalid Razorpay webhook signature received');
+      logger.warn('payment.webhook.signature_failed');
       return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
     }
 
@@ -50,9 +51,11 @@ export async function POST(req: NextRequest) {
       const paidPaise = paymentEntity?.amount || orderEntity?.amount;
 
       if (paidPaise && paidPaise < expectedPaise) {
-        console.error(
-          `Payment amount mismatch for order ${orderNumber}: expected ${expectedPaise}, received ${paidPaise}`
-        );
+        logger.error('payment.amount.mismatch', {
+          orderNumber,
+          expectedPaise,
+          paidPaise,
+        });
         return NextResponse.json(
           { error: 'Payment amount mismatch' },
           { status: 400 }
@@ -119,8 +122,8 @@ export async function POST(req: NextRequest) {
               },
             });
           }
-        } catch (shipErr) {
-          console.warn('Delhivery dispatch post-webhook notification:', shipErr);
+        } catch (shipErr: any) {
+          logger.warn('shipping.dispatch.post_webhook_warning', { orderId: orderNumber, error: shipErr?.message });
         }
       }
     } else if (event === 'payment.failed') {
@@ -128,11 +131,13 @@ export async function POST(req: NextRequest) {
         where: { orderNumber },
         data: { paymentStatus: 'FAILED' },
       });
+      logger.warn('payment.failed', { orderNumber });
     }
 
+    logger.info('payment.webhook.processed', { event, orderNumber });
     return NextResponse.json({ status: 'ok', receivedEvent: event });
   } catch (error: any) {
-    console.error('Razorpay webhook processing error:', error);
+    logger.error('payment.webhook.processing_failed', { error: error?.message });
     return NextResponse.json(
       { error: 'Webhook processing error' },
       { status: 500 }

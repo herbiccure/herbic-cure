@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getPolicyData, savePolicyData, DEFAULT_POLICIES } from '@/lib/policies';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, policies });
   } catch (error: any) {
-    console.error('Error fetching policies:', error);
+    logger.error('admin.policies.fetch_failed', { error });
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to fetch policies' },
       { status: 500 }
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       policy: updated,
     });
   } catch (error: any) {
-    console.error('Error saving policy:', error);
+    logger.error('admin.policies.save_failed', { error });
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to save policy' },
       { status: 500 }

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import React from 'react';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
@@ -48,7 +49,7 @@ export default async function OffersPage() {
     coupons = fetchedCoupons;
     comboProducts = fetchedCombos;
   } catch (err) {
-    console.warn('Offers query deferred during build/ISR:', (err as any)?.message || String(err));
+    logger.debug('offers.query_deferred', { error: (err as any)?.message });
   }
 
   return (

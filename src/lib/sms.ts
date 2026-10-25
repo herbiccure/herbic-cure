@@ -14,6 +14,8 @@ export interface SendSmsResult {
   devOtp?: string;
 }
 
+import { logger, maskPhone } from '@/lib/logger';
+
 export async function sendSmsOtp(phone: string, otp: string): Promise<SendSmsResult> {
   const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
   const messageText = `Your Herbic Cure verification code is ${otp}. Valid for 5 minutes. Do not share this OTP with anyone.`;
@@ -41,10 +43,10 @@ export async function sendSmsOtp(phone: string, otp: string): Promise<SendSmsRes
           message: `OTP sent successfully to +91 ${normalizedPhone}`,
         };
       } else {
-        console.warn('Fast2SMS failed to send OTP:', data);
+        logger.warn('sms.fast2sms.failed', { status: data?.status_code || 400 });
       }
-    } catch (err) {
-      console.error('Fast2SMS request error:', err);
+    } catch (err: any) {
+      logger.error('sms.fast2sms.error', { error: err?.message || 'Fast2SMS network error' });
     }
   }
 
@@ -76,21 +78,17 @@ export async function sendSmsOtp(phone: string, otp: string): Promise<SendSmsRes
           message: `OTP sent successfully via Twilio to +91 ${normalizedPhone}`,
         };
       } else {
-        const errorText = await response.text();
-        console.warn('Twilio SMS error:', errorText);
+        logger.warn('sms.twilio.failed', { status: response.status });
       }
-    } catch (err) {
-      console.error('Twilio SMS error:', err);
+    } catch (err: any) {
+      logger.error('sms.twilio.error', { error: err?.message || 'Twilio request error' });
     }
   }
 
-  // 3. Simulated Demo / Development Fallback Mode
-  console.log(`\n========================================`);
-  console.log(`[HERBIC CURE SMS GATEWAY]`);
-  console.log(`To: +91 ${normalizedPhone}`);
-  console.log(`Code: ${otp}`);
-  console.log(`Text: ${messageText}`);
-  console.log(`========================================\n`);
+  // 3. Simulated Demo / Development Fallback Mode (secure, no plaintext secrets logged)
+  logger.debug('sms.dispatch.simulated', {
+    phoneMasked: maskPhone(normalizedPhone),
+  });
 
   return {
     success: true,

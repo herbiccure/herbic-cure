@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     });
     return NextResponse.json({ customers });
   } catch (error) {
-    console.error('Failed to fetch customers:', error);
+    logger.error('admin.customers.fetch_failed', { error });
     return NextResponse.json({ error: 'Failed to fetch customers' }, { status: 500 });
   }
 }

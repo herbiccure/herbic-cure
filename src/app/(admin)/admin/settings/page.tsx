@@ -218,7 +218,6 @@ export default function AdminSettingsPage() {
         setTimeout(() => setSaved(false), 4000);
       }
     } catch (err) {
-      console.error('Failed to save settings:', err);
     } finally {
       setSaving(false);
     }

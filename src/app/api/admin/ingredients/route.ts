@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
       count: ingredients.length,
     });
   } catch (error) {
-    console.error('Error fetching ingredients:', error);
+    logger.error('admin.ingredients.fetch_failed', { error });
     return NextResponse.json(
       { error: 'Failed to fetch ingredients' },
       { status: 500 }
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, ingredient }, { status: 201 });
   } catch (error) {
-    console.error('Error creating ingredient:', error);
+    logger.error('admin.ingredients.create_failed', { error });
     return NextResponse.json(
       { error: 'Failed to create ingredient' },
       { status: 500 }
@@ -157,7 +158,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, ingredient: updated });
   } catch (error) {
-    console.error('Error updating ingredient:', error);
+    logger.error('admin.ingredients.update_failed', { error });
     return NextResponse.json(
       { error: 'Failed to update ingredient' },
       { status: 500 }
@@ -187,7 +188,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Ingredient deleted successfully' });
   } catch (error) {
-    console.error('Error deleting ingredient:', error);
+    logger.error('admin.ingredients.delete_failed', { error });
     return NextResponse.json(
       { error: 'Failed to delete ingredient' },
       { status: 500 }

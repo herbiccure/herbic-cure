@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { redis } from './redis';
+import { logger } from '@/lib/logger';
 
 /**
  * Distributed single-flight lock with TTL for coupon redemptions,
@@ -16,8 +17,8 @@ export async function acquireLock(lockKey: string, ttlMs = 5000): Promise<string
     });
 
     return result === 'OK' ? lockId : null;
-  } catch (err) {
-    console.warn('[LOCK] Failed to acquire lock:', err);
+  } catch (err: any) {
+    logger.warn('cache.lock.acquire_failed', { lockKey, error: err?.message });
     return null;
   }
 }
@@ -31,8 +32,8 @@ export async function releaseLock(lockKey: string, lockId: string): Promise<bool
       return true;
     }
     return false;
-  } catch (err) {
-    console.warn('[LOCK] Failed to release lock:', err);
+  } catch (err: any) {
+    logger.warn('cache.lock.release_failed', { lockKey, error: err?.message });
     return false;
   }
 }

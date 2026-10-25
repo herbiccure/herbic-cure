@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { contactSchema } from '@/lib/validations';
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, submission });
   } catch (error) {
-    console.error('Contact submit error:', error);
+    logger.error('contact.submit_failed', { error });
     return NextResponse.json({ error: 'Failed to submit contact message' }, { status: 500 });
   }
 }

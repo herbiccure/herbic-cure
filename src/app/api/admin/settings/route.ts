@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
@@ -61,14 +62,14 @@ export async function POST(request: NextRequest) {
         });
         clearFooterCache();
       } catch (err) {
-        console.error('Failed to sync footer_logo with footer_settings:', err);
+        logger.warn('admin.settings.footer_logo_sync_failed', { error: (err as any)?.message });
       }
     }
 
     invalidateAllPublicCaches();
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Update settings error:', error);
+    logger.error('admin.settings.update_failed', { error });
     return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
   }
 }

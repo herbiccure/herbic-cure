@@ -4,13 +4,14 @@ import { isAdminRole, assertPermission, ForbiddenError } from '@/lib/permissions
 import { AppResource, AppAction } from '@/lib/permissions/types';
 import { prisma } from '@/lib/prisma';
 import { headers } from 'next/headers';
+import { logger } from '@/lib/logger';
 
 /**
  * Base public action client
  */
 export const publicActionClient = createSafeActionClient({
   handleServerError: (e) => {
-    console.error('[SERVER ACTION ERROR]', e);
+    logger.error('server.action.error', { error: e });
     if (e instanceof ForbiddenError) {
       return e.message;
     }

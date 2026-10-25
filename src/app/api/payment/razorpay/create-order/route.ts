@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createRazorpayOrder } from '@/lib/payment/razorpay';
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
       keyId: rzOrder.keyId,
     });
   } catch (error: any) {
-    console.error('Razorpay create-order API error:', error);
+    logger.error('payment.order.init_failed', { error });
     return NextResponse.json(
       { error: error.message || 'Failed to initialize Razorpay payment order' },
       { status: 500 }

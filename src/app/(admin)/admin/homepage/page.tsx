@@ -715,7 +715,6 @@ export default function AdminHomepageBuilderPage() {
           return uploadData.url;
         }
       } catch (err) {
-        console.warn('Failed to convert base64 image URL to clean endpoint:', err);
       }
 
       // If conversion failed, never persist huge raw base64 strings that exceed Next.js body limits

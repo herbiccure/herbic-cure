@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import * as argon2 from '@node-rs/argon2';
@@ -163,7 +164,7 @@ export async function POST(request: NextRequest) {
       message: 'Password successfully updated! You can now sign in with your new password.',
     });
   } catch (error: any) {
-    console.error('Change password error:', error);
+    logger.error('admin.change_password.failed', { error });
     return NextResponse.json(
       { error: error?.message || 'Failed to update security password.' },
       { status: 500 }

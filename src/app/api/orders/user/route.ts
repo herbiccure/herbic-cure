@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifySessionToken, CustomerSessionPayload, AdminSessionPayload } from '@/lib/auth/session';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,8 +51,8 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ orders });
-  } catch (error) {
-    console.error('Fetch user orders error:', error);
+  } catch (error: any) {
+    logger.error('user.orders.fetch_failed', { error: error?.message || 'Failed to fetch user orders' });
     return NextResponse.json({ error: 'Failed to fetch user orders' }, { status: 500 });
   }
 }

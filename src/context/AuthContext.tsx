@@ -57,8 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await authClient.signOut();
       refetch();
       window.location.href = '/account/login';
-    } catch (e) {
-      console.error('Logout error:', e);
+    } catch {
+      window.location.href = '/account/login';
     }
   };
 

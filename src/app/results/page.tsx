@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -42,7 +43,7 @@ export default async function ResultsPage() {
       orderBy: { displayOrder: 'asc' },
     });
   } catch (err) {
-    console.warn('Results query deferred during build/ISR:', (err as any)?.message || String(err));
+    logger.debug('results.query_deferred', { error: (err as any)?.message });
   }
 
   return (

@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 export interface AboutHighlight {
   id: string;
   icon: string;
@@ -293,8 +295,8 @@ export async function getAboutPageData(): Promise<AboutPageData> {
       aboutCache = merged;
       return merged;
     }
-  } catch (error) {
-    console.warn('About data database fallback used:', (error as any)?.message || String(error));
+  } catch (error: any) {
+    logger.debug('about.fallback_used', { error: error?.message });
   }
 
   return DEFAULT_ABOUT_DATA;

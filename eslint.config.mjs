@@ -5,6 +5,28 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+  {
+    files: ["src/**/*.{ts,tsx,js,jsx}"],
+    rules: {
+      "no-console": "error",
+    },
+  },
+  {
+    files: [
+      "scripts/**/*.{ts,js}",
+      "prisma/**/*.{ts,js}",
+      "tests/**/*.{ts,js}",
+      "src/lib/logger.ts",
+    ],
+    rules: {
+      "no-console": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

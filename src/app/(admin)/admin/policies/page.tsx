@@ -74,7 +74,6 @@ export default function AdminPoliciesPage() {
           setPolicyData((prev) => ({ ...prev, ...map }));
         }
       } catch (err) {
-        console.error('Failed to load policies', err);
       } finally {
         setLoading(false);
       }

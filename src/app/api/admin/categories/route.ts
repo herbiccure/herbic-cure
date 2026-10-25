@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
@@ -106,7 +107,7 @@ export async function PUT(request: NextRequest) {
     invalidateCategoryCache(updated.slug);
     return NextResponse.json({ success: true, category: updated });
   } catch (error) {
-    console.error('Update category error:', error);
+    logger.error('admin.category.update_failed', { error });
     return NextResponse.json({ error: 'Failed to update category' }, { status: 500 });
   }
 }

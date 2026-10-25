@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     });
     return NextResponse.json({ products });
   } catch (error) {
-    console.error('Admin get products error:', error);
+    logger.error('admin.products.fetch_failed', { error });
     return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
   }
 }
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
     invalidateHomepageCache();
     return NextResponse.json({ success: true, product: created });
   } catch (error) {
-    console.error('Admin create product error:', error);
+    logger.error('admin.products.create_failed', { error });
     return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
   }
 }
@@ -148,7 +149,7 @@ export async function PUT(request: NextRequest) {
     invalidateHomepageCache();
     return NextResponse.json({ success: true, product: updated });
   } catch (error) {
-    console.error('Admin update product error:', error);
+    logger.error('admin.products.update_failed', { error });
     return NextResponse.json({ error: 'Failed to update product' }, { status: 500 });
   }
 }
