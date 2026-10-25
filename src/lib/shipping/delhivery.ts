@@ -171,6 +171,22 @@ export async function checkPincodeServiceability(
 /**
  * Manifest and register a shipment with Delhivery (Generates Waybill / AWB)
  */
+/**
+ * Format product name for courier shipping labels according to Amazon / Flipkart standards:
+ * - Strip redundant brand prefix ("Herbic Cure - ") so the label line doesn't waste space
+ * - Keep names concise and clean (up to 55 characters) so thermal 4x6 labels print without truncation
+ */
+export function formatDelhiveryItemName(rawName: string): string {
+  let name = (rawName || '').trim();
+  // Strip redundant leading brand prefix (logo is already on label header)
+  name = name.replace(/^herbic\s*cure\s*[-–—:]\s*/i, '').trim();
+  if (!name) name = 'Ayurvedic Formulation';
+  if (name.length > 55) {
+    name = name.slice(0, 52) + '...';
+  }
+  return name;
+}
+
 export async function createDelhiveryShipment(
   order: DelhiveryShipmentOrder
 ): Promise<DelhiveryManifestResult> {
@@ -182,25 +198,47 @@ export async function createDelhiveryShipment(
   const destState = order.shippingAddress?.state || order.state || 'Delhi';
   const orderTotal = Math.round(order.total || order.totalAmount || 0);
 
-  // Requirement 1: Exact product names
+  // Requirement 1 & Standard E-commerce Practice:
+  // Build structured items array for Delhivery One dashboard & manifestation
+  const structuredItems = (order.items || []).map((item) => {
+    const cleanName = formatDelhiveryItemName(item.name || item.productName || '');
+    return {
+      name: cleanName,
+      sku: item.sku || cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30) || 'HC-ITEM',
+      qty: item.quantity || 1,
+      price: item.price || 0,
+      discount: 0,
+      hsn: '33059011',
+    };
+  });
+
+  // Build clean, distinct line descriptions for thermal label printing
   const itemDescriptions = (order.items || []).map((item) => {
-    const name = (item.name || item.productName || '').trim();
-    if (!name) return 'Herbic Cure Formulation';
-    return item.quantity > 1 ? `${name} (Qty: ${item.quantity})` : name;
+    const cleanName = formatDelhiveryItemName(item.name || item.productName || '');
+    return item.quantity > 1 ? `${cleanName} (Qty: ${item.quantity})` : cleanName;
   });
 
   // Requirement 2: Delivery charges should come separately as a product (When customer selects COD)
   // Requirement 3: In Prepaid, only product name should come and no Delivery charges
   if (isCod) {
     const fee = order.shippingFee !== undefined ? Number(order.shippingFee) : 0;
+    const feeText = fee > 0 ? `Delivery Charges (₹${fee})` : 'Delivery Charges';
+    itemDescriptions.push(feeText);
+
     if (fee > 0) {
-      itemDescriptions.push(`Delivery Charges (₹${fee})`);
-    } else {
-      itemDescriptions.push('Delivery Charges');
+      structuredItems.push({
+        name: 'Delivery Charges',
+        sku: 'COD-DELIVERY-CHARGES',
+        qty: 1,
+        price: fee,
+        discount: 0,
+        hsn: '996813',
+      });
     }
   }
 
-  const productsDesc = (itemDescriptions.length > 0 ? itemDescriptions.join(', ') : 'Herbic Cure Formulation').slice(0, 250);
+  // Delhivery label layout parser separates distinct lines on thermal labels via newline '\n'
+  const productsDesc = (itemDescriptions.length > 0 ? itemDescriptions.join('\n') : 'Ayurvedic Formulation').slice(0, 500);
   const totalShipmentQuantity = totalQty + (isCod ? 1 : 0);
 
   // Requirement 4: Dimension of box should by default 18×10×8 cm (Length x Width x Height)
@@ -230,6 +268,8 @@ export async function createDelhiveryShipment(
             return_state: '',
             return_country: '',
             products_desc: productsDesc,
+            items: structuredItems,
+            order_items: structuredItems,
             hsn_code: '33059011',
             cod_amount: isCod ? String(orderTotal) : '0',
             order_date: new Date().toISOString(),

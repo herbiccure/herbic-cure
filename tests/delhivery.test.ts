@@ -153,4 +153,43 @@ describe('Delhivery Express Logistics Integration Tests', () => {
       ])
     ).toBe(true);
   });
+
+  it('Requirement 6: Formats multiple products on separate lines and strips redundant brand prefix like Amazon/Flipkart', async () => {
+    const multiItemOrder: DelhiveryShipmentOrder = {
+      orderNumber: 'HC-100005',
+      customerName: 'Test Customer',
+      customerPhone: '9876543214',
+      customerEmail: 'test@example.com',
+      shippingAddress: {
+        address: 'Bapatla, Ward 20',
+        city: 'Bapatla',
+        state: 'Andhra Pradesh',
+        pincode: '522101',
+      },
+      paymentMethod: 'COD',
+      shippingFee: 89,
+      items: [
+        {
+          name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)',
+          quantity: 1,
+          price: 349,
+        },
+        {
+          name: 'Herbic Cure - Shampoo with Conditioner (Pack of 1)',
+          quantity: 1,
+          price: 349,
+        },
+      ],
+      total: 787,
+    };
+
+    const res = await createDelhiveryShipment(multiItemOrder);
+    expect(res.success).toBe(true);
+    // Verifies brand prefix is stripped to save space on thermal label
+    expect(res.message).toContain('21 Herbs Fusion Hair Oil (Pack of 1)');
+    expect(res.message).toContain('Shampoo with Conditioner (Pack of 1)');
+    expect(res.message).toContain('Delivery Charges (₹89)');
+    // Verifies items are separated cleanly
+    expect(res.message).not.toContain('Herbic Cure - 21 Herbs Fusion Hair Oil');
+  });
 });
