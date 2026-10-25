@@ -31,29 +31,24 @@ function ReelThumbnail({
   src: string;
   alt: string;
 }) {
-  const [imgSrc, setImgSrc] = useState(src || '/images/banners/client-1.png');
+  const [errorSrc, setErrorSrc] = useState<string | null>(null);
 
-  useEffect(() => {
-    setImgSrc(src || '/images/banners/client-1.png');
-  }, [src]);
+  const activeSrc = errorSrc === src || !src ? '/images/banners/client-1.png' : src;
 
   return (
     <Image
-      src={imgSrc}
+      src={activeSrc}
       alt={alt}
       fill
       sizes="(max-width: 640px) 240px, (max-width: 1024px) 280px, 25vw"
       onError={() => {
-        if (imgSrc !== '/images/banners/client-1.png') {
-          setImgSrc('/images/banners/client-1.png');
-        }
+        setErrorSrc(src);
       }}
       className="object-cover group-hover:scale-105 transition-transform duration-700"
     />
   );
 }
 
-const DEFAULT_DURATIONS = ['0:50', '1:10', '0:45', '0:35'];
 
 interface SocialReelsSectionProps {
   posts: SocialItem[];
@@ -206,7 +201,6 @@ export default function SocialReelsSection({
             const isActive = idx === currentIndex;
             const isHovered = hoveredIndex === idx;
             const shouldPlay = isActive || isHovered;
-            const duration = post.duration || DEFAULT_DURATIONS[idx % DEFAULT_DURATIONS.length];
 
             return (
               <div
@@ -247,21 +241,6 @@ export default function SocialReelsSection({
 
                 {/* Subtle gradient overlay for contrast */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/30 group-hover:from-black/95 transition-colors pointer-events-none" />
-
-                {/* Top Badges (Duration pill with red pulsing dot + "Playing" pill on active) */}
-                <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-10">
-                  <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold text-white bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 shadow-sm">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                    <span>{duration}</span>
-                  </span>
-
-                  {shouldPlay && (
-                    <span className="text-[10px] sm:text-[11px] font-bold text-amber-300 bg-[#8C3A4F]/90 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-rose-400/40 shadow-sm flex items-center gap-1 animate-fadeIn">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                      <span>{isActive ? 'Playing' : 'Preview'}</span>
-                    </span>
-                  )}
-                </div>
 
                 {/* Center Play Button indicator (fades subtly when playing to keep focus on video) */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
