@@ -36,6 +36,13 @@ interface OrderItem {
   orderStatus: string;
   trackingNumber?: string | null;
   carrier?: string | null;
+  pickupStatus?: string | null;
+  pickupRequestId?: string | null;
+  pickupDate?: string | null;
+  pickupTime?: string | null;
+  pickupError?: string | null;
+  pickupAttempts?: number;
+  lastPickupAttemptAt?: string | null;
   createdAt: string;
   items: {
     id: string;
@@ -118,6 +125,7 @@ export default function AdminOrdersPage() {
   const [eventDesc, setEventDesc] = useState('');
   const [saving, setSaving] = useState(false);
   const [syncingDelhivery, setSyncingDelhivery] = useState(false);
+  const [requestingPickup, setRequestingPickup] = useState(false);
 
   const openModal = (o: OrderItem) => {
     setSelectedOrder(o);
@@ -125,6 +133,35 @@ export default function AdminOrdersPage() {
     setNewTracking(o.trackingNumber || '');
     setNewCarrier(o.carrier || 'Delhivery');
     setEventDesc('');
+  };
+
+  const handleRequestPickup = async (force: boolean = false) => {
+    if (!selectedOrder?.id) return;
+    setRequestingPickup(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${selectedOrder.id}/request-pickup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to schedule pickup');
+
+      toast.success(data.message || `Pickup scheduled successfully! Request ID: ${data.pickupId}`);
+      if (data.order) {
+        setSelectedOrder(data.order);
+        mutate(
+          {
+            orders: orders.map((o) => (o.id === data.order.id ? { ...o, ...data.order } : o)),
+          },
+          false
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error requesting pickup');
+    } finally {
+      setRequestingPickup(false);
+    }
   };
 
   const handleSyncDelhivery = async () => {
@@ -307,11 +344,36 @@ export default function AdminOrdersPage() {
       ),
     },
     {
-      header: 'AWB / Courier',
+      header: 'AWB / Pickup',
       cell: (o) => (
-        <span className={cn('font-mono text-[11px]', isLight ? 'text-slate-600' : 'text-slate-400')}>
-          {o.trackingNumber || 'Pending AWB'}
-        </span>
+        <div className="space-y-1">
+          <span className={cn('font-mono text-[11px] block', isLight ? 'text-slate-700' : 'text-slate-300')}>
+            {o.trackingNumber || 'Pending AWB'}
+          </span>
+          <span
+            className={cn(
+              'inline-block px-2 py-0.5 rounded text-[10px] font-semibold border',
+              o.pickupStatus === 'SCHEDULED'
+                ? isLight
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
+                : o.pickupStatus === 'FAILED'
+                ? isLight
+                  ? 'bg-rose-50 text-rose-800 border-rose-200'
+                  : 'bg-rose-950/80 text-rose-300 border-rose-800'
+                : isLight
+                ? 'bg-slate-100 text-slate-600 border-slate-200'
+                : 'bg-slate-800 text-slate-400 border-slate-700'
+            )}
+            title={o.pickupError || undefined}
+          >
+            {o.pickupStatus === 'SCHEDULED'
+              ? 'Pickup: Scheduled'
+              : o.pickupStatus === 'FAILED'
+              ? 'Pickup: Failed'
+              : 'Pickup: None'}
+          </span>
+        </div>
       ),
     },
     {
@@ -494,6 +556,114 @@ export default function AdminOrdersPage() {
                 <span className="text-rose-600 dark:text-rose-400 text-base font-extrabold font-mono">
                   ₹{selectedOrder.total.toLocaleString()}
                 </span>
+              </div>
+            </div>
+
+            {/* Delhivery First-Mile Pickup Scheduling */}
+            <div
+              className={cn(
+                'p-5 rounded-2xl border space-y-3.5 text-xs transition-colors',
+                isLight ? 'bg-indigo-50/60 border-indigo-200' : 'bg-indigo-950/20 border-indigo-900/50'
+              )}
+            >
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
+                    Delhivery Pickup Management
+                  </h4>
+                </div>
+                <span
+                  className={cn(
+                    'px-2.5 py-1 rounded-full text-[11px] font-bold border',
+                    selectedOrder.pickupStatus === 'SCHEDULED'
+                      ? isLight
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                      : selectedOrder.pickupStatus === 'FAILED'
+                      ? isLight
+                        ? 'bg-rose-100 text-rose-800 border-rose-300'
+                        : 'bg-rose-950 text-rose-300 border-rose-800'
+                      : isLight
+                      ? 'bg-slate-100 text-slate-700 border-slate-300'
+                      : 'bg-slate-800 text-slate-300 border-slate-700'
+                  )}
+                >
+                  Pickup Status: {selectedOrder.pickupStatus || 'NONE'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
+                <div>
+                  <span className={cn('block font-semibold', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                    Pickup Request ID:
+                  </span>
+                  <span className="font-mono font-bold">
+                    {selectedOrder.pickupRequestId || 'None'}
+                  </span>
+                </div>
+                <div>
+                  <span className={cn('block font-semibold', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                    Pickup Date:
+                  </span>
+                  <span className="font-medium">
+                    {selectedOrder.pickupDate
+                      ? new Date(selectedOrder.pickupDate).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })
+                      : 'Not scheduled'}
+                  </span>
+                </div>
+                <div>
+                  <span className={cn('block font-semibold', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                    Slot / Attempts:
+                  </span>
+                  <span className="font-medium">
+                    {selectedOrder.pickupTime || '14:00:00'} ({selectedOrder.pickupAttempts || 0} attempts)
+                  </span>
+                </div>
+              </div>
+
+              {/* Display Rejection / Error Reason for Staff Visibility */}
+              {selectedOrder.pickupError && (
+                <div
+                  className={cn(
+                    'p-3 rounded-xl border text-[11px] flex items-start gap-2 animate-fadeIn',
+                    isLight
+                      ? 'bg-rose-50 border-rose-200 text-rose-900'
+                      : 'bg-rose-950/60 border-rose-800 text-rose-200'
+                  )}
+                >
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="font-bold">Delhivery Pickup Error Reason:</p>
+                    <p className="leading-relaxed opacity-95">{selectedOrder.pickupError}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">
+                <p className={cn('text-[11px]', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                  Dispatches First-Mile pickup manifest (/fm/request/new/) for location &apos;Herbic Cure&apos;.
+                </p>
+                <button
+                  type="button"
+                  disabled={requestingPickup || !selectedOrder.trackingNumber || selectedOrder.orderStatus === 'CANCELLED'}
+                  onClick={() => handleRequestPickup(Boolean(selectedOrder.pickupStatus === 'SCHEDULED'))}
+                  className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                  title={!selectedOrder.trackingNumber ? 'Manifest shipment first to generate an AWB' : undefined}
+                >
+                  <Truck className={cn('w-3.5 h-3.5', requestingPickup && 'animate-spin')} />
+                  <span>
+                    {requestingPickup
+                      ? 'Requesting Pickup...'
+                      : selectedOrder.pickupStatus === 'SCHEDULED'
+                      ? 'Reschedule Pickup'
+                      : 'Request Delhivery Pickup'}
+                  </span>
+                </button>
               </div>
             </div>
 

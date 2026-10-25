@@ -1,6 +1,7 @@
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -374,6 +375,13 @@ model Order {
   trackingUrl      String?
   carrier          String?         @default("Shiprocket")
   notes            String?
+  pickupStatus        String          @default("NONE") // NONE, REQUESTED, SCHEDULED, FAILED, PICKED
+  pickupRequestId     String?
+  pickupDate          DateTime?
+  pickupTime          String?
+  pickupError         String?
+  pickupAttempts      Int             @default(0)
+  lastPickupAttemptAt DateTime?
   version          Int             @default(1)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @default(now()) @updatedAt

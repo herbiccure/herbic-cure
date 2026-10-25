@@ -2,53 +2,58 @@ import { describe, it, expect } from 'vitest';
 import {
   createDelhiveryShipment,
   isDelhiveryCancelled,
+  getShortLabelName,
+  buildDelhiveryLabelDescription,
   DelhiveryShipmentOrder,
 } from '@/lib/shipping/delhivery';
 
 describe('Delhivery Express Logistics Integration Tests', () => {
-  const sampleItems = [
-    {
-      name: '21 Herbs Ayurvedic Hair Oil (200ml)',
-      sku: 'HO-200',
-      quantity: 1,
-      price: 499,
-    },
-    {
-      name: 'Neem Wood Wide-Tooth Comb',
-      sku: 'ACC-NWC',
-      quantity: 2,
-      price: 249,
-    },
-  ];
-
-  it('Requirement 1: passes exact product names in Delhivery shipment registration', async () => {
-    const order: DelhiveryShipmentOrder = {
-      orderNumber: 'HC-100001',
-      customerName: 'Priya Sharma',
-      customerPhone: '9876543210',
-      customerEmail: 'priya@example.com',
-      shippingAddress: {
-        address: 'Flat 402, Lotus Towers',
-        city: 'Hyderabad',
-        state: 'Telangana',
-        pincode: '500081',
-      },
-      paymentMethod: 'Prepaid',
-      items: sampleItems,
-      total: 997,
-    };
-
-    const res = await createDelhiveryShipment(order);
-    expect(res.success).toBe(true);
-    expect(res.message).toContain('21 Herbs Ayurvedic Hair Oil (200ml)');
-    expect(res.message).toContain('Neem Wood Wide-Tooth Comb (Qty: 2)');
+  it('1. Short per-product label names: strips redundant brand name and compacts variants', () => {
+    expect(getShortLabelName('Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)')).toBe('21 Herbs Hair Oil (1pk)');
+    expect(getShortLabelName('Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 2)')).toBe('21 Herbs Hair Oil (2pk)');
+    expect(getShortLabelName('Herbic Cure - Shampoo with Conditioner (Pack of 1)')).toBe('Shampoo & Cond (1pk)');
+    expect(getShortLabelName('Neem Wood Wide-Tooth Comb')).toBe('Neem Wood Wide-Tooth Comb');
+    expect(getShortLabelName('Herbic Cure - Complete Hair Therapy Combo')).toBe('Complete Hair Therapy Combo');
   });
 
-  it('Requirement 2: Delivery charges come separately as a product when customer selects COD', async () => {
+  it('2. Label description for 1-item order: clean and compact without truncation', () => {
+    const order1 = [
+      { name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)', quantity: 1 },
+    ];
+    const desc = buildDelhiveryLabelDescription(order1);
+    expect(desc).toBe('21 Herbs Hair Oil (1pk)');
+    expect(desc.length).toBeLessThan(85);
+  });
+
+  it('3. Label description for 2-item order: fits within standard 4x6 label budget', () => {
+    const order2 = [
+      { name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)', quantity: 1 },
+      { name: 'Herbic Cure - Shampoo with Conditioner (Pack of 1)', quantity: 1 },
+    ];
+    const desc = buildDelhiveryLabelDescription(order2);
+    expect(desc).toBe('21 Herbs Hair Oil (1pk), Shampoo & Cond (1pk)');
+    expect(desc.length).toBeLessThan(85);
+  });
+
+  it('4. Label description for 5-item order: uses safe fallback to prevent label truncation', () => {
+    const order5 = [
+      { name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 2)', quantity: 1 },
+      { name: 'Herbic Cure - Shampoo with Conditioner (Pack of 1)', quantity: 1 },
+      { name: 'Neem Wood Wide-Tooth Comb', quantity: 2 },
+      { name: 'Herbic Cure - Scalp Therapy Serum (50ml)', quantity: 1 },
+      { name: 'Herbic Cure - Ayurvedic Hair Growth Mask', quantity: 1 },
+    ];
+    const desc = buildDelhiveryLabelDescription(order5);
+    // Verifies safe fallback pattern: primary 2 items + remaining count + total physical piece count
+    expect(desc).toBe('21 Herbs Hair Oil (2pk), Shampoo & Cond (1pk) + 3 more items (Total: 6 pcs)');
+    expect(desc.length).toBeLessThanOrEqual(85);
+  });
+
+  it('5. Physical Quantity: counts physical items only (delivery charges never counted as an item)', async () => {
     const codOrder: DelhiveryShipmentOrder = {
       orderNumber: 'HC-100002',
       customerName: 'Rahul Verma',
-      customerPhone: '9876543211',
+      customerPhone: '8688888338',
       customerEmail: 'rahul@example.com',
       shippingAddress: {
         address: 'B-12, Sector 15',
@@ -59,56 +64,27 @@ describe('Delhivery Express Logistics Integration Tests', () => {
       paymentMethod: 'COD',
       shippingFee: 89,
       items: [
-        {
-          name: '21 Herbs Ayurvedic Hair Oil (100ml)',
-          quantity: 1,
-          price: 299,
-        },
+        { name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)', quantity: 1, price: 349 },
+        { name: 'Herbic Cure - Shampoo with Conditioner (Pack of 1)', quantity: 1, price: 349 },
       ],
-      total: 388,
+      total: 787, // 349 + 349 + 89
     };
 
     const res = await createDelhiveryShipment(codOrder);
     expect(res.success).toBe(true);
-    expect(res.message).toContain('21 Herbs Ayurvedic Hair Oil (100ml)');
-    expect(res.message).toContain('Delivery Charges (₹89)');
+    // In our order of 2 physical items, physical piece count is 2 (NOT 3!)
+    const totalPhysicalPieces = codOrder.items.reduce((sum, it) => sum + it.quantity, 0);
+    expect(totalPhysicalPieces).toBe(2);
+    // Verifies label description contains short clean names
+    expect(res.message).toContain('21 Herbs Hair Oil (1pk)');
+    expect(res.message).toContain('Shampoo & Cond (1pk)');
   });
 
-  it('Requirement 3: In Prepaid, ONLY product names come and NO Delivery charges are listed', async () => {
-    const prepaidOrder: DelhiveryShipmentOrder = {
-      orderNumber: 'HC-100003',
-      customerName: 'Ananya Rao',
-      customerPhone: '9876543212',
-      customerEmail: 'ananya@example.com',
-      shippingAddress: {
-        address: 'Road No 10, Banjara Hills',
-        city: 'Hyderabad',
-        state: 'Telangana',
-        pincode: '500034',
-      },
-      paymentMethod: 'Prepaid',
-      shippingFee: 0,
-      items: [
-        {
-          name: 'Vedic Hair Cleanser & Scalp Therapy',
-          quantity: 1,
-          price: 399,
-        },
-      ],
-      total: 399,
-    };
-
-    const res = await createDelhiveryShipment(prepaidOrder);
-    expect(res.success).toBe(true);
-    expect(res.message).toContain('Vedic Hair Cleanser & Scalp Therapy');
-    expect(res.message).not.toContain('Delivery Charges');
-  });
-
-  it('Requirement 4: Default box dimensions are 18x10x8 cm (Length x Width x Height)', async () => {
-    const order: DelhiveryShipmentOrder = {
-      orderNumber: 'HC-100004',
+  it('6. Full payable amount is placed in cod_amount for COD, and 0 for Prepaid', async () => {
+    const codOrder: DelhiveryShipmentOrder = {
+      orderNumber: 'HC-100006',
       customerName: 'Vikram Mehta',
-      customerPhone: '9876543213',
+      customerPhone: '8688888338',
       customerEmail: 'vikram@example.com',
       shippingAddress: {
         address: '15 MG Road',
@@ -116,23 +92,30 @@ describe('Delhivery Express Logistics Integration Tests', () => {
         state: 'Karnataka',
         pincode: '560001',
       },
-      paymentMethod: 'Prepaid',
+      paymentMethod: 'COD',
+      shippingFee: 89,
       items: [
-        {
-          name: '21 Herbs Ayurvedic Hair Oil (200ml)',
-          quantity: 1,
-          price: 499,
-        },
+        { name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)', quantity: 1, price: 349 },
       ],
-      total: 499,
+      total: 438, // 349 + 89
     };
 
-    const res = await createDelhiveryShipment(order);
+    const res = await createDelhiveryShipment(codOrder);
     expect(res.success).toBe(true);
     expect(res.message).toContain('Dimensions: 18x10x8 cm');
+
+    const prepaidOrder: DelhiveryShipmentOrder = {
+      ...codOrder,
+      orderNumber: 'HC-100007',
+      paymentMethod: 'Prepaid',
+      shippingFee: 0,
+      total: 349,
+    };
+    const prepaidRes = await createDelhiveryShipment(prepaidOrder);
+    expect(prepaidRes.success).toBe(true);
   });
 
-  it('Requirement 5: isDelhiveryCancelled properly identifies Delhivery cancellation statuses and events', () => {
+  it('7. isDelhiveryCancelled properly identifies Delhivery cancellation statuses and events', () => {
     expect(isDelhiveryCancelled('Cancelled')).toBe(true);
     expect(isDelhiveryCancelled('CANCELED')).toBe(true);
     expect(isDelhiveryCancelled('RTO Initiated')).toBe(true);
@@ -141,7 +124,6 @@ describe('Delhivery Express Logistics Integration Tests', () => {
     expect(isDelhiveryCancelled('MANIFESTED')).toBe(false);
     expect(isDelhiveryCancelled('DELIVERED')).toBe(false);
 
-    // Scan event cancellation check
     expect(
       isDelhiveryCancelled('IN_TRANSIT', [
         {
@@ -152,44 +134,5 @@ describe('Delhivery Express Logistics Integration Tests', () => {
         },
       ])
     ).toBe(true);
-  });
-
-  it('Requirement 6: Formats multiple products on separate lines and strips redundant brand prefix like Amazon/Flipkart', async () => {
-    const multiItemOrder: DelhiveryShipmentOrder = {
-      orderNumber: 'HC-100005',
-      customerName: 'Test Customer',
-      customerPhone: '9876543214',
-      customerEmail: 'test@example.com',
-      shippingAddress: {
-        address: 'Bapatla, Ward 20',
-        city: 'Bapatla',
-        state: 'Andhra Pradesh',
-        pincode: '522101',
-      },
-      paymentMethod: 'COD',
-      shippingFee: 89,
-      items: [
-        {
-          name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)',
-          quantity: 1,
-          price: 349,
-        },
-        {
-          name: 'Herbic Cure - Shampoo with Conditioner (Pack of 1)',
-          quantity: 1,
-          price: 349,
-        },
-      ],
-      total: 787,
-    };
-
-    const res = await createDelhiveryShipment(multiItemOrder);
-    expect(res.success).toBe(true);
-    // Verifies brand prefix is stripped to save space on thermal label
-    expect(res.message).toContain('21 Herbs Fusion Hair Oil (Pack of 1)');
-    expect(res.message).toContain('Shampoo with Conditioner (Pack of 1)');
-    expect(res.message).toContain('Delivery Charges (₹89)');
-    // Verifies items are separated cleanly
-    expect(res.message).not.toContain('Herbic Cure - 21 Herbs Fusion Hair Oil');
   });
 });

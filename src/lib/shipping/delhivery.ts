@@ -90,10 +90,30 @@ const DELHIVERY_CONFIG: DelhiveryConfig = {
   apiKey: process.env.DELHIVERY_API_KEY || process.env.DELHIVERY_API_TOKEN || '',
   clientName: process.env.DELHIVERY_CLIENT_NAME || 'HERBIC CURE',
   env: (process.env.DELHIVERY_ENV === 'production' ? 'production' : 'staging'),
-  pickupLocation: process.env.DELHIVERY_PICKUP_LOCATION || 'Herbic Cure Fulfillment Hub',
+  pickupLocation: process.env.DELHIVERY_PICKUP_LOCATION || 'Herbic Cure',
 };
 
+export function getApiKey(): string {
+  return (
+    process.env.DELHIVERY_API_KEY ||
+    process.env.DELHIVERY_API_TOKEN ||
+    DELHIVERY_CONFIG.apiKey ||
+    ''
+  );
+}
+
+export function getPickupLocation(): string {
+  return (
+    process.env.DELHIVERY_PICKUP_LOCATION ||
+    DELHIVERY_CONFIG.pickupLocation ||
+    'Herbic Cure'
+  );
+}
+
 function getBaseUrl(): string {
+  if (process.env.DELHIVERY_BASE_URL) {
+    return process.env.DELHIVERY_BASE_URL.replace(/\/+$/, '');
+  }
   return DELHIVERY_CONFIG.env === 'production'
     ? 'https://track.delhivery.com'
     : 'https://staging-express.delhivery.com';
@@ -119,12 +139,13 @@ export async function checkPincodeServiceability(
   }
 
   // If API key is present, perform live lookup against Delhivery
-  if (DELHIVERY_CONFIG.apiKey) {
+  const apiKey = getApiKey();
+  if (apiKey) {
     try {
       const url = `${getBaseUrl()}/c/api/pin-codes/json/?filter_codes=${cleanPin}`;
       const res = await fetch(url, {
         headers: {
-          Authorization: `Token ${DELHIVERY_CONFIG.apiKey}`,
+          Authorization: `Token ${apiKey}`,
           'Content-Type': 'application/json',
         },
         signal: AbortSignal.timeout(5000),
@@ -174,80 +195,349 @@ export async function checkPincodeServiceability(
 /**
  * Format product name for courier shipping labels according to Amazon / Flipkart standards:
  * - Strip redundant brand prefix ("Herbic Cure - ") so the label line doesn't waste space
- * - Keep names concise and clean (up to 55 characters) so thermal 4x6 labels print without truncation
+ * - Compact common variant names to guarantee high readability and fit on thermal 4x6 labels
  */
-export function formatDelhiveryItemName(rawName: string): string {
+export function getShortLabelName(rawName: string): string {
   let name = (rawName || '').trim();
   // Strip redundant leading brand prefix (logo is already on label header)
   name = name.replace(/^herbic\s*cure\s*[-–—:]\s*/i, '').trim();
-  if (!name) name = 'Ayurvedic Formulation';
-  if (name.length > 55) {
-    name = name.slice(0, 52) + '...';
+  // Compact common variants
+  name = name.replace(/\bfusion\s+/gi, '');
+  name = name.replace(/\(pack of (\d+)\)/i, '($1pk)');
+  name = name.replace(/\bwith\b/gi, '&');
+  name = name.replace(/\bconditioner\b/gi, 'Cond');
+  name = name.replace(/\bcombos?\b/gi, 'Combo');
+  name = name.replace(/\s{2,}/g, ' ').trim();
+  if (name.length > 32) {
+    name = name.slice(0, 30).trim() + '..';
   }
-  return name;
+  return name || 'Ayurvedic Item';
+}
+
+/**
+ * Builds safe label description for Delhivery shipping labels:
+ * - Fits within the ~85 character budget of Delhivery's 4x6 thermal label "Product Name" column.
+ * - For orders with 1-2 items, lists short item names with quantity.
+ * - For orders with 3-5+ items that exceed the character ceiling, uses safe fallback:
+ *   e.g. "21 Herbs Hair Oil (2pk), Shampoo & Cond (1pk) + 3 more items (Total: 6 pcs)"
+ */
+export function buildDelhiveryLabelDescription(
+  items: Array<{ name?: string; productName?: string; quantity: number }>
+): string {
+  if (!items || items.length === 0) {
+    return 'Herbic Cure Ayurvedic Formulation';
+  }
+
+  const totalPhysicalPieces = items.reduce((sum, it) => sum + (it.quantity || 1), 0);
+
+  const formattedItems = items.map((it) => {
+    const shortName = getShortLabelName(it.name || it.productName || '');
+    return (it.quantity || 1) > 1 ? `${shortName} (x${it.quantity})` : shortName;
+  });
+
+  const fullJoined = formattedItems.join(', ');
+
+  // Safe label length budget on Delhivery 4x6 thermal label is ~85 characters.
+  if (fullJoined.length <= 85) {
+    return fullJoined;
+  }
+
+  // Safe fallback when length exceeds budget (e.g. 3, 4, 5+ items):
+  // Show first 2 primary items + remaining item count + total physical piece count
+  const primaryItems = formattedItems.slice(0, 2).join(', ');
+  const remainingCount = items.length - 2;
+  return `${primaryItems} + ${remainingCount} more items (Total: ${totalPhysicalPieces} pcs)`;
+}
+
+export function formatDelhiveryItemName(rawName: string): string {
+  return getShortLabelName(rawName);
+}
+
+export function getNextAvailablePickupSlot(): { pickupDate: string; pickupTime: string } {
+  const now = new Date();
+  const istFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+
+  const parts = istFormatter.formatToParts(now);
+  const partMap: Record<string, string> = {};
+  for (const p of parts) {
+    partMap[p.type] = p.value;
+  }
+
+  const year = partMap.year;
+  const month = partMap.month;
+  const day = partMap.day;
+  const hour = parseInt(partMap.hour || '0', 10);
+
+  // Delhivery daily pickup cut-off is typically 13:00 (1:00 PM IST).
+  // If requested before 13:00 IST, schedule for today afternoon (15:00:00).
+  // If requested after 13:00 IST, schedule for tomorrow morning (11:00:00).
+  if (hour < 13) {
+    return {
+      pickupDate: `${year}-${month}-${day}`,
+      pickupTime: '15:00:00',
+    };
+  } else {
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const tomParts = istFormatter.formatToParts(tomorrow);
+    const tomMap: Record<string, string> = {};
+    for (const p of tomParts) {
+      tomMap[p.type] = p.value;
+    }
+    return {
+      pickupDate: `${tomMap.year}-${tomMap.month}-${tomMap.day}`,
+      pickupTime: '11:00:00',
+    };
+  }
+}
+
+export interface DelhiveryPickupOptions {
+  pickupDate?: string;
+  pickupTime?: string;
+  pickupLocation?: string;
+  expectedPackageCount?: number;
+}
+
+export interface DelhiveryPickupResult {
+  success: boolean;
+  pickupId?: string;
+  status: 'SCHEDULED' | 'FAILED';
+  message: string;
+  pickupDate: string;
+  pickupTime: string;
+  rawResponse?: any;
+}
+
+export async function requestDelhiveryPickup(
+  options: DelhiveryPickupOptions = {}
+): Promise<DelhiveryPickupResult> {
+  const defaultSlot = getNextAvailablePickupSlot();
+  const pickupDate = options.pickupDate || defaultSlot.pickupDate;
+  const pickupTime = options.pickupTime || defaultSlot.pickupTime;
+  const pickupLocation = options.pickupLocation || getPickupLocation();
+  const expectedPackageCount = Math.max(1, options.expectedPackageCount || 1);
+
+  // Validate date format YYYY-MM-DD
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(pickupDate)) {
+    return {
+      success: false,
+      status: 'FAILED',
+      message: 'Invalid pickup_date format. Must be YYYY-MM-DD.',
+      pickupDate,
+      pickupTime,
+    };
+  }
+
+  // Validate time format HH:mm:ss or HH:mm
+  let formattedTime = pickupTime;
+  if (/^\d{2}:\d{2}$/.test(formattedTime)) {
+    formattedTime = `${formattedTime}:00`;
+  }
+  if (!/^\d{2}:\d{2}:\d{2}$/.test(formattedTime)) {
+    return {
+      success: false,
+      status: 'FAILED',
+      message: 'Invalid pickup_time format. Must be HH:mm:ss.',
+      pickupDate,
+      pickupTime: formattedTime,
+    };
+  }
+
+  const apiKey = getApiKey();
+  if (apiKey) {
+    try {
+      const payload = {
+        pickup_time: formattedTime,
+        pickup_date: pickupDate,
+        pickup_location: pickupLocation,
+        expected_package_count: expectedPackageCount,
+      };
+
+      const res = await fetch(`${getBaseUrl()}/fm/request/new/`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Token ${apiKey}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10000),
+      });
+
+      const responseText = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = { raw: responseText };
+      }
+
+      if (!res.ok) {
+        const errorMsg =
+          data?.message ||
+          data?.error ||
+          data?.remarks ||
+          `Delhivery API returned HTTP ${res.status}: ${res.statusText}`;
+        console.warn('Delhivery pickup request failed HTTP status:', res.status, errorMsg);
+        return {
+          success: false,
+          status: 'FAILED',
+          message: errorMsg,
+          pickupDate,
+          pickupTime: formattedTime,
+          rawResponse: data,
+        };
+      }
+
+      const pickupId = String(
+        data?.pr_id ||
+        data?.pickup_id ||
+        data?.data?.pr_id ||
+        data?.data?.pickup_id ||
+        data?.id ||
+        ''
+      );
+
+      const isSuccess =
+        data?.status === 'Success' ||
+        data?.status === true ||
+        data?.success === true ||
+        (Boolean(pickupId) && data?.status !== 'Fail');
+
+      if (isSuccess) {
+        return {
+          success: true,
+          pickupId: pickupId || `PR-${Date.now()}`,
+          status: 'SCHEDULED',
+          message:
+            data?.message ||
+            `Pickup scheduled successfully with Delhivery for ${pickupDate} at ${formattedTime}`,
+          pickupDate,
+          pickupTime: formattedTime,
+          rawResponse: data,
+        };
+      } else {
+        const errMsg =
+          data?.message ||
+          data?.error ||
+          data?.remarks ||
+          'Delhivery pickup request rejected';
+        return {
+          success: false,
+          status: 'FAILED',
+          message: errMsg,
+          pickupDate,
+          pickupTime: formattedTime,
+          rawResponse: data,
+        };
+      }
+    } catch (err: any) {
+      console.warn('Delhivery pickup request exception:', err?.message || 'Network error');
+      return {
+        success: false,
+        status: 'FAILED',
+        message: err?.message || 'Failed to connect to Delhivery pickup service',
+        pickupDate,
+        pickupTime: formattedTime,
+      };
+    }
+  }
+
+  // Graceful fallback for local development / testing without live key
+  return {
+    success: true,
+    pickupId: `SIM-PR-${Date.now()}`,
+    status: 'SCHEDULED',
+    message: `[Simulated] Pickup registered for ${pickupLocation} on ${pickupDate} at ${formattedTime}`,
+    pickupDate,
+    pickupTime: formattedTime,
+  };
 }
 
 export async function createDelhiveryShipment(
   order: DelhiveryShipmentOrder
 ): Promise<DelhiveryManifestResult> {
   const isCod = order.paymentMethod === 'COD';
-  const totalQty = (order.items || []).reduce((sum, item) => sum + item.quantity, 0);
-  const destAddress = order.shippingAddress?.address || order.customerAddress || 'Address';
-  const destPin = order.shippingAddress?.pincode || order.pincode || '110001';
-  const destCity = order.shippingAddress?.city || order.city || 'Delhi';
-  const destState = order.shippingAddress?.state || order.state || 'Delhi';
-  const orderTotal = Math.round(order.total || order.totalAmount || 0);
+  
+  // Requirement: Fix quantity so it counts physical items only!
+  // Delivery charges must NEVER be counted as an item in shipment quantity.
+  const physicalQuantity = (order.items || []).reduce(
+    (sum, item) => sum + (item.quantity || 1),
+    0
+  );
 
-  // Requirement 1 & Standard E-commerce Practice:
-  // Build structured items array for Delhivery One dashboard & manifestation
-  const structuredItems = (order.items || []).map((item) => {
-    const cleanName = formatDelhiveryItemName(item.name || item.productName || '');
+  if (physicalQuantity <= 0) {
     return {
-      name: cleanName,
-      sku: item.sku || cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30) || 'HC-ITEM',
-      qty: item.quantity || 1,
-      price: item.price || 0,
-      discount: 0,
-      hsn: '33059011',
+      success: false,
+      waybill: '',
+      trackingUrl: '',
+      status: 'FAILED',
+      message: 'Shipment physical quantity must be at least 1',
     };
-  });
-
-  // Build clean, distinct line descriptions for thermal label printing
-  const itemDescriptions = (order.items || []).map((item) => {
-    const cleanName = formatDelhiveryItemName(item.name || item.productName || '');
-    return item.quantity > 1 ? `${cleanName} (Qty: ${item.quantity})` : cleanName;
-  });
-
-  // Requirement 2: Delivery charges should come separately as a product (When customer selects COD)
-  // Requirement 3: In Prepaid, only product name should come and no Delivery charges
-  if (isCod) {
-    const fee = order.shippingFee !== undefined ? Number(order.shippingFee) : 0;
-    const feeText = fee > 0 ? `Delivery Charges (₹${fee})` : 'Delivery Charges';
-    itemDescriptions.push(feeText);
-
-    if (fee > 0) {
-      structuredItems.push({
-        name: 'Delivery Charges',
-        sku: 'COD-DELIVERY-CHARGES',
-        qty: 1,
-        price: fee,
-        discount: 0,
-        hsn: '996813',
-      });
-    }
   }
 
-  // Delhivery label layout parser separates distinct lines on thermal labels via newline '\n'
-  const productsDesc = (itemDescriptions.length > 0 ? itemDescriptions.join('\n') : 'Ayurvedic Formulation').slice(0, 500);
-  const totalShipmentQuantity = totalQty + (isCod ? 1 : 0);
+  const destAddress = (order.shippingAddress?.address || order.customerAddress || '').trim();
+  const destPin = (order.shippingAddress?.pincode || order.pincode || '').trim().replace(/\D/g, '');
+  const destCity = (order.shippingAddress?.city || order.city || '').trim();
+  const destState = (order.shippingAddress?.state || order.state || '').trim();
+  const cleanPhone = (order.customerPhone || '').replace(/\D/g, '').slice(-10);
 
-  // Requirement 4: Dimension of box should by default 18×10×8 cm (Length x Width x Height)
+  // Validate address completeness
+  if (!destAddress || destAddress.length < 5) {
+    return {
+      success: false,
+      waybill: '',
+      trackingUrl: '',
+      status: 'FAILED',
+      message: 'Customer shipping address is missing or incomplete',
+    };
+  }
+
+  // Validate postal PIN code
+  if (destPin.length !== 6) {
+    return {
+      success: false,
+      waybill: '',
+      trackingUrl: '',
+      status: 'FAILED',
+      message: 'Customer postal PIN code must be exactly 6 digits',
+    };
+  }
+
+  // Validate phone format
+  if (cleanPhone.length !== 10) {
+    return {
+      success: false,
+      waybill: '',
+      trackingUrl: '',
+      status: 'FAILED',
+      message: 'Customer phone number must be a valid 10-digit number',
+    };
+  }
+  
+  // Full payable amount: subtotal - discount + (isCod ? shippingFee : 0)
+  const orderTotal = Math.round(order.total || order.totalAmount || 0);
+  const codAmount = isCod ? String(orderTotal) : '0';
+
+  // Build clean, safe label description with fallback for long orders
+  const productsDesc = buildDelhiveryLabelDescription(order.items || []);
+
+  // Requirement: Dimension of box should by default 18×10×8 cm (Length x Width x Height)
   const boxLength = String(order.length || 18);
   const boxWidth = String(order.width || 10);
   const boxHeight = String(order.height || 8);
 
   // If live Delhivery API Key is available
-  if (DELHIVERY_CONFIG.apiKey) {
+  const apiKey = getApiKey();
+  if (apiKey) {
     try {
       const shipmentData = {
         shipments: [
@@ -255,10 +545,10 @@ export async function createDelhiveryShipment(
             name: order.customerName,
             add: destAddress,
             pin: destPin,
-            city: destCity,
-            state: destState,
+            city: destCity || 'Destination',
+            state: destState || 'State',
             country: 'India',
-            phone: order.customerPhone,
+            phone: cleanPhone,
             order: order.orderNumber,
             payment_mode: isCod ? 'COD' : 'Prepaid',
             return_pin: '',
@@ -268,16 +558,14 @@ export async function createDelhiveryShipment(
             return_state: '',
             return_country: '',
             products_desc: productsDesc,
-            items: structuredItems,
-            order_items: structuredItems,
             hsn_code: '33059011',
-            cod_amount: isCod ? String(orderTotal) : '0',
+            cod_amount: codAmount,
             order_date: new Date().toISOString(),
             total_amount: String(orderTotal),
             seller_add: 'Herbic Cure Apothecary Labs, India',
             seller_name: DELHIVERY_CONFIG.clientName,
             seller_inv: order.orderNumber,
-            quantity: String(totalShipmentQuantity || 1),
+            quantity: String(physicalQuantity), // Strictly physical items only!
             waybill: order.waybill || '',
             shipment_width: boxWidth,
             shipment_height: boxHeight,
@@ -285,13 +573,9 @@ export async function createDelhiveryShipment(
             weight: String(order.weight || 500),
           },
         ],
+        // Use registered warehouse name only without hardcoded fake Jaipur address/phone
         pickup_location: {
-          name: DELHIVERY_CONFIG.pickupLocation,
-          add: 'Herbic Cure Central Apothecary Hub',
-          city: 'Jaipur',
-          pin_code: '302001',
-          country: 'India',
-          phone: '9876543210',
+          name: getPickupLocation(),
         },
       };
 
@@ -302,28 +586,75 @@ export async function createDelhiveryShipment(
       const res = await fetch(`${getBaseUrl()}/api/cmu/create.json`, {
         method: 'POST',
         headers: {
-          Authorization: `Token ${DELHIVERY_CONFIG.apiKey}`,
+          Authorization: `Token ${apiKey}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: params.toString(),
         signal: AbortSignal.timeout(8000),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        const packageInfo = data?.packages?.[0];
-        if (packageInfo?.waybill) {
-          return {
-            success: true,
-            waybill: packageInfo.waybill,
-            trackingUrl: `https://www.delhivery.com/track/package/${packageInfo.waybill}`,
-            status: 'MANIFESTED',
-            rawResponse: data,
-          };
-        }
+      const responseText = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = { raw: responseText };
       }
+
+      if (!res.ok) {
+        const errorMsg =
+          data?.rmk ||
+          data?.error ||
+          data?.message ||
+          `Delhivery manifest request failed with HTTP ${res.status}`;
+        console.warn('Delhivery manifest API rejected HTTP status:', res.status, errorMsg);
+        return {
+          success: false,
+          waybill: '',
+          trackingUrl: '',
+          status: 'FAILED',
+          message: errorMsg,
+          rawResponse: data,
+        };
+      }
+
+      const packageInfo = data?.packages?.[0];
+      const pkgStatus = String(packageInfo?.status || '').toLowerCase();
+      const remarks = Array.isArray(packageInfo?.remarks)
+        ? packageInfo.remarks.join(', ')
+        : packageInfo?.remarks || data?.rmk || '';
+
+      if (packageInfo?.waybill && pkgStatus !== 'fail') {
+        return {
+          success: true,
+          waybill: packageInfo.waybill,
+          trackingUrl: `https://www.delhivery.com/track/package/${packageInfo.waybill}`,
+          status: 'MANIFESTED',
+          message: remarks || undefined,
+          rawResponse: data,
+        };
+      }
+
+      // If package status is Fail or no waybill was returned
+      const failureReason = remarks || 'Package manifest rejected by Delhivery';
+      console.warn('Delhivery package creation failed:', failureReason);
+      return {
+        success: false,
+        waybill: '',
+        trackingUrl: '',
+        status: 'REJECTED',
+        message: failureReason,
+        rawResponse: data,
+      };
     } catch (err: any) {
-      console.warn('Delhivery manifest live API fallback:', err.message);
+      console.warn('Delhivery manifest live API exception:', err.message);
+      return {
+        success: false,
+        waybill: '',
+        trackingUrl: '',
+        status: 'FAILED',
+        message: err.message || 'Network exception while connecting to Delhivery Express',
+      };
     }
   }
 
@@ -382,13 +713,14 @@ export async function trackDelhiveryShipment(
   const cleanWbn = waybill.trim();
   const publicTrackingUrl = `https://www.delhivery.com/track/package/${cleanWbn}`;
 
-  if (DELHIVERY_CONFIG.apiKey) {
+  const apiKey = getApiKey();
+  if (apiKey) {
     try {
       const res = await fetch(
         `${getBaseUrl()}/api/v1/packages/json/?waybill=${cleanWbn}`,
         {
           headers: {
-            Authorization: `Token ${DELHIVERY_CONFIG.apiKey}`,
+            Authorization: `Token ${apiKey}`,
             'Content-Type': 'application/json',
           },
           signal: AbortSignal.timeout(6000),
@@ -498,7 +830,8 @@ export async function cancelDelhiveryShipment(
   }
 
   // If live Delhivery API Key is available, dispatch cancellation request
-  if (DELHIVERY_CONFIG.apiKey) {
+  const apiKey = getApiKey();
+  if (apiKey) {
     try {
       const response = await axios.post(
         `${getBaseUrl()}/api/p/edit`,
@@ -508,7 +841,7 @@ export async function cancelDelhiveryShipment(
         },
         {
           headers: {
-            Authorization: `Token ${DELHIVERY_CONFIG.apiKey}`,
+            Authorization: `Token ${apiKey}`,
             'Content-Type': 'application/json',
             Accept: 'application/json',
           },
