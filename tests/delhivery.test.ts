@@ -87,7 +87,7 @@ describe('Delhivery Express Logistics Integration Tests', () => {
         pincode: '500034',
       },
       paymentMethod: 'Prepaid',
-      shippingFee: 89,
+      shippingFee: 0,
       items: [
         {
           name: 'Vedic Hair Cleanser & Scalp Therapy',
@@ -95,7 +95,7 @@ describe('Delhivery Express Logistics Integration Tests', () => {
           price: 399,
         },
       ],
-      total: 488,
+      total: 399,
     };
 
     const res = await createDelhiveryShipment(prepaidOrder);

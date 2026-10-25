@@ -132,9 +132,12 @@ export default function CheckoutPage() {
     }
   }, [formData.pincode]);
 
-  // Delivery charge: Free when order >= freeShippingThreshold (₹499), standard fee (₹89) when under
-  const isFreeShipping = subtotal >= freeShippingThreshold;
-  const currentShippingFee = isFreeShipping ? 0 : standardShippingFee;
+  // Delivery charge logic:
+  // For PREPAID: Delivery charges are strictly FREE (₹0) on all orders
+  // For COD: Free when subtotal >= freeShippingThreshold (₹499), standard fee (₹89) when under
+  const isPrepaid = formData.paymentMethod !== 'COD';
+  const isCodFreeShipping = subtotal >= freeShippingThreshold;
+  const currentShippingFee = isPrepaid ? 0 : (isCodFreeShipping ? 0 : standardShippingFee);
   const currentFinalTotal = Math.max(0, subtotal - discountAmount + currentShippingFee);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -660,15 +663,15 @@ export default function CheckoutPage() {
                           </span>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                          isFreeShipping
+                          isCodFreeShipping
                             ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
                             : 'text-[#8C3A4F] bg-[#F6DFE7] border-[#EAC9D1]'
                         }`}>
-                          {isFreeShipping ? 'FREE Delivery' : `+₹${standardShippingFee} Delivery`}
+                          {isCodFreeShipping ? 'FREE Delivery' : `+₹${standardShippingFee} Delivery`}
                         </span>
                       </div>
                       <span className="block text-[11px] text-[#7A5B64] mt-1 leading-snug">
-                        {isFreeShipping
+                        {isCodFreeShipping
                           ? `Pay cash or UPI to courier upon delivery (Free express shipping on orders above ₹${freeShippingThreshold})`
                           : `Pay cash or UPI to courier upon delivery (₹${standardShippingFee} courier charges applicable under ₹${freeShippingThreshold})`}
                       </span>
@@ -706,18 +709,12 @@ export default function CheckoutPage() {
                             Prepaid (UPI / Card / NetBanking)
                           </span>
                         </div>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                          isFreeShipping
-                            ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                            : 'text-[#8C3A4F] bg-[#F6DFE7] border-[#EAC9D1]'
-                        }`}>
-                          {isFreeShipping ? 'FREE Delivery' : `+₹${standardShippingFee} Delivery`}
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md border text-emerald-700 bg-emerald-50 border-emerald-200">
+                          FREE Delivery
                         </span>
                       </div>
                       <span className="block text-[11px] text-[#7A5B64] mt-1 leading-snug">
-                        {isFreeShipping
-                          ? `Pay via UPI, GPay, PhonePe, Cards or NetBanking (Free express delivery applied)`
-                          : `Pay via UPI, GPay, PhonePe, Cards or NetBanking (₹${standardShippingFee} courier charges applicable under ₹${freeShippingThreshold})`}
+                        Pay via UPI, GPay, PhonePe, Cards or NetBanking (100% Free Express Delivery on all Prepaid orders)
                       </span>
                     </div>
                   </label>

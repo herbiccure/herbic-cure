@@ -126,14 +126,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Authoritative Shipping Fee: Dynamic from siteSetting, free if >= freeShippingThreshold, else standardShippingFee
+    // 5. Authoritative Shipping Fee:
+    // For prepaid orders (RAZORPAY, ONLINE, UPI, CARD): FREE Delivery (₹0 delivery fee)
+    // For COD: Free if >= freeShippingThreshold, else standardShippingFee
+    const isPrepaidOrder = paymentMethod !== 'COD';
+
     const [feeSetting, thresholdSetting] = await Promise.all([
       prisma.siteSetting.findUnique({ where: { key: 'standard_shipping_fee' } }),
       prisma.siteSetting.findUnique({ where: { key: 'free_shipping_threshold' } }),
     ]);
     const authoritativeStandardFee = feeSetting?.value ? Number(feeSetting.value) : 89;
     const authoritativeThreshold = thresholdSetting?.value ? Number(thresholdSetting.value) : 499;
-    const calculatedShippingFee = calculatedSubtotal >= authoritativeThreshold ? 0 : authoritativeStandardFee;
+
+    const calculatedShippingFee = isPrepaidOrder
+      ? 0
+      : (calculatedSubtotal >= authoritativeThreshold ? 0 : authoritativeStandardFee);
 
     // 6. Final Authoritative Payable Total
     const calculatedFinalTotal = Math.max(
