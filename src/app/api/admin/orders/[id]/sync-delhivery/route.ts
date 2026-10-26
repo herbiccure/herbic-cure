@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminAuth } from '@/lib/auth/adminAuth';
-import { trackDelhiveryShipment, isDelhiveryCancelled } from '@/lib/shipping/delhivery';
+import { trackDelhiveryShipment, mapDelhiveryStatusToOrderStatus } from '@/lib/shipping/delhivery';
 import { cancelOrderWithLogistics } from '@/lib/shipping/orderCancellation';
 import { logger } from '@/lib/logger';
 
@@ -40,10 +40,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
     // 1. Fetch live tracking info from Delhivery
     const tracking = await trackDelhiveryShipment(order.trackingNumber);
 
-    // 2. Check if Delhivery reports the package as CANCELLED
-    const isCancelledInDelhivery = isDelhiveryCancelled(tracking.status, tracking.scans);
+    // 2. Map tracking status to Herbic Cure order lifecycle
+    const mapped = mapDelhiveryStatusToOrderStatus(tracking.status, tracking.scans);
 
-    if (isCancelledInDelhivery && order.orderStatus !== 'CANCELLED') {
+    // Check cancellation
+    if (mapped.isCancelled && order.orderStatus !== 'CANCELLED') {
       // Auto-cancel in database and restock inventory
       const cancelResult = await cancelOrderWithLogistics({
         orderId: order.id,
@@ -82,14 +83,76 @@ export async function POST(request: NextRequest, context: RouteContext) {
       });
     }
 
-    // If status is active / in transit
+    // 3. Update order lifecycle status if changed
+    let needsUpdate = false;
+    const updateData: {
+      orderStatus?: string;
+      pickupStatus?: string;
+      paymentStatus?: string;
+    } = {};
+
+    if (mapped.isDelivered && order.orderStatus !== 'DELIVERED') {
+      updateData.orderStatus = 'DELIVERED';
+      updateData.pickupStatus = 'PICKED';
+      if (order.paymentMethod === 'COD') updateData.paymentStatus = 'PAID';
+      needsUpdate = true;
+    } else if (
+      mapped.orderStatus === 'OUT_FOR_DELIVERY' &&
+      order.orderStatus !== 'DELIVERED' &&
+      order.orderStatus !== 'OUT_FOR_DELIVERY'
+    ) {
+      updateData.orderStatus = 'OUT_FOR_DELIVERY';
+      updateData.pickupStatus = 'PICKED';
+      needsUpdate = true;
+    } else if (mapped.orderStatus === 'SHIPPED') {
+      const allowed = ['PENDING', 'CONFIRMED', 'PROCESSING', 'PACKED'];
+      if (allowed.includes(order.orderStatus)) {
+        updateData.orderStatus = 'SHIPPED';
+        updateData.pickupStatus = 'PICKED';
+        needsUpdate = true;
+      }
+    }
+
+    if (
+      mapped.pickupStatus === 'SCHEDULED' &&
+      order.pickupStatus !== 'SCHEDULED' &&
+      order.pickupStatus !== 'PICKED'
+    ) {
+      updateData.pickupStatus = 'SCHEDULED';
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      await prisma.order.update({
+        where: { id },
+        data: updateData,
+      });
+
+      await prisma.shipmentEvent.create({
+        data: {
+          orderId: id,
+          status: updateData.orderStatus || order.orderStatus,
+          location: tracking.destination || tracking.origin || 'Delhivery Logistics Hub',
+          description: mapped.description || `Synchronized live status from Delhivery: ${tracking.status}`,
+        },
+      });
+    }
+
+    const finalOrder = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: true,
+        events: { orderBy: { timestamp: 'desc' } },
+      },
+    });
+
     return NextResponse.json({
       success: true,
       isCancelled: false,
-      orderStatus: order.orderStatus,
-      order,
+      orderStatus: finalOrder?.orderStatus || order.orderStatus,
+      order: finalOrder,
       tracking,
-      message: `Delhivery live status: ${tracking.status || 'IN_TRANSIT'}. Expected Delivery: ${tracking.expectedDeliveryDate ? new Date(tracking.expectedDeliveryDate).toLocaleDateString('en-IN') : '2-4 days'}`,
+      message: `Delhivery live status: ${tracking.status || 'IN_TRANSIT'}. Synced to Admin (Status: ${finalOrder?.orderStatus}).`,
     });
   } catch (error: any) {
     logger.error('admin.order.sync_delhivery_failed', { error: error?.message || 'Failed to sync with Delhivery' });

@@ -731,6 +731,131 @@ export function isDelhiveryCancelled(status?: string | null, scans?: DelhiverySc
   return false;
 }
 
+export type MappedOrderStatus =
+  | 'CONFIRMED'
+  | 'PROCESSING'
+  | 'SHIPPED'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | null;
+
+export interface MappedDelhiveryState {
+  orderStatus: MappedOrderStatus;
+  pickupStatus?: 'SCHEDULED' | 'PICKED' | 'FAILED' | 'NONE';
+  description?: string;
+  isCancelled: boolean;
+  isDelivered: boolean;
+}
+
+/**
+ * Maps live Delhivery tracking status / scans to Herbic Cure order lifecycle states.
+ * Allows seamless background synchronization from Delhivery One into the website.
+ */
+export function mapDelhiveryStatusToOrderStatus(
+  status?: string | null,
+  scans?: DelhiveryScanEvent[]
+): MappedDelhiveryState {
+  const isCancelled = isDelhiveryCancelled(status, scans);
+  if (isCancelled) {
+    return {
+      orderStatus: 'CANCELLED',
+      isCancelled: true,
+      isDelivered: false,
+      description: 'Shipment cancelled or marked RTO in Delhivery network',
+    };
+  }
+
+  const s = (status || '').trim().toLowerCase();
+
+  // Delivered
+  if (s === 'delivered' || s === 'dl' || s.includes('delivered')) {
+    return {
+      orderStatus: 'DELIVERED',
+      pickupStatus: 'PICKED',
+      isCancelled: false,
+      isDelivered: true,
+      description: 'Package successfully delivered by Delhivery logistics partner',
+    };
+  }
+
+  // Out for Delivery
+  if (
+    s.includes('out for delivery') ||
+    s.includes('out_for_delivery') ||
+    s.includes('pending delivery') ||
+    s.includes('delivery scheduled')
+  ) {
+    return {
+      orderStatus: 'OUT_FOR_DELIVERY',
+      pickupStatus: 'PICKED',
+      isCancelled: false,
+      isDelivered: false,
+      description: 'Package is out for delivery with Delhivery rider',
+    };
+  }
+
+  // In Transit / Picked Up / Dispatched
+  if (
+    s.includes('in transit') ||
+    s.includes('in_transit') ||
+    s.includes('dispatched') ||
+    s.includes('picked up') ||
+    s.includes('pickup completed') ||
+    s.includes('arrived at') ||
+    s.includes('at facility') ||
+    s.includes('connected to')
+  ) {
+    return {
+      orderStatus: 'SHIPPED',
+      pickupStatus: 'PICKED',
+      isCancelled: false,
+      isDelivered: false,
+      description: 'Package picked up by Delhivery and in transit across network',
+    };
+  }
+
+  // Pickup Scheduled / Booked in Delhivery One
+  if (
+    s.includes('pickup scheduled') ||
+    s.includes('pickup booked') ||
+    s.includes('pickup generated') ||
+    s.includes('add to pickup') ||
+    s.includes('pickup requested')
+  ) {
+    return {
+      orderStatus: 'PROCESSING',
+      pickupStatus: 'SCHEDULED',
+      isCancelled: false,
+      isDelivered: false,
+      description: 'Pickup scheduled with Delhivery logistics partner',
+    };
+  }
+
+  // Manifested / Ready to Ship / Open
+  if (
+    s.includes('manifest') ||
+    s.includes('ready to ship') ||
+    s.includes('ready for test') ||
+    s.includes('open') ||
+    s.includes('pending')
+  ) {
+    return {
+      orderStatus: 'CONFIRMED',
+      pickupStatus: 'NONE',
+      isCancelled: false,
+      isDelivered: false,
+      description: 'Shipment manifested on Delhivery. Ready for pickup.',
+    };
+  }
+
+  return {
+    orderStatus: null,
+    isCancelled: false,
+    isDelivered: false,
+  };
+}
+
 /**
  * Track an active Delhivery Waybill number
  */

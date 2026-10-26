@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cancelOrderWithLogistics } from '@/lib/shipping/orderCancellation';
-import { isDelhiveryCancelled } from '@/lib/shipping/delhivery';
+import { mapDelhiveryStatusToOrderStatus } from '@/lib/shipping/delhivery';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -85,18 +85,6 @@ export async function POST(request: NextRequest) {
       const scans = shipment.Scans || shipment.scans || [];
       const instructions = shipment.Status?.Instructions || shipment.instructions || shipment.reason || '';
 
-      const isCancelled = isDelhiveryCancelled(status, scans);
-
-      if (!isCancelled) {
-        results.push({
-          waybill,
-          orderNumber,
-          action: 'IGNORED',
-          message: `Status "${status}" is not a cancellation event`,
-        });
-        continue;
-      }
-
       // Locate the order in the database
       const order = await prisma.order.findFirst({
         where: {
@@ -117,32 +105,166 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      if (order.orderStatus === 'CANCELLED') {
+      const mapped = mapDelhiveryStatusToOrderStatus(status, scans);
+
+      // 1. Cancellation / RTO Handling
+      if (mapped.isCancelled) {
+        if (order.orderStatus === 'CANCELLED') {
+          results.push({
+            orderNumber: order.orderNumber,
+            waybill: order.trackingNumber || waybill,
+            action: 'ALREADY_CANCELLED',
+            message: `Order ${order.orderNumber} is already marked CANCELLED`,
+          });
+          continue;
+        }
+
+        const cancelReason = instructions
+          ? `Shipment cancelled in Delhivery: ${instructions}`
+          : 'Shipment cancelled in Delhivery network';
+
+        const cancelResult = await cancelOrderWithLogistics({
+          orderId: order.id,
+          reason: cancelReason,
+          cancelledBy: 'SYSTEM',
+        });
+
         results.push({
           orderNumber: order.orderNumber,
           waybill: order.trackingNumber || waybill,
-          action: 'ALREADY_CANCELLED',
-          message: `Order ${order.orderNumber} is already marked CANCELLED`,
+          action: 'CANCELLED_IN_ADMIN',
+          message: cancelResult.message,
         });
         continue;
       }
 
-      // Execute central order cancellation with inventory restock and ShipmentEvent audit log
-      const cancelReason = instructions
-        ? `Shipment cancelled in Delhivery: ${instructions}`
-        : 'Shipment cancelled in Delhivery network';
+      // 2. Delivered
+      if (mapped.isDelivered) {
+        if (order.orderStatus !== 'DELIVERED') {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              orderStatus: 'DELIVERED',
+              pickupStatus: 'PICKED',
+              ...(order.paymentMethod === 'COD' ? { paymentStatus: 'PAID' } : {}),
+            },
+          });
 
-      const cancelResult = await cancelOrderWithLogistics({
-        orderId: order.id,
-        reason: cancelReason,
-        cancelledBy: 'SYSTEM',
-      });
+          await prisma.shipmentEvent.create({
+            data: {
+              orderId: order.id,
+              status: 'DELIVERED',
+              location: 'Customer Address',
+              description: instructions || mapped.description || 'Package delivered successfully by Delhivery',
+            },
+          });
+        }
 
+        results.push({
+          orderNumber: order.orderNumber,
+          waybill: order.trackingNumber || waybill,
+          action: 'DELIVERED',
+          message: `Order #${order.orderNumber} updated to DELIVERED`,
+        });
+        continue;
+      }
+
+      // 3. Out for Delivery
+      if (mapped.orderStatus === 'OUT_FOR_DELIVERY') {
+        if (order.orderStatus !== 'DELIVERED' && order.orderStatus !== 'OUT_FOR_DELIVERY') {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              orderStatus: 'OUT_FOR_DELIVERY',
+              pickupStatus: 'PICKED',
+            },
+          });
+
+          await prisma.shipmentEvent.create({
+            data: {
+              orderId: order.id,
+              status: 'OUT_FOR_DELIVERY',
+              location: 'Local Delivery Hub',
+              description: instructions || mapped.description || 'Package out for delivery with Delhivery rider',
+            },
+          });
+        }
+
+        results.push({
+          orderNumber: order.orderNumber,
+          waybill: order.trackingNumber || waybill,
+          action: 'OUT_FOR_DELIVERY',
+          message: `Order #${order.orderNumber} updated to OUT_FOR_DELIVERY`,
+        });
+        continue;
+      }
+
+      // 4. In Transit / Picked Up
+      if (mapped.orderStatus === 'SHIPPED') {
+        const allowedPreviousStatuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'PACKED'];
+        if (allowedPreviousStatuses.includes(order.orderStatus)) {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              orderStatus: 'SHIPPED',
+              pickupStatus: 'PICKED',
+            },
+          });
+
+          await prisma.shipmentEvent.create({
+            data: {
+              orderId: order.id,
+              status: 'SHIPPED',
+              location: 'Delhivery Transit Center',
+              description: instructions || mapped.description || 'Package picked up by Delhivery and in transit',
+            },
+          });
+        }
+
+        results.push({
+          orderNumber: order.orderNumber,
+          waybill: order.trackingNumber || waybill,
+          action: 'SHIPPED',
+          message: `Order #${order.orderNumber} updated to SHIPPED`,
+        });
+        continue;
+      }
+
+      // 5. Pickup Scheduled ("Add to Pickup" in Delhivery One)
+      if (mapped.pickupStatus === 'SCHEDULED') {
+        if (order.pickupStatus !== 'SCHEDULED' && order.pickupStatus !== 'PICKED') {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              pickupStatus: 'SCHEDULED',
+            },
+          });
+
+          await prisma.shipmentEvent.create({
+            data: {
+              orderId: order.id,
+              status: 'PROCESSING',
+              location: 'Warehouse',
+              description: 'Pickup scheduled in Delhivery One',
+            },
+          });
+        }
+
+        results.push({
+          orderNumber: order.orderNumber,
+          waybill: order.trackingNumber || waybill,
+          action: 'PICKUP_SCHEDULED',
+          message: `Order #${order.orderNumber} pickup status updated to SCHEDULED`,
+        });
+        continue;
+      }
+
+      // Unhandled or informational scan
       results.push({
-        orderNumber: order.orderNumber,
-        waybill: order.trackingNumber || waybill,
-        action: 'CANCELLED_IN_ADMIN',
-        message: cancelResult.message,
+        waybill,
+        orderNumber,
+        action: 'PROCESSED_INFORMATIONAL',
+        message: `Status "${status}" recorded without lifecycle state transition`,
       });
     }
 

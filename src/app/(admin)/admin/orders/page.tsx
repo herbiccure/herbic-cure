@@ -130,7 +130,6 @@ export default function AdminOrdersPage() {
   const [eventDesc, setEventDesc] = useState('');
   const [saving, setSaving] = useState(false);
   const [syncingDelhivery, setSyncingDelhivery] = useState(false);
-  const [requestingPickup, setRequestingPickup] = useState(false);
   const [manifestingDelhivery, setManifestingDelhivery] = useState(false);
 
   const openModal = (o: OrderItem) => {
@@ -171,35 +170,6 @@ export default function AdminOrdersPage() {
       toast.error(err.message || 'Error manifesting with Delhivery');
     } finally {
       setManifestingDelhivery(false);
-    }
-  };
-
-  const handleRequestPickup = async (force: boolean = false) => {
-    if (!selectedOrder?.id) return;
-    setRequestingPickup(true);
-    try {
-      const res = await fetch(`/api/admin/orders/${selectedOrder.id}/request-pickup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ force }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to schedule pickup');
-
-      toast.success(data.message || `Pickup scheduled successfully! Request ID: ${data.pickupId}`);
-      if (data.order) {
-        setSelectedOrder(data.order);
-        mutate(
-          {
-            orders: orders.map((o) => (o.id === data.order.id ? { ...o, ...data.order } : o)),
-          },
-          false
-        );
-      }
-    } catch (err: any) {
-      toast.error(err.message || 'Error requesting pickup');
-    } finally {
-      setRequestingPickup(false);
     }
   };
 
@@ -703,7 +673,7 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
             ) : (
-              /* Delhivery Manifested & First-Mile Pickup Scheduling */
+              /* Delhivery Manifested & Logistics Card */
               <div
                 className={cn(
                   'p-5 rounded-2xl border space-y-3.5 text-xs transition-colors',
@@ -711,126 +681,93 @@ export default function AdminOrdersPage() {
                 )}
               >
                 <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <Truck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-600/10 dark:bg-indigo-400/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                      <Truck className="w-4 h-4" />
+                    </div>
                     <div>
                       <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
-                        Delhivery Shipment &amp; Pickup
+                        Delhivery Express Shipment
                       </h4>
                       {selectedOrder.trackingNumber && (
                         <p className={cn('text-[11px] font-mono mt-0.5', isLight ? 'text-slate-600' : 'text-slate-300')}>
                           AWB: <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{selectedOrder.trackingNumber}</strong>
-                          {selectedOrder.trackingUrl && (
-                            <a
-                              href={selectedOrder.trackingUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="ml-2 inline-flex items-center gap-0.5 text-rose-600 hover:underline"
-                            >
-                              <span>Track on Delhivery</span>
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
                         </p>
                       )}
                     </div>
                   </div>
-                  <span
-                    className={cn(
-                      'px-2.5 py-1 rounded-full text-[11px] font-bold border',
-                      selectedOrder.pickupStatus === 'SCHEDULED'
-                        ? isLight
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                          : 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                        : selectedOrder.pickupStatus === 'FAILED'
-                        ? isLight
-                          ? 'bg-rose-100 text-rose-800 border-rose-300'
-                          : 'bg-rose-950 text-rose-300 border-rose-800'
-                        : isLight
-                        ? 'bg-slate-100 text-slate-700 border-slate-300'
-                        : 'bg-slate-800 text-slate-300 border-slate-700'
-                    )}
-                  >
-                    Pickup Status: {selectedOrder.pickupStatus || 'NONE'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
-                  <div>
-                    <span className={cn('block font-semibold', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                      Pickup Request ID:
-                    </span>
-                    <span className="font-mono font-bold">
-                      {selectedOrder.pickupRequestId || 'None'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className={cn('block font-semibold', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                      Pickup Date:
-                    </span>
-                    <span className="font-medium">
-                      {selectedOrder.pickupDate
-                        ? new Date(selectedOrder.pickupDate).toLocaleDateString('en-IN', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })
-                        : 'Not scheduled'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className={cn('block font-semibold', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                      Slot / Attempts:
-                    </span>
-                    <span className="font-medium">
-                      {selectedOrder.pickupTime || '14:00:00'} ({selectedOrder.pickupAttempts || 0} attempts)
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        'px-2.5 py-1 rounded-full text-[11px] font-bold border',
+                        selectedOrder.orderStatus === 'DELIVERED'
+                          ? isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                          : selectedOrder.orderStatus === 'SHIPPED' || selectedOrder.orderStatus === 'OUT_FOR_DELIVERY'
+                          ? isLight ? 'bg-blue-100 text-blue-800 border-blue-300' : 'bg-blue-950 text-blue-300 border-blue-800'
+                          : selectedOrder.pickupStatus === 'SCHEDULED'
+                          ? isLight ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-amber-950 text-amber-300 border-amber-800'
+                          : isLight ? 'bg-indigo-100 text-indigo-800 border-indigo-300' : 'bg-indigo-950 text-indigo-300 border-indigo-800'
+                      )}
+                    >
+                      Status: {selectedOrder.orderStatus} {selectedOrder.pickupStatus === 'SCHEDULED' ? '• Pickup Scheduled' : ''}
                     </span>
                   </div>
                 </div>
 
-                {/* Display Rejection / Error Reason for Staff Visibility */}
-                {selectedOrder.pickupError && (
-                  <div
-                    className={cn(
-                      'p-3 rounded-xl border text-[11px] flex items-start gap-2 animate-fadeIn',
-                      isLight
-                        ? 'bg-rose-50 border-rose-200 text-rose-900'
-                        : 'bg-rose-950/60 border-rose-800 text-rose-200'
-                    )}
-                  >
-                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                    <div className="space-y-0.5">
-                      <p className="font-bold">Delhivery Pickup Error Reason:</p>
-                      <p className="leading-relaxed opacity-95">{selectedOrder.pickupError}</p>
-                    </div>
-                  </div>
-                )}
+                <div
+                  className={cn(
+                    'p-3.5 rounded-xl border text-xs space-y-1.5',
+                    isLight ? 'bg-white/80 border-indigo-100 text-slate-700' : 'bg-slate-900/80 border-slate-800 text-slate-300'
+                  )}
+                >
+                  <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>Courier operations handled in Delhivery One</span>
+                  </p>
+                  <p className="text-[11px] leading-relaxed opacity-90">
+                    Label printing, parcel packaging, and rider pickups (&quot;Add to Pickup&quot;) are managed directly in your <strong>Delhivery One</strong> portal. Real-time carrier scans (Pickup, In Transit, Out for Delivery, Delivered) automatically sync here and update customer tracking.
+                  </p>
+                </div>
 
                 <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">
-                  <p className={cn('text-[11px]', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                    Dispatches First-Mile pickup manifest (/fm/request/new/) for location &apos;Herbic Cure&apos;.
-                  </p>
+                  <div className="flex items-center gap-2">
+                    {selectedOrder.trackingUrl && (
+                      <a
+                        href={selectedOrder.trackingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs"
+                      >
+                        <span>Public Tracking Link</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                    <a
+                      href="https://one.delhivery.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs"
+                    >
+                      <span>Open Delhivery One Portal</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+
                   <button
                     type="button"
-                    disabled={requestingPickup || !selectedOrder.trackingNumber || selectedOrder.orderStatus === 'CANCELLED'}
-                    onClick={() => handleRequestPickup(Boolean(selectedOrder.pickupStatus === 'SCHEDULED'))}
-                    className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
-                    title={!selectedOrder.trackingNumber ? 'Manifest shipment first to generate an AWB' : undefined}
+                    onClick={handleSyncDelhivery}
+                    disabled={syncingDelhivery}
+                    className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                    title="Pull live status from Delhivery network and synchronize order state"
                   >
-                    <Truck className={cn('w-3.5 h-3.5', requestingPickup && 'animate-spin')} />
-                    <span>
-                      {requestingPickup
-                        ? 'Requesting Pickup...'
-                        : selectedOrder.pickupStatus === 'SCHEDULED'
-                        ? 'Reschedule Pickup'
-                        : 'Request Delhivery Pickup'}
-                    </span>
+                    <RefreshCw className={cn('w-3.5 h-3.5', syncingDelhivery && 'animate-spin')} />
+                    <span>{syncingDelhivery ? 'Syncing...' : 'Sync Live Status'}</span>
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Status & Courier Update Form */}
+            {/* Manual Order Override Form */}
             <form
               onSubmit={handleUpdateOrder}
               className={cn(
@@ -840,23 +777,11 @@ export default function AdminOrdersPage() {
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-rose-600" />
+                  <Edit className="w-4 h-4 text-slate-500" />
                   <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
-                    Update Order &amp; Tracking Info
+                    Manual Override &amp; Notes
                   </h4>
                 </div>
-                {selectedOrder.trackingNumber && (
-                  <button
-                    type="button"
-                    onClick={handleSyncDelhivery}
-                    disabled={syncingDelhivery}
-                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
-                    title="Check live status from Delhivery (automatically cancels order in admin if cancelled in Delhivery)"
-                  >
-                    <RefreshCw className={cn('w-3.5 h-3.5', syncingDelhivery && 'animate-spin')} />
-                    <span>{syncingDelhivery ? 'Checking Delhivery...' : 'Sync Delhivery Status'}</span>
-                  </button>
-                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
