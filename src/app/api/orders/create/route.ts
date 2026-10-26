@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { checkoutSchema } from '@/lib/validations';
 import { enforceRateLimit } from '@/lib/rateLimit';
-import { createDelhiveryShipment } from '@/lib/shipping/delhivery';
 import { createRazorpayOrder } from '@/lib/payment/razorpay';
 import { logger } from '@/lib/logger';
 
@@ -179,7 +178,7 @@ export async function POST(req: NextRequest) {
             },
           });
           matchedCustomerId = newCustomer.id;
-        } catch (custErr) {
+        } catch {
           // Fallback: customer record creation non-fatal
         }
       }
@@ -239,47 +238,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6.1 Dispatch / Manifest shipment via Delhivery Logistics ONLY for COD orders
-    // For prepaid orders, Delhivery shipment is manifested upon payment verification
-    let delhiveryAwb = '';
-    let delhiveryTrackingUrl = '';
-
-    if (!isOnlinePayment) {
-      try {
-        const delhiveryRes = await createDelhiveryShipment({
-          orderNumber,
-          customerName: name,
-          customerPhone: phone,
-          customerEmail: authoritativeEmail,
-          customerAddress: address,
-          city,
-          state,
-          pincode,
-          totalAmount: calculatedFinalTotal,
-          shippingFee: calculatedShippingFee,
-          paymentMethod: 'COD',
-          items: verifiedOrderItems.map((item) => ({
-            name: item.productName,
-            sku: item.productId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-        });
-
-        if (delhiveryRes?.waybill) {
-          delhiveryAwb = delhiveryRes.waybill;
-          delhiveryTrackingUrl =
-            delhiveryRes.trackingUrl || `https://www.delhivery.com/track/package/${delhiveryAwb}`;
-        }
-      } catch (delhiveryErr: any) {
-        logger.warn('shipping.delhivery.initiation_fallback', { orderNumber, error: delhiveryErr?.message });
-      }
-
-      if (!delhiveryAwb) {
-        delhiveryAwb = `DLH${Date.now().toString().slice(-8)}${Math.floor(100 + Math.random() * 900)}`;
-        delhiveryTrackingUrl = `https://www.delhivery.com/track/package/${delhiveryAwb}`;
-      }
-    }
+    // 6.1 Order starts in 'Pending AWB' status (unmanifested).
+    // To protect against fake orders and prevent premature Delhivery wallet deductions,
+    // shipments are NOT auto-manifested on checkout. The store admin verifies and accepts
+    // the order in the Admin Dashboard, which then manifests with Delhivery and generates the AWB.
+    const delhiveryAwb: string | null = null;
+    const delhiveryTrackingUrl: string | null = null;
 
     // 7. Atomic Database Transaction: Order Creation + Stock Decrement + Coupon Usage
     // COD orders start as CONFIRMED.

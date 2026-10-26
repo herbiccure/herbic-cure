@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyRazorpayWebhookSignature } from '@/lib/payment/razorpay';
-import { createDelhiveryShipment } from '@/lib/shipping/delhivery';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -82,50 +81,8 @@ export async function POST(req: NextRequest) {
         },
       }).catch(() => {});
 
-      // Dispatch Delhivery shipment if not manifested
-      if (!dbOrder.trackingNumber || dbOrder.trackingNumber.startsWith('DLH')) {
-        try {
-          let parsedAddress: any = {};
-          try {
-            parsedAddress = JSON.parse(dbOrder.shippingAddress || '{}');
-          } catch {}
-
-          const delhiveryRes = await createDelhiveryShipment({
-            orderNumber: dbOrder.orderNumber,
-            customerName: dbOrder.customerName,
-            customerPhone: dbOrder.customerPhone,
-            customerEmail: dbOrder.customerEmail,
-            customerAddress: parsedAddress.address || dbOrder.shippingAddress,
-            city: parsedAddress.city || '',
-            state: parsedAddress.state || '',
-            pincode: parsedAddress.pincode || '',
-            totalAmount: dbOrder.total,
-            shippingFee: dbOrder.shippingFee,
-            paymentMethod: 'Prepaid',
-            items: dbOrder.items.map((it) => ({
-              name: it.productName,
-              sku: it.productId || it.productName,
-              quantity: it.quantity,
-              price: it.price,
-            })),
-          });
-
-          if (delhiveryRes?.waybill) {
-            await prisma.order.update({
-              where: { id: dbOrder.id },
-              data: {
-                trackingNumber: delhiveryRes.waybill,
-                trackingUrl:
-                  delhiveryRes.trackingUrl ||
-                  `https://www.delhivery.com/track/package/${delhiveryRes.waybill}`,
-                carrier: 'Delhivery',
-              },
-            });
-          }
-        } catch (shipErr: any) {
-          logger.warn('shipping.dispatch.post_webhook_warning', { orderId: orderNumber, error: shipErr?.message });
-        }
-      }
+      // Order remains in 'Pending AWB' status until admin verification & acceptance.
+      // Charges are NOT deducted from Delhivery until the admin clicks 'Accept & Generate AWB'.
     } else if (event === 'payment.failed') {
       await prisma.order.updateMany({
         where: { orderNumber },

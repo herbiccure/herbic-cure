@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyRazorpayPaymentSignature } from '@/lib/payment/razorpay';
-import { createDelhiveryShipment } from '@/lib/shipping/delhivery';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
 
@@ -74,50 +73,8 @@ export async function POST(req: NextRequest) {
       },
     }).catch(() => { });
 
-    // 5. Manifest shipment with Delhivery if not yet manifested
-    if (!order.trackingNumber || order.trackingNumber.startsWith('DLH')) {
-      try {
-        let parsedAddress: any = {};
-        try {
-          parsedAddress = JSON.parse(order.shippingAddress || '{}');
-        } catch { }
-
-        const delhiveryRes = await createDelhiveryShipment({
-          orderNumber: order.orderNumber,
-          customerName: order.customerName,
-          customerPhone: order.customerPhone,
-          customerEmail: order.customerEmail,
-          customerAddress: parsedAddress.address || order.shippingAddress,
-          city: parsedAddress.city || '',
-          state: parsedAddress.state || '',
-          pincode: parsedAddress.pincode || '',
-          totalAmount: order.total,
-          shippingFee: order.shippingFee,
-          paymentMethod: 'Prepaid',
-          items: order.items.map((it) => ({
-            name: it.productName,
-            sku: it.productId || it.productName,
-            quantity: it.quantity,
-            price: it.price,
-          })),
-        });
-
-        if (delhiveryRes?.waybill) {
-          await prisma.order.update({
-            where: { id: order.id },
-            data: {
-              trackingNumber: delhiveryRes.waybill,
-              trackingUrl:
-                delhiveryRes.trackingUrl ||
-                `https://www.delhivery.com/track/package/${delhiveryRes.waybill}`,
-              carrier: 'Delhivery',
-            },
-          });
-        }
-      } catch (shipErr: any) {
-        logger.warn('shipping.dispatch.post_payment_warning', { orderId: order.orderNumber, error: shipErr?.message });
-      }
-    }
+    // 5. Order remains in 'Pending AWB' status until admin verification & acceptance.
+    // Charges are NOT deducted from Delhivery until the admin clicks 'Accept & Generate AWB'.
 
     logger.info('payment.verified', {
       orderId: order.orderNumber,

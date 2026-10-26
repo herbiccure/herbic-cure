@@ -13,6 +13,10 @@ import {
   ExternalLink,
   AlertTriangle,
   RefreshCw,
+  ShieldCheck,
+  CheckCircle2,
+  Phone,
+  MessageCircle,
 } from 'lucide-react';
 import { fetcher } from '@/lib/fetcher';
 import { AdminDataTable, Column } from '@/components/admin/AdminDataTable';
@@ -35,6 +39,7 @@ interface OrderItem {
   paymentStatus: string;
   orderStatus: string;
   trackingNumber?: string | null;
+  trackingUrl?: string | null;
   carrier?: string | null;
   pickupStatus?: string | null;
   pickupRequestId?: string | null;
@@ -126,6 +131,7 @@ export default function AdminOrdersPage() {
   const [saving, setSaving] = useState(false);
   const [syncingDelhivery, setSyncingDelhivery] = useState(false);
   const [requestingPickup, setRequestingPickup] = useState(false);
+  const [manifestingDelhivery, setManifestingDelhivery] = useState(false);
 
   const openModal = (o: OrderItem) => {
     setSelectedOrder(o);
@@ -133,6 +139,39 @@ export default function AdminOrdersPage() {
     setNewTracking(o.trackingNumber || '');
     setNewCarrier(o.carrier || 'Delhivery');
     setEventDesc('');
+  };
+
+  const handleManifestDelhivery = async (force: boolean = false) => {
+    if (!selectedOrder?.id) return;
+    setManifestingDelhivery(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${selectedOrder.id}/manifest-delhivery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to manifest order with Delhivery');
+
+      toast.success(data.message || `Delhivery AWB generated: ${data.waybill}`);
+
+      if (data.order) {
+        setSelectedOrder(data.order);
+        setNewTracking(data.order.trackingNumber || '');
+        setNewCarrier(data.order.carrier || 'Delhivery');
+        setNewStatus(data.order.orderStatus);
+        mutate(
+          {
+            orders: orders.map((o) => (o.id === data.order.id ? { ...o, ...data.order } : o)),
+          },
+          false
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error manifesting with Delhivery');
+    } finally {
+      setManifestingDelhivery(false);
+    }
   };
 
   const handleRequestPickup = async (force: boolean = false) => {
@@ -347,9 +386,22 @@ export default function AdminOrdersPage() {
       header: 'AWB / Pickup',
       cell: (o) => (
         <div className="space-y-1">
-          <span className={cn('font-mono text-[11px] block', isLight ? 'text-slate-700' : 'text-slate-300')}>
-            {o.trackingNumber || 'Pending AWB'}
-          </span>
+          {o.trackingNumber ? (
+            <span className={cn('font-mono text-[11px] block font-bold', isLight ? 'text-slate-900' : 'text-slate-100')}>
+              {o.trackingNumber}
+            </span>
+          ) : (
+            <span
+              className={cn(
+                'inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border',
+                o.orderStatus === 'CANCELLED'
+                  ? isLight ? 'bg-slate-100 text-slate-500 border-slate-200' : 'bg-slate-800 text-slate-400 border-slate-700'
+                  : isLight ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-950/80 text-amber-300 border-amber-800'
+              )}
+            >
+              Pending AWB
+            </span>
+          )}
           <span
             className={cn(
               'inline-block px-2 py-0.5 rounded text-[10px] font-semibold border',
@@ -416,10 +468,15 @@ export default function AdminOrdersPage() {
           o.customerEmail.toLowerCase().includes(q) ||
           (o.trackingNumber ? o.trackingNumber.toLowerCase().includes(q) : false)
         }
-        statusTabs={['ALL', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']}
+        statusTabs={['ALL', 'PENDING_AWB', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']}
         activeStatus={activeStatus}
         onStatusChange={setActiveStatus}
-        statusFilter={(o, st) => o.orderStatus === st}
+        statusFilter={(o, st) => {
+          if (st === 'PENDING_AWB') {
+            return !o.trackingNumber && o.orderStatus !== 'CANCELLED';
+          }
+          return o.orderStatus === st;
+        }}
         emptyMessage="No customer orders recorded yet."
       />
 
@@ -559,113 +616,219 @@ export default function AdminOrdersPage() {
               </div>
             </div>
 
-            {/* Delhivery First-Mile Pickup Scheduling */}
-            <div
-              className={cn(
-                'p-5 rounded-2xl border space-y-3.5 text-xs transition-colors',
-                isLight ? 'bg-indigo-50/60 border-indigo-200' : 'bg-indigo-950/20 border-indigo-900/50'
-              )}
-            >
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
-                    Delhivery Pickup Management
-                  </h4>
+            {/* Delhivery Order Verification & AWB Generation */}
+            {!selectedOrder.trackingNumber && selectedOrder.orderStatus !== 'CANCELLED' ? (
+              <div
+                className={cn(
+                  'p-5 rounded-2xl border space-y-4 text-xs transition-colors',
+                  isLight ? 'bg-amber-50/70 border-amber-200' : 'bg-amber-950/20 border-amber-900/50'
+                )}
+              >
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                    <div>
+                      <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
+                        Order Verification (Pending AWB)
+                      </h4>
+                      <p className={cn('text-[11px]', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                        Delhivery Charges: <strong className="text-emerald-600 dark:text-emerald-400">₹0 Deducted</strong> (Order is not manifested yet)
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={cn(
+                      'px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider',
+                      isLight ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-950 text-amber-300 border-amber-800'
+                    )}
+                  >
+                    Awaiting Verification
+                  </span>
                 </div>
-                <span
-                  className={cn(
-                    'px-2.5 py-1 rounded-full text-[11px] font-bold border',
-                    selectedOrder.pickupStatus === 'SCHEDULED'
-                      ? isLight
-                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                        : 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                      : selectedOrder.pickupStatus === 'FAILED'
-                      ? isLight
-                        ? 'bg-rose-100 text-rose-800 border-rose-300'
-                        : 'bg-rose-950 text-rose-300 border-rose-800'
-                      : isLight
-                      ? 'bg-slate-100 text-slate-700 border-slate-300'
-                      : 'bg-slate-800 text-slate-300 border-slate-700'
-                  )}
-                >
-                  Pickup Status: {selectedOrder.pickupStatus || 'NONE'}
-                </span>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
-                <div>
-                  <span className={cn('block font-semibold', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                    Pickup Request ID:
-                  </span>
-                  <span className="font-mono font-bold">
-                    {selectedOrder.pickupRequestId || 'None'}
-                  </span>
+                <div className={cn('p-3 rounded-xl border text-[11px] leading-relaxed', isLight ? 'bg-white border-amber-200/80 text-slate-700' : 'bg-slate-900/80 border-amber-900/40 text-slate-300')}>
+                  Verify customer phone and delivery address before accepting. Delhivery wallet balance will <strong>ONLY</strong> be deducted after you click <strong>&quot;Accept &amp; Generate AWB&quot;</strong>. If this is a fake order, reject it with zero charges.
                 </div>
-                <div>
-                  <span className={cn('block font-semibold', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                    Pickup Date:
-                  </span>
-                  <span className="font-medium">
-                    {selectedOrder.pickupDate
-                      ? new Date(selectedOrder.pickupDate).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })
-                      : 'Not scheduled'}
-                  </span>
+
+                {/* Direct Customer Contact Buttons */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <a
+                    href={`tel:${selectedOrder.customerPhone}`}
+                    className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-xs inline-flex items-center gap-1.5 transition-colors text-slate-800 dark:text-slate-200 shadow-2xs"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Call Customer ({selectedOrder.customerPhone})</span>
+                  </a>
+                  <a
+                    href={`https://wa.me/91${selectedOrder.customerPhone.replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(
+                      `Hello ${selectedOrder.customerName}, this is Herbic Cure confirming your order #${selectedOrder.orderNumber} for ₹${selectedOrder.total}. Is your address confirmed for delivery?`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-300 dark:border-emerald-700 font-bold text-xs inline-flex items-center gap-1.5 transition-colors text-emerald-800 dark:text-emerald-300 shadow-2xs"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>WhatsApp Verification</span>
+                  </a>
                 </div>
-                <div>
-                  <span className={cn('block font-semibold', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                    Slot / Attempts:
-                  </span>
-                  <span className="font-medium">
-                    {selectedOrder.pickupTime || '14:00:00'} ({selectedOrder.pickupAttempts || 0} attempts)
-                  </span>
+
+                {/* Accept vs Reject Actions */}
+                <div className="flex items-center justify-between gap-3 pt-2 border-t border-amber-200/80 dark:border-amber-800/40 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewStatus('CANCELLED');
+                      setEventDesc('Order rejected during verification (fake / unverified order)');
+                      toast.info('Status set to CANCELLED. Click "Save Changes" below to finalize rejection with zero Delhivery charges.');
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Mark as Fake / Reject (₹0 Charged)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={manifestingDelhivery}
+                    onClick={() => handleManifestDelhivery(false)}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                  >
+                    <CheckCircle2 className={cn('w-4 h-4', manifestingDelhivery && 'animate-spin')} />
+                    <span>
+                      {manifestingDelhivery
+                        ? 'Manifesting with Delhivery...'
+                        : 'Accept Order & Generate Delhivery AWB'}
+                    </span>
+                  </button>
                 </div>
               </div>
+            ) : (
+              /* Delhivery Manifested & First-Mile Pickup Scheduling */
+              <div
+                className={cn(
+                  'p-5 rounded-2xl border space-y-3.5 text-xs transition-colors',
+                  isLight ? 'bg-indigo-50/60 border-indigo-200' : 'bg-indigo-950/20 border-indigo-900/50'
+                )}
+              >
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <div>
+                      <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
+                        Delhivery Shipment &amp; Pickup
+                      </h4>
+                      {selectedOrder.trackingNumber && (
+                        <p className={cn('text-[11px] font-mono mt-0.5', isLight ? 'text-slate-600' : 'text-slate-300')}>
+                          AWB: <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{selectedOrder.trackingNumber}</strong>
+                          {selectedOrder.trackingUrl && (
+                            <a
+                              href={selectedOrder.trackingUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-2 inline-flex items-center gap-0.5 text-rose-600 hover:underline"
+                            >
+                              <span>Track on Delhivery</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <span
+                    className={cn(
+                      'px-2.5 py-1 rounded-full text-[11px] font-bold border',
+                      selectedOrder.pickupStatus === 'SCHEDULED'
+                        ? isLight
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                          : 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                        : selectedOrder.pickupStatus === 'FAILED'
+                        ? isLight
+                          ? 'bg-rose-100 text-rose-800 border-rose-300'
+                          : 'bg-rose-950 text-rose-300 border-rose-800'
+                        : isLight
+                        ? 'bg-slate-100 text-slate-700 border-slate-300'
+                        : 'bg-slate-800 text-slate-300 border-slate-700'
+                    )}
+                  >
+                    Pickup Status: {selectedOrder.pickupStatus || 'NONE'}
+                  </span>
+                </div>
 
-              {/* Display Rejection / Error Reason for Staff Visibility */}
-              {selectedOrder.pickupError && (
-                <div
-                  className={cn(
-                    'p-3 rounded-xl border text-[11px] flex items-start gap-2 animate-fadeIn',
-                    isLight
-                      ? 'bg-rose-50 border-rose-200 text-rose-900'
-                      : 'bg-rose-950/60 border-rose-800 text-rose-200'
-                  )}
-                >
-                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                  <div className="space-y-0.5">
-                    <p className="font-bold">Delhivery Pickup Error Reason:</p>
-                    <p className="leading-relaxed opacity-95">{selectedOrder.pickupError}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
+                  <div>
+                    <span className={cn('block font-semibold', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                      Pickup Request ID:
+                    </span>
+                    <span className="font-mono font-bold">
+                      {selectedOrder.pickupRequestId || 'None'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className={cn('block font-semibold', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                      Pickup Date:
+                    </span>
+                    <span className="font-medium">
+                      {selectedOrder.pickupDate
+                        ? new Date(selectedOrder.pickupDate).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : 'Not scheduled'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className={cn('block font-semibold', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                      Slot / Attempts:
+                    </span>
+                    <span className="font-medium">
+                      {selectedOrder.pickupTime || '14:00:00'} ({selectedOrder.pickupAttempts || 0} attempts)
+                    </span>
                   </div>
                 </div>
-              )}
 
-              <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">
-                <p className={cn('text-[11px]', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                  Dispatches First-Mile pickup manifest (/fm/request/new/) for location &apos;Herbic Cure&apos;.
-                </p>
-                <button
-                  type="button"
-                  disabled={requestingPickup || !selectedOrder.trackingNumber || selectedOrder.orderStatus === 'CANCELLED'}
-                  onClick={() => handleRequestPickup(Boolean(selectedOrder.pickupStatus === 'SCHEDULED'))}
-                  className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
-                  title={!selectedOrder.trackingNumber ? 'Manifest shipment first to generate an AWB' : undefined}
-                >
-                  <Truck className={cn('w-3.5 h-3.5', requestingPickup && 'animate-spin')} />
-                  <span>
-                    {requestingPickup
-                      ? 'Requesting Pickup...'
-                      : selectedOrder.pickupStatus === 'SCHEDULED'
-                      ? 'Reschedule Pickup'
-                      : 'Request Delhivery Pickup'}
-                  </span>
-                </button>
+                {/* Display Rejection / Error Reason for Staff Visibility */}
+                {selectedOrder.pickupError && (
+                  <div
+                    className={cn(
+                      'p-3 rounded-xl border text-[11px] flex items-start gap-2 animate-fadeIn',
+                      isLight
+                        ? 'bg-rose-50 border-rose-200 text-rose-900'
+                        : 'bg-rose-950/60 border-rose-800 text-rose-200'
+                    )}
+                  >
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <p className="font-bold">Delhivery Pickup Error Reason:</p>
+                      <p className="leading-relaxed opacity-95">{selectedOrder.pickupError}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">
+                  <p className={cn('text-[11px]', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                    Dispatches First-Mile pickup manifest (/fm/request/new/) for location &apos;Herbic Cure&apos;.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={requestingPickup || !selectedOrder.trackingNumber || selectedOrder.orderStatus === 'CANCELLED'}
+                    onClick={() => handleRequestPickup(Boolean(selectedOrder.pickupStatus === 'SCHEDULED'))}
+                    className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                    title={!selectedOrder.trackingNumber ? 'Manifest shipment first to generate an AWB' : undefined}
+                  >
+                    <Truck className={cn('w-3.5 h-3.5', requestingPickup && 'animate-spin')} />
+                    <span>
+                      {requestingPickup
+                        ? 'Requesting Pickup...'
+                        : selectedOrder.pickupStatus === 'SCHEDULED'
+                        ? 'Reschedule Pickup'
+                        : 'Request Delhivery Pickup'}
+                    </span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Status & Courier Update Form */}
             <form
