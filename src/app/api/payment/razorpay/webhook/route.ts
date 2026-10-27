@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyRazorpayWebhookSignature } from '@/lib/payment/razorpay';
+import { sendOrderToDelhiveryPending } from '@/lib/shipping/delhiveryPending';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -97,7 +98,13 @@ export async function POST(req: NextRequest) {
         },
       }).catch(() => {});
 
-      // Order remains in store pending queue (unmanifested, ₹0 charged until staff manifest)
+      // Stage order into Delhivery One Pending queue (or manifest if auto_manifest enabled)
+      sendOrderToDelhiveryPending(dbOrder.id).catch((err: any) => {
+        logger.warn('shipping.delhivery_pending.webhook_dispatch_failed', {
+          orderId: dbOrder.id,
+          error: err?.message,
+        });
+      });
     } else if (event === 'payment.failed') {
       await prisma.order.updateMany({
         where: { orderNumber },

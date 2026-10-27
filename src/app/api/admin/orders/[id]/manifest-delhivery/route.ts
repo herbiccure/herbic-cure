@@ -45,6 +45,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
+    const { getEffectiveShippingMode } = await import('@/lib/shipping/delhiveryPending');
+    const effectiveMode = await getEffectiveShippingMode();
+    if (effectiveMode === 'delhivery_pending') {
+      return NextResponse.json(
+        {
+          error:
+            'Direct manifestation from store code is disabled in "delhivery_pending" mode. Please verify the order and click "Get AWB number" directly inside Delhivery One (Orders > Forward Orders > Pending).',
+        },
+        { status: 400 }
+      );
+    }
+
     let body: any = {};
     try {
       body = await request.json();

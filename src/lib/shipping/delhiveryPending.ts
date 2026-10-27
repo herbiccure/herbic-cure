@@ -11,21 +11,22 @@ import { logger } from '@/lib/logger';
 export type EffectiveShippingMode = 'delhivery_pending' | 'auto_manifest';
 
 /**
- * Retrieves the effective logistics shipping mode from store settings.
- * Defaults to 'delhivery_pending'.
+ * Retrieves the effective logistics shipping mode from store settings or environment.
+ * Default is 'auto_manifest' so existing live store behavior remains untouched
+ * until the merchant explicitly switches SHIPPING_MODE to 'delhivery_pending'.
  */
 export async function getEffectiveShippingMode(): Promise<EffectiveShippingMode> {
   try {
     const setting = await prisma.siteSetting.findUnique({
       where: { key: 'shipping_mode' },
     });
-    if (setting?.value === 'auto_manifest') {
-      return 'auto_manifest';
+    if (setting?.value === 'delhivery_pending' || process.env.SHIPPING_MODE === 'delhivery_pending') {
+      return 'delhivery_pending';
     }
-    return 'delhivery_pending';
+    return 'auto_manifest';
   } catch (err: any) {
     logger.warn('shipping.mode.read_failed', { error: err?.message });
-    return 'delhivery_pending';
+    return 'auto_manifest';
   }
 }
 
@@ -93,97 +94,162 @@ export async function sendOrderToDelhiveryPending(
     };
   }
 
-  // Determine effective fulfillment mode
-  const shippingMode = await getEffectiveShippingMode();
+  // Atomic concurrency guard: prevent duplicate concurrent calls from staging or manifesting twice
+  // (e.g. razorpay verify and webhook running simultaneously)
+  const claim = await prisma.order.updateMany({
+    where: {
+      id: order.id,
+      trackingNumber: null,
+      delhiverySyncStatus: { not: 'IN_PROGRESS' },
+    },
+    data: {
+      delhiverySyncStatus: 'IN_PROGRESS',
+      lastDelhiverySyncAt: new Date(),
+    } as any,
+  });
 
-  // Parse destination address
-  let destAddress = order.shippingAddress;
-  let city = '';
-  let state = '';
-  let pincode = '';
-
-  try {
-    const trimmed = (order.shippingAddress || '').trim();
-    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-      const parsed = JSON.parse(trimmed);
-      destAddress = parsed.address || parsed.addressLine1 || order.shippingAddress;
-      if (parsed.addressLine2) destAddress = `${destAddress}, ${parsed.addressLine2}`;
-      city = parsed.city || '';
-      state = parsed.state || '';
-      pincode = (parsed.pinCode || parsed.pincode || '').replace(/\D/g, '');
-    }
-  } catch {
-    // Keep fallback
+  if (claim.count === 0) {
+    logger.info('shipping.delhivery.sync_already_in_progress', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+    });
+    return {
+      success: true,
+      status: 'SKIPPED',
+      message: 'Order Delhivery sync is already in progress or completed.',
+    };
   }
 
-  const isCod = order.paymentMethod === 'COD';
-  const orderAdv = Number((order as any).advanceAmount ?? 0);
-  const effectiveCodBalance = Number(
-    (order as any).codBalanceAmount ?? (order.total - orderAdv)
-  );
+  try {
+    // Determine effective fulfillment mode
+    const shippingMode = await getEffectiveShippingMode();
 
-  const shipmentPayload: DelhiveryShipmentOrder = {
-    orderNumber: order.orderNumber,
-    customerName: order.customerName,
-    customerPhone: order.customerPhone,
-    customerEmail: order.customerEmail,
-    customerAddress: destAddress,
-    city,
-    state,
-    pincode,
-    totalAmount: order.total,
-    shippingFee: order.shippingFee,
-    codBalanceAmount: isCod ? effectiveCodBalance : 0,
-    paymentMethod: isCod ? 'COD' : 'Prepaid',
-    items: order.items.map((it) => ({
-      name: it.productName,
-      productName: it.productName,
-      sku: it.productId || it.productName,
-      quantity: it.quantity,
-      price: it.price,
-    })),
-  };
+    // Parse destination address
+    let destAddress = order.shippingAddress;
+    let city = '';
+    let state = '';
+    let pincode = '';
 
-  // Branch based on configured shipping mode
-  if (shippingMode === 'auto_manifest') {
-    // Atomic concurrency guard: prevent duplicate concurrent calls from manifesting twice
-    const claim = await prisma.order.updateMany({
-      where: {
-        id: order.id,
-        trackingNumber: null,
-        delhiverySyncStatus: { not: 'IN_PROGRESS' },
-      },
-      data: {
-        delhiverySyncStatus: 'IN_PROGRESS',
-        lastDelhiverySyncAt: new Date(),
-      } as any,
-    });
-
-    if (claim.count === 0) {
-      logger.info('shipping.delhivery.manifest_already_in_progress', {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-      });
-      return {
-        success: true,
-        status: 'SKIPPED',
-        message: 'Order manifestation is already in progress or already completed.',
-      };
+    try {
+      const trimmed = (order.shippingAddress || '').trim();
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        const parsed = JSON.parse(trimmed);
+        destAddress = parsed.address || parsed.addressLine1 || order.shippingAddress;
+        if (parsed.addressLine2) destAddress = `${destAddress}, ${parsed.addressLine2}`;
+        city = parsed.city || '';
+        state = parsed.state || '';
+        pincode = (parsed.pinCode || parsed.pincode || '').replace(/\D/g, '');
+      }
+    } catch {
+      // Keep fallback
     }
 
-    // Direct Manifestation
-    const manifestRes = await createDelhiveryShipment(shipmentPayload);
-    if (manifestRes.success && manifestRes.waybill) {
+    const isCod = order.paymentMethod === 'COD';
+    const orderAdv = Number((order as any).advanceAmount ?? 0);
+    const effectiveCodBalance = Number(
+      (order as any).codBalanceAmount ?? (order.total - orderAdv)
+    );
+
+    const shipmentPayload: DelhiveryShipmentOrder = {
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      customerEmail: order.customerEmail,
+      customerAddress: destAddress,
+      city,
+      state,
+      pincode,
+      totalAmount: order.total,
+      shippingFee: order.shippingFee,
+      codBalanceAmount: isCod ? effectiveCodBalance : 0,
+      paymentMethod: isCod ? 'COD' : 'Prepaid',
+      items: order.items.map((it) => ({
+        name: it.productName,
+        productName: it.productName,
+        sku: it.productId || it.productName,
+        quantity: it.quantity,
+        price: it.price,
+      })),
+    };
+
+    // Branch based on configured shipping mode
+    if (shippingMode === 'auto_manifest') {
+      // Direct Manifestation
+      const manifestRes = await createDelhiveryShipment(shipmentPayload);
+      if (manifestRes.success && manifestRes.waybill) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            trackingNumber: manifestRes.waybill,
+            trackingUrl: manifestRes.trackingUrl,
+            carrier: 'Delhivery',
+            delhiveryStatus: 'MANIFESTED',
+            delhiverySyncStatus: 'SYNCED',
+            delhiverySyncError: null,
+            shippingMode: 'auto_manifest',
+            lastDelhiverySyncAt: new Date(),
+          } as any,
+        });
+
+        await prisma.shipmentEvent.create({
+          data: {
+            orderId: order.id,
+            status: 'READY_TO_SHIP',
+            location: 'Delhivery Logistics Hub',
+            description: `Shipment auto-manifested with Delhivery. AWB: ${manifestRes.waybill}`,
+          },
+        });
+
+        logger.info('shipping.delhivery.auto_manifested', {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          waybill: manifestRes.waybill,
+        });
+
+        return {
+          success: true,
+          status: 'MANIFESTED',
+          waybill: manifestRes.waybill,
+          message: manifestRes.message,
+        };
+      } else {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            delhiverySyncStatus: 'FAILED',
+            delhiverySyncError: manifestRes.message || 'Auto-manifest failed',
+            shippingMode: 'auto_manifest',
+            delhiverySyncAttempts: { increment: 1 },
+            lastDelhiverySyncAt: new Date(),
+          } as any,
+        });
+
+        logger.warn('shipping.delhivery.auto_manifest_failed', {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          error: manifestRes.message,
+        });
+
+        return {
+          success: false,
+          status: 'FAILED',
+          error: manifestRes.message || 'Auto-manifest failed',
+        };
+      }
+    }
+
+    // Recommended: Delhivery Pending Queue Mode (Unmanifested, ₹0 charged)
+    const pendingRes = await createDelhiveryPendingOrder(shipmentPayload);
+
+    if (pendingRes.success) {
+      // Normal Pending Mode: Order staged in Store Pending queue (₹0 charged)
       await prisma.order.update({
         where: { id: order.id },
         data: {
-          trackingNumber: manifestRes.waybill,
-          trackingUrl: manifestRes.trackingUrl,
-          carrier: 'Delhivery',
-          delhiveryStatus: 'MANIFESTED',
+          delhiveryStatus: 'PENDING',
           delhiverySyncStatus: 'SYNCED',
           delhiverySyncError: null,
-          shippingMode: 'auto_manifest',
+          shippingMode: 'delhivery_pending',
           lastDelhiverySyncAt: new Date(),
         } as any,
       });
@@ -191,111 +257,67 @@ export async function sendOrderToDelhiveryPending(
       await prisma.shipmentEvent.create({
         data: {
           orderId: order.id,
-          status: 'READY_TO_SHIP',
-          location: 'Delhivery Logistics Hub',
-          description: `Shipment auto-manifested with Delhivery. AWB: ${manifestRes.waybill}`,
+          status: 'PENDING',
+          location: 'Delhivery One (Pending Queue)',
+          description: 'Order staged in Delhivery One Pending queue (unmanifested, ₹0 charged). Awaiting warehouse verification and manifestation.',
         },
       });
 
-      logger.info('shipping.delhivery.auto_manifested', {
+      logger.info('shipping.delhivery_pending.staged', {
         orderId: order.id,
         orderNumber: order.orderNumber,
-        waybill: manifestRes.waybill,
       });
 
       return {
         success: true,
-        status: 'MANIFESTED',
-        waybill: manifestRes.waybill,
-        message: manifestRes.message,
-      };
-    } else {
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          delhiverySyncStatus: 'FAILED',
-          delhiverySyncError: manifestRes.message || 'Auto-manifest failed',
-          shippingMode: 'auto_manifest',
-          delhiverySyncAttempts: { increment: 1 },
-          lastDelhiverySyncAt: new Date(),
-        } as any,
-      });
-
-      logger.warn('shipping.delhivery.auto_manifest_failed', {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        error: manifestRes.message,
-      });
-
-      return {
-        success: false,
-        status: 'FAILED',
-        error: manifestRes.message || 'Auto-manifest failed',
+        status: 'PENDING',
+        message: 'Order staged in Delhivery One Pending queue. Awaiting staff verification (₹0 charged).',
       };
     }
-  }
 
-  // Recommended: Delhivery Pending Queue Mode (Unmanifested, ₹0 charged)
-  const pendingRes = await createDelhiveryPendingOrder(shipmentPayload);
-
-  if (pendingRes.success) {
-    // Normal Pending Mode: Order staged in Store Pending queue (₹0 charged)
+    // Pending creation failed
+    const errorMsg = pendingRes.message || 'Failed to stage order in Delhivery Pending queue';
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        delhiveryStatus: 'PENDING',
-        delhiverySyncStatus: 'SYNCED',
-        delhiverySyncError: null,
+        delhiverySyncStatus: 'FAILED',
+        delhiverySyncError: errorMsg,
         shippingMode: 'delhivery_pending',
+        delhiverySyncAttempts: { increment: 1 },
         lastDelhiverySyncAt: new Date(),
       } as any,
     });
 
-    await prisma.shipmentEvent.create({
-      data: {
-        orderId: order.id,
-        status: 'PENDING',
-        location: 'Store Order Management',
-        description: 'Order staged in Pending queue. Awaiting warehouse staff verification and manifestation.',
-      },
-    });
-
-    logger.info('shipping.delhivery_pending.staged', {
+    logger.warn('shipping.delhivery_pending.failed', {
       orderId: order.id,
       orderNumber: order.orderNumber,
+      error: errorMsg,
     });
 
     return {
-      success: true,
-      status: 'PENDING',
-      message: 'Order staged in Pending queue. Awaiting staff verification (₹0 charged).',
+      success: false,
+      status: 'FAILED',
+      error: errorMsg,
+    };
+  } catch (err: any) {
+    logger.error('shipping.delhivery_pending.exception', {
+      orderId: order.id,
+      error: err?.message,
+    });
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        delhiverySyncStatus: 'FAILED',
+        delhiverySyncError: err?.message || 'Unexpected exception during Delhivery sync',
+        lastDelhiverySyncAt: new Date(),
+      } as any,
+    }).catch(() => {});
+    return {
+      success: false,
+      status: 'FAILED',
+      error: err?.message || 'Unexpected exception during Delhivery sync',
     };
   }
-
-  // Pending creation failed
-  const errorMsg = pendingRes.message || 'Failed to stage order in Delhivery Pending queue';
-  await prisma.order.update({
-    where: { id: order.id },
-    data: {
-      delhiverySyncStatus: 'FAILED',
-      delhiverySyncError: errorMsg,
-      shippingMode: 'delhivery_pending',
-      delhiverySyncAttempts: { increment: 1 },
-      lastDelhiverySyncAt: new Date(),
-    } as any,
-  });
-
-  logger.warn('shipping.delhivery_pending.failed', {
-    orderId: order.id,
-    orderNumber: order.orderNumber,
-    error: errorMsg,
-  });
-
-  return {
-    success: false,
-    status: 'FAILED',
-    error: errorMsg,
-  };
 }
 
 /**

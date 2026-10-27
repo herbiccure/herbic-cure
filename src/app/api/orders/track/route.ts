@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
         customerEmail: maskedEmail,
         orderStatus: order.orderStatus,
         carrier: order.carrier || 'Delhivery Express',
-        trackingNumber: order.trackingNumber || `SR${order.orderNumber.replace(/[^0-9]/g, '') || '918237'}IN`,
+        trackingNumber: order.trackingNumber || null,
         total: order.total,
         paymentStatus: order.paymentStatus,
         createdAt: order.createdAt,

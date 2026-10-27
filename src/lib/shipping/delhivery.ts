@@ -734,7 +734,9 @@ export interface DelhiveryPendingResult {
 
 /**
  * Stages an unmanifested order into Delhivery One (Pending Queue).
- * Delhivery charges ₹0 until staff manually click "Get AWB number" inside Delhivery One dashboard.
+ * - Leaves waybill blank ("") to prevent automatic manifestation and wallet deduction.
+ * - Delhivery charges ₹0 until warehouse staff manually click "Get AWB number" inside Delhivery One dashboard.
+ * - In Staging or when DELHIVERY_PUSH_PENDING_TO_API=true, sends the order directly to Delhivery API.
  */
 export async function createDelhiveryPendingOrder(
   order: DelhiveryShipmentOrder
@@ -750,13 +752,23 @@ export async function createDelhiveryPendingOrder(
     return {
       success: false,
       status: 'FAILED',
-      message: 'Shipment physical quantity must be at least 1',
+      message: 'Shipment physical quantity must be at least 1 (delivery charge is not an item)',
     };
   }
 
   const destAddress = (order.shippingAddress?.address || order.customerAddress || '').trim();
   const destPin = (order.shippingAddress?.pincode || order.pincode || '').trim().replace(/\D/g, '');
+  const destCity = (order.shippingAddress?.city || order.city || '').trim();
+  const destState = (order.shippingAddress?.state || order.state || '').trim();
   const cleanPhone = (order.customerPhone || '').replace(/\D/g, '').slice(-10);
+
+  if (!order.orderNumber) {
+    return {
+      success: false,
+      status: 'FAILED',
+      message: 'Order number is required for Delhivery reference mapping',
+    };
+  }
 
   if (!destAddress || destAddress.length < 5) {
     return {
@@ -782,17 +794,158 @@ export async function createDelhiveryPendingOrder(
     };
   }
 
+  // Invoice / Declared values
+  const orderTotal = Math.round(order.total || order.totalAmount || 0);
+
+  // If COD advance was collected, collect only the remaining balance.
+  let effectivePaymentMode: 'COD' | 'Prepaid' = isCod ? 'COD' : 'Prepaid';
+  let codAmount = '0';
+
+  if (isCod) {
+    const rawBalance = typeof order.codBalanceAmount === 'number'
+      ? Math.round(order.codBalanceAmount)
+      : orderTotal;
+
+    if (rawBalance <= 0) {
+      effectivePaymentMode = 'Prepaid';
+      codAmount = '0';
+    } else {
+      codAmount = String(rawBalance);
+    }
+  }
+
   const productsDesc = buildDelhiveryLabelDescription(order.items || []);
 
-  // Unmanifested Pending Mode: Validates address, pin, phone and physical quantity
-  // Does NOT call Delhivery CMU (/api/cmu/create.json) because CMU instantly generates
-  // an AWB and manifests the order into "Ready to ship", charging the merchant's wallet.
-  // The order stays unmanifested (₹0 charged) until staff explicitly manifest it.
+  const pendingShipmentData = {
+    shipments: [
+      {
+        name: order.customerName,
+        add: destAddress,
+        pin: destPin,
+        city: destCity || 'Destination',
+        state: destState || 'State',
+        country: 'India',
+        phone: cleanPhone,
+        order: order.orderNumber,
+        payment_mode: effectivePaymentMode,
+        return_pin: '',
+        return_city: '',
+        return_phone: '',
+        return_add: '',
+        return_state: '',
+        return_country: '',
+        products_desc: productsDesc,
+        hsn_code: '33059011',
+        cod_amount: codAmount,
+        order_date: new Date().toISOString(),
+        total_amount: String(orderTotal),
+        quantity: String(physicalQuantity), // Physical items only! Delivery charges excluded
+        waybill: '', // Blank waybill requests unmanifested pending order
+        shipment_width: String(order.width || 10),
+        shipment_height: String(order.height || 8),
+        shipment_length: String(order.length || 18),
+        weight: String(order.weight || 500),
+        pickup_location: getPickupLocation(),
+      },
+    ],
+    pickup_location: {
+      name: getPickupLocation(),
+      add: getPickupAddress(),
+      city: getPickupCity(),
+      state: getPickupState(),
+      pin_code: getPickupPin(),
+      phone: getPickupPhone(),
+    },
+  };
+
+  // If live Delhivery API integration is enabled for pending queue
+  const isStaging = process.env.DELHIVERY_ENV === 'staging';
+  const isPendingPushActive = process.env.DELHIVERY_PUSH_PENDING_TO_API === 'true' || isStaging;
+  const apiKey = getApiKey();
+
+  if (apiKey && isPendingPushActive) {
+    try {
+      const endpoint = process.env.DELHIVERY_PENDING_ORDER_ENDPOINT || `${getBaseUrl()}/api/cmu/create.json`;
+      const params = new URLSearchParams();
+      params.append('format', 'json');
+      params.append('data', JSON.stringify(pendingShipmentData));
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Token ${apiKey}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+        signal: AbortSignal.timeout(8000),
+      });
+
+      const responseText = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = { raw: responseText };
+      }
+
+      if (!res.ok) {
+        const errorMsg = data?.rmk || data?.error || data?.message || `Delhivery pending staging failed (HTTP ${res.status})`;
+        logger.warn('shipping.delhivery_pending.rejected', { status: res.status, error: errorMsg });
+        return {
+          success: false,
+          status: 'FAILED',
+          message: errorMsg,
+          rawResponse: data,
+        };
+      }
+
+      const packageInfo = data?.packages?.[0];
+      const remarks = Array.isArray(packageInfo?.remarks)
+        ? packageInfo.remarks.join(', ')
+        : packageInfo?.remarks || data?.rmk || '';
+
+      // If Delhivery assigned a waybill despite waybill="", account is in Direct Manifestation mode
+      if (packageInfo?.waybill) {
+        logger.warn('shipping.delhivery_pending.unexpected_waybill', {
+          orderNumber: order.orderNumber,
+          waybill: packageInfo.waybill,
+          note: 'Account may not be in Order Management mode in Delhivery One',
+        });
+        return {
+          success: true,
+          status: 'MANIFESTED',
+          waybill: packageInfo.waybill,
+          trackingUrl: `https://www.delhivery.com/track/package/${packageInfo.waybill}`,
+          message: remarks || `Order manifested with AWB ${packageInfo.waybill}`,
+          rawResponse: data,
+        };
+      }
+
+      return {
+        success: true,
+        status: 'PENDING',
+        waybill: '',
+        message: remarks || `Order staged in Delhivery One Pending queue (${productsDesc} | ₹0 charged).`,
+        rawResponse: data,
+      };
+    } catch (err: any) {
+      logger.warn('shipping.delhivery_pending.api_exception', { error: err?.message });
+      return {
+        success: false,
+        status: 'FAILED',
+        message: err?.message || 'Network exception connecting to Delhivery API',
+      };
+    }
+  }
+
+  // Safe unmanifested mode: Order details validated and staged in Pending queue
+  // ₹0 charged until warehouse staff manually click "Get AWB number" in Delhivery One
   return {
     success: true,
     status: 'PENDING',
     waybill: '',
     message: `Order verified and staged in pending queue (${productsDesc} | ₹0 charged until manifested).`,
+    rawResponse: { payload: pendingShipmentData },
   };
 }
 
@@ -1182,7 +1335,7 @@ export interface DelhiveryCancelResult {
  */
 export async function cancelDelhiveryShipment(
   waybill: string,
-  _cancellationReason?: string
+  cancellationReason?: string
 ): Promise<DelhiveryCancelResult> {
   const cleanWbn = (waybill || '').trim();
   if (!cleanWbn) {
@@ -1203,6 +1356,7 @@ export async function cancelDelhiveryShipment(
         {
           waybill: cleanWbn,
           cancellation: 'true',
+          ...(cancellationReason ? { remarks: cancellationReason } : {}),
         },
         {
           headers: {

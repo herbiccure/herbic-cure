@@ -42,6 +42,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
+    const { getEffectiveShippingMode } = await import('@/lib/shipping/delhiveryPending');
+    const effectiveMode = await getEffectiveShippingMode();
+    if (effectiveMode === 'delhivery_pending') {
+      return NextResponse.json(
+        {
+          error:
+            'Direct pickup requests from store code are disabled in "delhivery_pending" mode. Pickups are managed directly inside Delhivery One ("Add to Pickup").',
+        },
+        { status: 400 }
+      );
+    }
+
     if (!order.trackingNumber) {
       return NextResponse.json(
         {

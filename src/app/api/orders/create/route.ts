@@ -5,6 +5,7 @@ import { checkoutSchema } from '@/lib/validations';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { createRazorpayOrder } from '@/lib/payment/razorpay';
 import { calculateCodAdvance } from '@/lib/shipping/codAdvance';
+import { sendOrderToDelhiveryPending } from '@/lib/shipping/delhiveryPending';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -385,8 +386,16 @@ export async function POST(req: NextRequest) {
       return order;
     });
 
-    // Orders remain in store pending queue (unmanifested, ₹0 charged).
-    // Warehouse / store staff review orders and generate Delhivery AWB when ready to ship.
+    // 8. Logistics Staging:
+    // If standard COD (confirmed order), stage into Delhivery One Pending queue (or manifest if auto_manifest enabled)
+    if (createdOrder.orderStatus === 'CONFIRMED' && !requiresGatewaySession) {
+      sendOrderToDelhiveryPending(createdOrder.id).catch((err: any) => {
+        logger.warn('shipping.delhivery_pending.create_dispatch_failed', {
+          orderId: createdOrder.id,
+          error: err?.message,
+        });
+      });
+    }
 
     logger.info('order.created', {
       orderNumber: createdOrder.orderNumber,
