@@ -16,6 +16,11 @@ const getNavigationSettings = unstable_cache(
       codSetting,
       footerLogoSetting,
       footerSetting,
+      codAdvanceEnabledSetting,
+      codAdvanceTypeSetting,
+      codAdvanceValueSetting,
+      codAdvanceMaxCapSetting,
+      codAdvanceMessageSetting,
     ] = await Promise.all([
       prisma.siteSetting.findUnique({
         where: { key: 'navbar_offers_enabled' },
@@ -45,6 +50,21 @@ const getNavigationSettings = unstable_cache(
       prisma.siteSetting.findUnique({
         where: { key: 'footer_settings' },
       }),
+      prisma.siteSetting.findUnique({
+        where: { key: 'cod_advance_enabled' },
+      }),
+      prisma.siteSetting.findUnique({
+        where: { key: 'cod_advance_type' },
+      }),
+      prisma.siteSetting.findUnique({
+        where: { key: 'cod_advance_value' },
+      }),
+      prisma.siteSetting.findUnique({
+        where: { key: 'cod_advance_max_cap' },
+      }),
+      prisma.siteSetting.findUnique({
+        where: { key: 'cod_advance_message' },
+      }),
     ]);
 
     const navbarOffersEnabled = setting ? setting.value === 'true' : false;
@@ -54,6 +74,17 @@ const getNavigationSettings = unstable_cache(
     const standardShippingFee = feeSetting?.value ? Number(feeSetting.value) : 89;
     const freeShippingThreshold = thresholdSetting?.value ? Number(thresholdSetting.value) : 499;
     const codAvailable = codSetting ? codSetting.value === 'true' : true;
+
+    // COD Advance configuration
+    const codAdvance = {
+      enabled: codAdvanceEnabledSetting?.value === 'true' && codAvailable,
+      type: (codAdvanceTypeSetting?.value as 'FIXED' | 'PERCENTAGE') || 'FIXED',
+      value: codAdvanceValueSetting?.value ? Number(codAdvanceValueSetting.value) : 99,
+      maxCap: codAdvanceMaxCapSetting?.value ? Number(codAdvanceMaxCapSetting.value) : null,
+      message:
+        codAdvanceMessageSetting?.value ||
+        'Pay a small advance online to confirm your COD order. The rest is paid on delivery.',
+    };
 
     let footerLogoUrl = footerLogoSetting?.value?.trim() || '';
     if (!footerLogoUrl && footerSetting?.value) {
@@ -77,6 +108,7 @@ const getNavigationSettings = unstable_cache(
       standardShippingFee,
       freeShippingThreshold,
       codAvailable,
+      codAdvance,
     };
   },
   ['navigation-settings-cache'],

@@ -103,3 +103,23 @@ Please inspect why this shipment cannot be linked to a pickup request and advise
 Thank you,
 Herbic Cure Operations Team
 ```
+
+---
+
+### Incident: Order Staged in Delhivery One Pending Queue But AWB Not Discovered
+
+#### Symptoms
+- Warehouse staff manifested the order ("Get AWB number") in Delhivery One dashboard, but `/admin/orders` still says `Delhivery Pending`.
+
+#### Resolution Steps
+1. In `/admin/orders`, click **Manage** on the order.
+2. Click **"Check Delhivery Status / Discover AWB"**.
+   - The system calls `/api/admin/orders/[id]/sync-delhivery`.
+   - The endpoint queries Delhivery's `/api/v1/packages/json/?ref_ids=HC-XXXXX` and pulls the newly assigned AWB into the database, transitioning the order status to `READY_TO_SHIP`.
+3. To batch-discover all newly manifested orders, trigger:
+   - `POST /api/admin/orders/stuck-pending`
+   - This queries up to 50 unmanifested orders simultaneously and binds all generated AWBs.
+4. Verify webhook delivery:
+   - Delhivery One sends webhook payloads on `Manifested` events to: `https://herbiccure.com/api/shipping/delhivery/webhook`.
+   - Ensure the webhook URL is registered in your Delhivery One account under **Settings > Webhooks**.
+

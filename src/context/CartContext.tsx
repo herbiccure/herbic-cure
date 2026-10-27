@@ -30,6 +30,13 @@ interface CartContextType {
   shippingFee: number;
   freeShippingThreshold: number;
   standardShippingFee: number;
+  codAdvance?: {
+    enabled: boolean;
+    type: 'FIXED' | 'PERCENTAGE';
+    value: number;
+    maxCap?: number | null;
+    message: string;
+  } | null;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -45,6 +52,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [isMounted, setIsMounted] = useState(false);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(499);
   const [standardShippingFee, setStandardShippingFee] = useState(89);
+  const [codAdvance, setCodAdvance] = useState<{
+    enabled: boolean;
+    type: 'FIXED' | 'PERCENTAGE';
+    value: number;
+    maxCap?: number | null;
+    message: string;
+  } | null>(null);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -71,6 +85,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
         if (typeof data?.standardShippingFee === 'number') {
           setStandardShippingFee(data.standardShippingFee);
+        }
+        if (data?.codAdvance) {
+          setCodAdvance(data.codAdvance);
+        } else {
+          setCodAdvance(null);
         }
       })
       .catch(() => {});
@@ -179,6 +198,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         shippingFee,
         freeShippingThreshold,
         standardShippingFee,
+        codAdvance,
       }}
     >
       {children}

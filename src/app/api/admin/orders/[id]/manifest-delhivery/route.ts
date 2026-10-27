@@ -54,6 +54,19 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const { force } = body;
 
+    // Guard: In 'delhivery_pending' mode, manifestation is managed inside Delhivery One
+    const { getEffectiveShippingMode } = await import('@/lib/shipping/delhiveryPending');
+    const effectiveMode = await getEffectiveShippingMode();
+    if (effectiveMode === 'delhivery_pending' && !force) {
+      return NextResponse.json(
+        {
+          error:
+            'Direct manifestation from Admin UI is disabled in Delhivery Pending mode. Staff must verify and manifest orders inside Delhivery One dashboard (Orders > Forward Orders > Pending). Pass force=true to override.',
+        },
+        { status: 400 }
+      );
+    }
+
     // Idempotency: If order already has an active AWB and force is false
     if (order.trackingNumber && !order.trackingNumber.startsWith('DLH') && !force) {
       return NextResponse.json({
@@ -100,6 +113,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       pincode,
       totalAmount: order.total,
       shippingFee: order.shippingFee,
+      codBalanceAmount: order.codBalanceAmount ?? (order.total - (order.advanceAmount || 0)),
       paymentMethod: isCod ? 'COD' : 'Prepaid',
       items: order.items.map((it) => ({
         name: it.productName,

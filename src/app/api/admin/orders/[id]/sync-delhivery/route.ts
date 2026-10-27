@@ -30,11 +30,48 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    // If order does not have an AWB yet, query Delhivery One via orderNumber (ref_ids)
+    // to discover if warehouse staff clicked "Get AWB number" in Delhivery One dashboard
     if (!order.trackingNumber) {
-      return NextResponse.json(
-        { error: 'Order does not have a Delhivery Waybill / AWB tracking number yet' },
-        { status: 400 }
-      );
+      const { syncOrderFromDelhiveryRefId, sendOrderToDelhiveryPending } = await import('@/lib/shipping/delhiveryPending');
+
+      // If sync failed earlier, retry staging to Delhivery
+      if (order.delhiverySyncStatus === 'FAILED') {
+        const retryResult = await sendOrderToDelhiveryPending(order.id);
+        const refreshed = await prisma.order.findUnique({
+          where: { id },
+          include: { items: true, events: { orderBy: { timestamp: 'desc' } } },
+        });
+        return NextResponse.json({
+          success: retryResult.success,
+          isPending: retryResult.status === 'PENDING',
+          order: refreshed,
+          message: retryResult.message || (retryResult.success ? 'Order re-staged in Delhivery One Pending queue' : 'Retry staging failed'),
+        });
+      }
+
+      const syncRes = await syncOrderFromDelhiveryRefId(order.id);
+      const updatedOrder = await prisma.order.findUnique({
+        where: { id },
+        include: { items: true, events: { orderBy: { timestamp: 'desc' } } },
+      });
+
+      if (syncRes.discoveredAwb && updatedOrder?.trackingNumber) {
+        const tracking = await trackDelhiveryShipment(updatedOrder.trackingNumber);
+        return NextResponse.json({
+          success: true,
+          order: updatedOrder,
+          tracking,
+          message: `Discovered AWB #${updatedOrder.trackingNumber} from Delhivery One. Order is now manifested!`,
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        isPending: syncRes.isPending,
+        order: updatedOrder,
+        message: syncRes.message || 'Order is staged in Delhivery One Pending queue. Awaiting warehouse staff verification.',
+      });
     }
 
     // 1. Fetch live tracking info from Delhivery

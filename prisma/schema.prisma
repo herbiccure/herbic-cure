@@ -375,6 +375,17 @@ model Order {
   trackingUrl      String?
   carrier          String?         @default("Shiprocket")
   notes            String?
+  advanceAmount           Float           @default(0)
+  codBalanceAmount        Float?          @default(0)
+  advancePaymentId        String?
+  advancePaidAt           DateTime?
+  advanceSettingsSnapshot String?
+  shippingMode            String?         @default("delhivery_pending") // delhivery_pending or auto_manifest
+  delhiverySyncStatus     String?         @default("PENDING_DISPATCH") // PENDING_DISPATCH, SYNCED, FAILED
+  delhiverySyncAttempts   Int             @default(0)
+  delhiverySyncError      String?
+  lastDelhiverySyncAt     DateTime?
+  delhiveryStatus         String?         // PENDING, READY_TO_SHIP, IN_TRANSIT, OUT_FOR_DELIVERY, DELIVERED, CANCELLED, RTO
   pickupStatus        String          @default("NONE") // NONE, REQUESTED, SCHEDULED, FAILED, PICKED
   pickupRequestId     String?
   pickupDate          DateTime?

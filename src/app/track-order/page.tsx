@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Package, Search, Truck, CheckCircle2, Phone, AlertCircle, ShoppingBag, Clock } from 'lucide-react';
+import { Search, Truck, AlertCircle, ShoppingBag, Clock } from 'lucide-react';
 
 interface TrackedOrder {
   id: string;
@@ -112,7 +112,11 @@ export default function TrackOrderPage() {
                           </span>
                         </div>
                         <p className="text-xs text-stone-600 mt-0.5">
-                          Carrier: {order.carrier} • AWB: <strong className="font-mono text-stone-800">{order.trackingNumber}</strong>
+                          Carrier: {order.carrier || 'Delhivery Express'} • AWB: {order.trackingNumber ? (
+                            <strong className="font-mono text-stone-800">{order.trackingNumber}</strong>
+                          ) : (
+                            <span className="text-amber-700 italic font-medium">Allocated upon dispatch</span>
+                          )}
                         </p>
                       </div>
                     </div>

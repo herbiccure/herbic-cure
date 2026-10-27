@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { checkoutSchema } from '@/lib/validations';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { createRazorpayOrder } from '@/lib/payment/razorpay';
+import { calculateCodAdvance } from '@/lib/shipping/codAdvance';
+import { sendOrderToDelhiveryPending } from '@/lib/shipping/delhiveryPending';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -131,10 +133,31 @@ export async function POST(req: NextRequest) {
     // For COD: Free if >= freeShippingThreshold, else standardShippingFee
     const isPrepaidOrder = paymentMethod !== 'COD';
 
-    const [feeSetting, thresholdSetting] = await Promise.all([
+    const [
+      feeSetting,
+      thresholdSetting,
+      codAvailableSetting,
+      codAdvanceEnabledSetting,
+      codAdvanceTypeSetting,
+      codAdvanceValueSetting,
+      codAdvanceMaxCapSetting,
+    ] = await Promise.all([
       prisma.siteSetting.findUnique({ where: { key: 'standard_shipping_fee' } }),
       prisma.siteSetting.findUnique({ where: { key: 'free_shipping_threshold' } }),
+      prisma.siteSetting.findUnique({ where: { key: 'cod_available' } }),
+      prisma.siteSetting.findUnique({ where: { key: 'cod_advance_enabled' } }),
+      prisma.siteSetting.findUnique({ where: { key: 'cod_advance_type' } }),
+      prisma.siteSetting.findUnique({ where: { key: 'cod_advance_value' } }),
+      prisma.siteSetting.findUnique({ where: { key: 'cod_advance_max_cap' } }),
     ]);
+
+    if (paymentMethod === 'COD' && codAvailableSetting?.value === 'false') {
+      return NextResponse.json(
+        { error: 'Cash on Delivery is currently disabled for this store.' },
+        { status: 400 }
+      );
+    }
+
     const authoritativeStandardFee = feeSetting?.value ? Number(feeSetting.value) : 89;
     const authoritativeThreshold = thresholdSetting?.value ? Number(thresholdSetting.value) : 499;
 
@@ -147,6 +170,25 @@ export async function POST(req: NextRequest) {
       0,
       calculatedSubtotal - calculatedDiscount + calculatedShippingFee
     );
+
+    // 6.1 Server-authoritative COD Advance calculation
+    const codAdvanceCalc = calculateCodAdvance(
+      calculatedFinalTotal,
+      {
+        enabled: codAvailableSetting?.value !== 'false' && codAdvanceEnabledSetting?.value === 'true',
+        type: (codAdvanceTypeSetting?.value as 'FIXED' | 'PERCENTAGE') || 'FIXED',
+        value: codAdvanceValueSetting?.value ? Number(codAdvanceValueSetting.value) : 0,
+        maxCap: codAdvanceMaxCapSetting?.value ? Number(codAdvanceMaxCapSetting.value) : null,
+      },
+      paymentMethod
+    );
+
+    const isCodWithAdvance = codAdvanceCalc.isApplicable;
+    const advanceAmount = codAdvanceCalc.advanceAmount;
+    const codBalanceAmount = codAdvanceCalc.balanceAmount;
+    const advanceSettingsSnapshot = codAdvanceCalc.snapshot
+      ? JSON.stringify(codAdvanceCalc.snapshot)
+      : null;
 
     const fullShippingAddress = JSON.stringify({
       name,
@@ -185,9 +227,11 @@ export async function POST(req: NextRequest) {
     }
 
     const orderNumber = `HC-${Date.now().toString().slice(-6)}`;
-    const isOnlinePayment = paymentMethod !== 'COD';
+    const isOnlinePayment = paymentMethod !== 'COD' || isCodWithAdvance;
+    const payableOnlineAmount = isCodWithAdvance ? advanceAmount : calculatedFinalTotal;
+    const requiresGatewaySession = isOnlinePayment && payableOnlineAmount > 0;
 
-    // 6. If Online / Razorpay payment, create Razorpay gateway order FIRST
+    // 6.2 If Online or COD with Advance, create Razorpay gateway order FIRST
     // If Razorpay gateway credentials fail or are invalid, fail fast before writing to DB
     let razorpaySession: {
       razorpayOrderId: string;
@@ -196,16 +240,17 @@ export async function POST(req: NextRequest) {
       keyId: string;
     } | null = null;
 
-    if (isOnlinePayment) {
+    if (requiresGatewaySession) {
       try {
         const rzOrder = await createRazorpayOrder({
           orderNumber,
-          amount: calculatedFinalTotal,
+          amount: payableOnlineAmount,
           customerName: name,
           customerEmail: authoritativeEmail,
           customerPhone: phone,
           notes: {
             orderNumber,
+            isCodAdvance: isCodWithAdvance ? 'true' : 'false',
           },
         });
 
@@ -246,9 +291,9 @@ export async function POST(req: NextRequest) {
     const delhiveryTrackingUrl: string | null = null;
 
     // 7. Atomic Database Transaction: Order Creation + Stock Decrement + Coupon Usage
-    // COD orders start as CONFIRMED.
-    // Prepaid orders start as PENDING and only become CONFIRMED when Razorpay payment is verified!
-    const initialOrderStatus = isOnlinePayment ? 'PENDING' : 'CONFIRMED';
+    // Standard COD orders without advance start as CONFIRMED.
+    // Prepaid orders and COD orders with advance start as PENDING and only become CONFIRMED when Razorpay payment is verified!
+    const initialOrderStatus = requiresGatewaySession ? 'PENDING' : 'CONFIRMED';
 
     const createdOrder = await prisma.$transaction(async (tx) => {
       // Create the verified order
@@ -265,6 +310,9 @@ export async function POST(req: NextRequest) {
           discount: calculatedDiscount,
           shippingFee: calculatedShippingFee,
           total: calculatedFinalTotal,
+          advanceAmount,
+          codBalanceAmount,
+          advanceSettingsSnapshot,
           couponCode: couponCode ? couponCode.trim().toUpperCase() : null,
           paymentMethod,
           paymentStatus: 'PENDING',
@@ -338,10 +386,22 @@ export async function POST(req: NextRequest) {
       return order;
     });
 
+    // For standard COD orders (no online gateway session required), dispatch to Delhivery Pending queue
+    if (!requiresGatewaySession) {
+      sendOrderToDelhiveryPending(createdOrder.id).catch((err) => {
+        logger.warn('shipping.delhivery_pending.async_error', {
+          orderId: createdOrder.id,
+          error: err?.message,
+        });
+      });
+    }
+
     logger.info('order.created', {
       orderNumber: createdOrder.orderNumber,
       total: createdOrder.total,
       paymentMethod: createdOrder.paymentMethod,
+      advanceAmount: createdOrder.advanceAmount,
+      codBalanceAmount: createdOrder.codBalanceAmount,
     });
 
     return NextResponse.json({
@@ -349,6 +409,8 @@ export async function POST(req: NextRequest) {
       orderId: createdOrder.orderNumber,
       id: createdOrder.id,
       total: createdOrder.total,
+      advanceAmount: createdOrder.advanceAmount,
+      codBalanceAmount: createdOrder.codBalanceAmount,
       paymentMethod: createdOrder.paymentMethod,
       carrier: createdOrder.carrier,
       trackingNumber: createdOrder.trackingNumber,

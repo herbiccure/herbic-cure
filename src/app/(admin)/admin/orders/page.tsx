@@ -38,6 +38,11 @@ interface OrderItem {
   paymentMethod: string;
   paymentStatus: string;
   orderStatus: string;
+  advanceAmount?: number;
+  codBalanceAmount?: number | null;
+  advancePaymentId?: string | null;
+  advancePaidAt?: string | null;
+  advanceSettingsSnapshot?: string | null;
   trackingNumber?: string | null;
   trackingUrl?: string | null;
   carrier?: string | null;
@@ -48,6 +53,12 @@ interface OrderItem {
   pickupError?: string | null;
   pickupAttempts?: number;
   lastPickupAttemptAt?: string | null;
+  shippingMode?: string | null;
+  delhiveryStatus?: string | null;
+  delhiverySyncStatus?: string | null;
+  delhiverySyncError?: string | null;
+  delhiverySyncAttempts?: number;
+  lastDelhiverySyncAt?: string | null;
   createdAt: string;
   items: {
     id: string;
@@ -326,18 +337,30 @@ export default function AdminOrdersPage() {
     },
     {
       header: 'Payment',
-      cell: (o) => (
-        <span
-          className={cn(
-            'px-2.5 py-0.5 rounded-full text-[10px] font-bold border',
-            o.paymentStatus === 'PAID'
-              ? isLight ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-rose-950 text-rose-400 border-rose-800'
-              : isLight ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-amber-950 text-amber-400 border-amber-800'
-          )}
-        >
-          {o.paymentMethod} • {o.paymentStatus}
-        </span>
-      ),
+      cell: (o) => {
+        const isCodAdvance = o.paymentMethod === 'COD' && (o.advanceAmount || 0) > 0;
+        return (
+          <div className="space-y-1">
+            <span
+              className={cn(
+                'px-2.5 py-0.5 rounded-full text-[10px] font-bold border inline-block',
+                o.paymentStatus === 'PAID'
+                  ? isLight ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-rose-950 text-rose-400 border-rose-800'
+                  : isLight ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-amber-950 text-amber-400 border-amber-800'
+              )}
+            >
+              {isCodAdvance
+                ? `COD • Adv ₹${o.advanceAmount} Paid`
+                : `${o.paymentMethod} • ${o.paymentStatus}`}
+            </span>
+            {isCodAdvance && (
+              <span className="block text-[10px] font-medium text-slate-500">
+                Bal: ₹{(o.codBalanceAmount ?? (o.total - (o.advanceAmount || 0))).toLocaleString()}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       header: 'Status',
@@ -360,16 +383,34 @@ export default function AdminOrdersPage() {
             <span className={cn('font-mono text-[11px] block font-bold', isLight ? 'text-slate-900' : 'text-slate-100')}>
               {o.trackingNumber}
             </span>
+          ) : o.orderStatus === 'CANCELLED' ? (
+            <span
+              className={cn(
+                'inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border',
+                isLight ? 'bg-slate-100 text-slate-500 border-slate-200' : 'bg-slate-800 text-slate-400 border-slate-700'
+              )}
+            >
+              Cancelled
+            </span>
+          ) : o.delhiverySyncStatus === 'FAILED' ? (
+            <span
+              className={cn(
+                'inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border',
+                isLight ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-rose-950/80 text-rose-300 border-rose-800'
+              )}
+              title={o.delhiverySyncError || 'Delhivery staging failed'}
+            >
+              Sync Failed
+            </span>
           ) : (
             <span
               className={cn(
                 'inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border',
-                o.orderStatus === 'CANCELLED'
-                  ? isLight ? 'bg-slate-100 text-slate-500 border-slate-200' : 'bg-slate-800 text-slate-400 border-slate-700'
-                  : isLight ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-950/80 text-amber-300 border-amber-800'
+                isLight ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-950/80 text-amber-300 border-amber-800'
               )}
+              title="Staged in Delhivery One Pending queue. Awaiting warehouse staff verification."
             >
-              Pending AWB
+              Delhivery Pending
             </span>
           )}
           <span
@@ -578,15 +619,37 @@ export default function AdminOrdersPage() {
                 ))}
               </div>
 
-              <div className={cn('flex justify-between items-center font-bold text-sm pt-2 px-1 border-t', isLight ? 'border-slate-200 text-slate-900' : 'border-slate-800 text-white')}>
-                <span>Total Amount:</span>
-                <span className="text-rose-600 dark:text-rose-400 text-base font-extrabold font-mono">
-                  ₹{selectedOrder.total.toLocaleString()}
-                </span>
+              <div className={cn('space-y-1.5 pt-2 px-1 border-t text-xs', isLight ? 'border-slate-200 text-slate-900' : 'border-slate-800 text-white')}>
+                <div className="flex justify-between items-center font-bold text-sm">
+                  <span>Total Amount:</span>
+                  <span className="text-rose-600 dark:text-rose-400 text-base font-extrabold font-mono">
+                    ₹{selectedOrder.total.toLocaleString()}
+                  </span>
+                </div>
+                {selectedOrder.advanceAmount && selectedOrder.advanceAmount > 0 ? (
+                  <div className="pt-2 border-t border-dashed border-slate-200 dark:border-slate-800 space-y-1 text-xs">
+                    <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
+                      <span>COD Advance Paid Online:</span>
+                      <span className="font-mono">₹{selectedOrder.advanceAmount.toLocaleString()}</span>
+                    </div>
+                    {selectedOrder.advancePaymentId && (
+                      <div className="flex justify-between text-[11px] text-slate-500">
+                        <span>Gateway Payment ID:</span>
+                        <span className="font-mono">{selectedOrder.advancePaymentId}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-amber-700 dark:text-amber-400 font-bold">
+                      <span>COD Balance to Collect:</span>
+                      <span className="font-mono">
+                        ₹{(selectedOrder.codBalanceAmount ?? (selectedOrder.total - selectedOrder.advanceAmount)).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
 
-            {/* Delhivery Order Verification & AWB Generation */}
+            {/* Delhivery Order Verification & Logistics Queue */}
             {!selectedOrder.trackingNumber && selectedOrder.orderStatus !== 'CANCELLED' ? (
               <div
                 className={cn(
@@ -599,7 +662,9 @@ export default function AdminOrdersPage() {
                     <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                     <div>
                       <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
-                        Order Verification (Pending AWB)
+                        {selectedOrder.shippingMode === 'auto_manifest'
+                          ? 'Order Verification (Direct Manifestation Mode)'
+                          : 'Order Verification in Delhivery One (Pending Queue)'}
                       </h4>
                       <p className={cn('text-[11px]', isLight ? 'text-slate-500' : 'text-slate-400')}>
                         Delhivery Charges: <strong className="text-emerald-600 dark:text-emerald-400">₹0 Deducted</strong> (Order is not manifested yet)
@@ -609,15 +674,53 @@ export default function AdminOrdersPage() {
                   <span
                     className={cn(
                       'px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider',
-                      isLight ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-950 text-amber-300 border-amber-800'
+                      selectedOrder.delhiverySyncStatus === 'FAILED'
+                        ? isLight ? 'bg-rose-100 text-rose-900 border-rose-300' : 'bg-rose-950 text-rose-300 border-rose-800'
+                        : isLight ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-950 text-amber-300 border-amber-800'
                     )}
                   >
-                    Awaiting Verification
+                    {selectedOrder.delhiverySyncStatus === 'FAILED' ? 'Delhivery Sync Failed' : 'Awaiting Warehouse Verification'}
                   </span>
                 </div>
 
+                {/* Staging Failure Alert Box */}
+                {selectedOrder.delhiverySyncStatus === 'FAILED' && (
+                  <div
+                    className={cn(
+                      'p-3.5 rounded-xl border text-xs flex items-start justify-between gap-3',
+                      isLight ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-rose-950/40 border-rose-800 text-rose-200'
+                    )}
+                  >
+                    <div className="space-y-0.5">
+                      <p className="font-bold flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                        <span>Staging to Delhivery Failed</span>
+                      </p>
+                      <p className="text-[11px] opacity-90 leading-relaxed font-mono">
+                        {selectedOrder.delhiverySyncError || 'Network or authorization error communicating with Delhivery API.'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={syncingDelhivery}
+                      onClick={handleSyncDelhivery}
+                      className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs inline-flex items-center gap-1 shrink-0 transition-colors shadow-2xs cursor-pointer"
+                    >
+                      <RefreshCw className={cn('w-3 h-3', syncingDelhivery && 'animate-spin')} />
+                      <span>{syncingDelhivery ? 'Retrying...' : 'Retry Push'}</span>
+                    </button>
+                  </div>
+                )}
+
                 <div className={cn('p-3 rounded-xl border text-[11px] leading-relaxed', isLight ? 'bg-white border-amber-200/80 text-slate-700' : 'bg-slate-900/80 border-amber-900/40 text-slate-300')}>
-                  Verify customer phone and delivery address before accepting. Delhivery wallet balance will <strong>ONLY</strong> be deducted after you click <strong>&quot;Accept &amp; Generate AWB&quot;</strong>. If this is a fake order, reject it with zero charges.
+                  {selectedOrder.shippingMode === 'auto_manifest' ? (
+                    <span>Verify customer phone and delivery address before accepting. Delhivery wallet balance will <strong>ONLY</strong> be deducted after you click <strong>&quot;Accept &amp; Generate AWB&quot;</strong>. If this is a fake order, reject it with zero charges.</span>
+                  ) : (
+                    <span>
+                      This order is staged in your <strong>Delhivery One</strong> dashboard under <strong>Main Menu &gt; Orders &gt; Forward Orders &gt; Pending</strong>.
+                      Warehouse staff should verify phone/address and click <strong>&quot;Get AWB number&quot;</strong> in Delhivery One. Once manifested, the AWB automatically syncs here.
+                    </span>
+                  )}
                 </div>
 
                 {/* Direct Customer Contact Buttons */}
@@ -642,7 +745,7 @@ export default function AdminOrdersPage() {
                   </a>
                 </div>
 
-                {/* Accept vs Reject Actions */}
+                {/* Action Controls */}
                 <div className="flex items-center justify-between gap-3 pt-2 border-t border-amber-200/80 dark:border-amber-800/40 flex-wrap">
                   <button
                     type="button"
@@ -657,19 +760,44 @@ export default function AdminOrdersPage() {
                     <span>Mark as Fake / Reject (₹0 Charged)</span>
                   </button>
 
-                  <button
-                    type="button"
-                    disabled={manifestingDelhivery}
-                    onClick={() => handleManifestDelhivery(false)}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
-                  >
-                    <CheckCircle2 className={cn('w-4 h-4', manifestingDelhivery && 'animate-spin')} />
-                    <span>
-                      {manifestingDelhivery
-                        ? 'Manifesting with Delhivery...'
-                        : 'Accept Order & Generate Delhivery AWB'}
-                    </span>
-                  </button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <a
+                      href="https://one.delhivery.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs"
+                    >
+                      <span>Open Delhivery One (Pending Queue)</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+
+                    <button
+                      type="button"
+                      disabled={syncingDelhivery}
+                      onClick={handleSyncDelhivery}
+                      className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                      title="Poll Delhivery One to check if warehouse staff manifested this order"
+                    >
+                      <RefreshCw className={cn('w-4 h-4', syncingDelhivery && 'animate-spin')} />
+                      <span>{syncingDelhivery ? 'Checking...' : 'Check Delhivery Status / Discover AWB'}</span>
+                    </button>
+
+                    {selectedOrder.shippingMode === 'auto_manifest' && (
+                      <button
+                        type="button"
+                        disabled={manifestingDelhivery}
+                        onClick={() => handleManifestDelhivery(false)}
+                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                      >
+                        <CheckCircle2 className={cn('w-4 h-4', manifestingDelhivery && 'animate-spin')} />
+                        <span>
+                          {manifestingDelhivery
+                            ? 'Manifesting with Delhivery...'
+                            : 'Accept Order & Generate Delhivery AWB'}
+                        </span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (

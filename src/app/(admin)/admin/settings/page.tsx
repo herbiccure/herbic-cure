@@ -4,9 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  Settings,
   Search,
-  Phone,
   Save,
   ShieldCheck,
   Truck,
@@ -17,7 +15,6 @@ import {
   Image as ImageIcon,
   RotateCcw,
   Check,
-  Sparkles,
   AlertCircle,
   Eye,
   EyeOff,
@@ -41,6 +38,17 @@ export default function AdminSettingsPage() {
   const [codEnabled, setCodEnabled] = useState(true);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(499);
   const [standardShippingFee, setStandardShippingFee] = useState(89);
+  
+  // COD Advance Payment Settings
+  const [codAdvanceEnabled, setCodAdvanceEnabled] = useState(false);
+  const [codAdvanceType, setCodAdvanceType] = useState<'FIXED' | 'PERCENTAGE'>('FIXED');
+  const [codAdvanceValue, setCodAdvanceValue] = useState<number | string>(99);
+  const [codAdvanceMaxCap, setCodAdvanceMaxCap] = useState<number | string>('');
+  const [codAdvanceMessage, setCodAdvanceMessage] = useState(
+    'Pay a small advance online to confirm your COD order. The rest is paid on delivery.'
+  );
+  const [shippingMode, setShippingMode] = useState<'delhivery_pending' | 'auto_manifest'>('delhivery_pending');
+  const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -112,6 +120,12 @@ export default function AdminSettingsPage() {
           if (s.cod_available !== undefined) setCodEnabled(s.cod_available === 'true');
           if (s.free_shipping_threshold) setFreeShippingThreshold(Number(s.free_shipping_threshold));
           if (s.standard_shipping_fee) setStandardShippingFee(Number(s.standard_shipping_fee));
+          if (s.cod_advance_enabled !== undefined) setCodAdvanceEnabled(s.cod_advance_enabled === 'true');
+          if (s.cod_advance_type) setCodAdvanceType(s.cod_advance_type as 'FIXED' | 'PERCENTAGE');
+          if (s.cod_advance_value !== undefined) setCodAdvanceValue(s.cod_advance_value);
+          if (s.cod_advance_max_cap !== undefined) setCodAdvanceMaxCap(s.cod_advance_max_cap);
+          if (s.cod_advance_message) setCodAdvanceMessage(s.cod_advance_message);
+          if (s.shipping_mode) setShippingMode(s.shipping_mode as 'delhivery_pending' | 'auto_manifest');
         }
       })
       .catch(() => {});
@@ -196,6 +210,7 @@ export default function AdminSettingsPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    setSaveErrorMessage(null);
     try {
       const res = await fetch('/api/admin/settings', {
         method: 'POST',
@@ -210,14 +225,24 @@ export default function AdminSettingsPage() {
           cod_available: codEnabled ? 'true' : 'false',
           free_shipping_threshold: String(freeShippingThreshold),
           standard_shipping_fee: String(standardShippingFee),
+          cod_advance_enabled: codAdvanceEnabled ? 'true' : 'false',
+          cod_advance_type: codAdvanceType,
+          cod_advance_value: String(codAdvanceValue),
+          cod_advance_max_cap: codAdvanceMaxCap ? String(codAdvanceMaxCap) : '',
+          cod_advance_message: codAdvanceMessage,
+          shipping_mode: shippingMode,
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setSaved(true);
         setTimeout(() => setSaved(false), 4000);
+      } else {
+        setSaveErrorMessage(data.error || 'Failed to update store settings');
       }
-    } catch (err) {
+    } catch (err: any) {
+      setSaveErrorMessage(err.message || 'Error updating settings');
     } finally {
       setSaving(false);
     }
@@ -792,11 +817,256 @@ export default function AdminSettingsPage() {
                 <span className="font-semibold">Allow Cash on Delivery (COD) across India</span>
               </label>
             </div>
+
+            {/* COD Advance Payment Sub-Section */}
+            <div
+              className={`mt-4 pt-4 border-t space-y-3.5 transition-all ${
+                isLight ? 'border-stone-100' : 'border-slate-800'
+              } ${!codEnabled ? 'opacity-40 pointer-events-none select-none' : ''}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <label
+                    className={`flex items-center gap-2 font-semibold text-xs cursor-pointer ${
+                      isLight ? 'text-stone-800' : 'text-slate-200'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      disabled={!codEnabled}
+                      checked={codAdvanceEnabled}
+                      onChange={(e) => setCodAdvanceEnabled(e.target.checked)}
+                      className={`rounded-md w-4 h-4 accent-rose-600 ${
+                        isLight ? 'border-slate-300' : 'border-slate-700'
+                      }`}
+                    />
+                    <span>Require advance payment for COD orders</span>
+                  </label>
+                  <p className={`text-[11px] mt-0.5 ml-6 ${isLight ? 'text-stone-400' : 'text-slate-500'}`}>
+                    Protects against fake and fraudulent orders. Customer pays a small advance online; Delhivery collects the remaining balance on delivery.
+                  </p>
+                </div>
+              </div>
+
+              {codAdvanceEnabled && codEnabled && (
+                <div
+                  className={`ml-6 p-4 rounded-2xl border space-y-3.5 animate-fadeIn text-xs ${
+                    isLight ? 'bg-stone-50/80 border-stone-200/90' : 'bg-slate-800/50 border-slate-700/80'
+                  }`}
+                >
+                  {/* Advance Type Selector */}
+                  <div>
+                    <label className={`block font-semibold mb-1.5 text-[11px] ${isLight ? 'text-stone-700' : 'text-slate-300'}`}>
+                      Advance Calculation Type
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-1.5 cursor-pointer font-medium text-xs">
+                        <input
+                          type="radio"
+                          name="codAdvanceType"
+                          value="FIXED"
+                          checked={codAdvanceType === 'FIXED'}
+                          onChange={() => setCodAdvanceType('FIXED')}
+                          className="accent-rose-600"
+                        />
+                        <span>Fixed Amount (₹)</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer font-medium text-xs">
+                        <input
+                          type="radio"
+                          name="codAdvanceType"
+                          value="PERCENTAGE"
+                          checked={codAdvanceType === 'PERCENTAGE'}
+                          onChange={() => setCodAdvanceType('PERCENTAGE')}
+                          className="accent-rose-600"
+                        />
+                        <span>Percentage of Order Total (%)</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Value & Optional Cap Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className={`block font-semibold mb-1 text-[11px] ${isLight ? 'text-stone-700' : 'text-slate-300'}`}>
+                        {codAdvanceType === 'FIXED' ? 'Advance Amount (₹)' : 'Advance Percentage (%)'}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min={1}
+                          max={codAdvanceType === 'PERCENTAGE' ? 100 : undefined}
+                          value={codAdvanceValue}
+                          onChange={(e) => setCodAdvanceValue(e.target.value)}
+                          placeholder={codAdvanceType === 'FIXED' ? 'e.g. 99' : 'e.g. 15'}
+                          className={`w-full rounded-xl px-3 py-2 text-xs border outline-none font-mono ${
+                            isLight
+                              ? 'bg-white border-stone-300 text-stone-900 focus:border-rose-600'
+                              : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                          }`}
+                        />
+                        <span className="absolute right-3 top-2 text-[11px] text-stone-400 font-bold">
+                          {codAdvanceType === 'FIXED' ? 'INR' : '%'}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-stone-400 mt-1">
+                        {codAdvanceType === 'FIXED'
+                          ? 'Whole rupees, min ₹1. Deducted from COD collection.'
+                          : 'Percentage between 1% and 100% of final order total.'}
+                      </p>
+                    </div>
+
+                    {codAdvanceType === 'PERCENTAGE' && (
+                      <div>
+                        <label className={`block font-semibold mb-1 text-[11px] ${isLight ? 'text-stone-700' : 'text-slate-300'}`}>
+                          Maximum Cap (₹) <span className="font-normal opacity-70">(Optional)</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min={1}
+                            value={codAdvanceMaxCap}
+                            onChange={(e) => setCodAdvanceMaxCap(e.target.value)}
+                            placeholder="e.g. 200 (No cap if empty)"
+                            className={`w-full rounded-xl px-3 py-2 text-xs border outline-none font-mono ${
+                              isLight
+                                ? 'bg-white border-stone-300 text-stone-900 focus:border-rose-600'
+                                : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                            }`}
+                          />
+                          <span className="absolute right-3 top-2 text-[11px] text-stone-400 font-bold">
+                            INR
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-stone-400 mt-1">
+                          Ceiling limit so high cart totals don&apos;t require disproportionate advance.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Customer Message */}
+                  <div>
+                    <label className={`block font-semibold mb-1 text-[11px] ${isLight ? 'text-stone-700' : 'text-slate-300'}`}>
+                      Customer-Facing Notice Message
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={codAdvanceMessage}
+                      onChange={(e) => setCodAdvanceMessage(e.target.value)}
+                      placeholder="Pay a small advance online to confirm your COD order. The rest is paid on delivery."
+                      className={`w-full rounded-xl p-2.5 text-xs border outline-none leading-relaxed ${
+                        isLight
+                          ? 'bg-white border-stone-300 text-stone-900 focus:border-rose-600'
+                          : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                      }`}
+                    />
+                    <p className="text-[10px] text-stone-400 mt-0.5">
+                      Shown to shoppers on the checkout page before payment.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Logistics Fulfillment Mode (Delhivery Pending vs Auto-Manifest) */}
+            <div
+              className={`mt-5 pt-5 border-t space-y-3.5 ${
+                isLight ? 'border-stone-100' : 'border-slate-800'
+              }`}
+            >
+              <div>
+                <h3 className={`font-semibold text-xs ${isLight ? 'text-stone-800' : 'text-slate-200'}`}>
+                  Logistics Fulfillment &amp; Manifestation Mode
+                </h3>
+                <p className={`text-[11px] mt-0.5 ${isLight ? 'text-stone-400' : 'text-slate-500'}`}>
+                  Controls whether website orders stay in Delhivery One Pending queue (unmanifested) for warehouse verification, or manifest automatically.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Pending Queue Option */}
+                <label
+                  className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
+                    shippingMode === 'delhivery_pending'
+                      ? isLight
+                        ? 'bg-rose-50/70 border-rose-300 ring-1 ring-rose-300 text-stone-900'
+                        : 'bg-rose-950/30 border-rose-700 ring-1 ring-rose-700 text-white'
+                      : isLight
+                      ? 'bg-white border-stone-200 hover:border-stone-300 text-stone-700'
+                      : 'bg-slate-800/60 border-slate-700 hover:border-slate-600 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <input
+                      type="radio"
+                      name="shippingMode"
+                      value="delhivery_pending"
+                      checked={shippingMode === 'delhivery_pending'}
+                      onChange={() => setShippingMode('delhivery_pending')}
+                      className="accent-rose-600 mt-0.5"
+                    />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-xs">Delhivery One Pending Queue</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          Recommended
+                        </span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed opacity-85">
+                        Orders land in <strong>Delhivery One &gt; Forward Orders &gt; Pending</strong>. ₹0 deducted until staff review order and click <em>&quot;Get AWB number&quot;</em>. Protects against fake orders.
+                      </p>
+                    </div>
+                  </div>
+                </label>
+
+                {/* Auto Manifest Option */}
+                <label
+                  className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
+                    shippingMode === 'auto_manifest'
+                      ? isLight
+                        ? 'bg-rose-50/70 border-rose-300 ring-1 ring-rose-300 text-stone-900'
+                        : 'bg-rose-950/30 border-rose-700 ring-1 ring-rose-700 text-white'
+                      : isLight
+                      ? 'bg-white border-stone-200 hover:border-stone-300 text-stone-700'
+                      : 'bg-slate-800/60 border-slate-700 hover:border-slate-600 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <input
+                      type="radio"
+                      name="shippingMode"
+                      value="auto_manifest"
+                      checked={shippingMode === 'auto_manifest'}
+                      onChange={() => setShippingMode('auto_manifest')}
+                      className="accent-rose-600 mt-0.5"
+                    />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-xs">Direct Auto-Manifestation</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-stone-200 dark:bg-slate-700 text-stone-700 dark:text-slate-300">
+                          Legacy
+                        </span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed opacity-85">
+                        AWB is generated immediately upon order confirmation. Shipping fees are deducted immediately from Delhivery account wallet balance.
+                      </p>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Action Button */}
-        <div className="lg:col-span-2 flex justify-end">
+        <div className="lg:col-span-2 flex flex-col sm:flex-row items-center justify-end gap-3">
+          {saveErrorMessage && (
+            <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs rounded-xl flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{saveErrorMessage}</span>
+            </div>
+          )}
           <button
             type="submit"
             disabled={saving}

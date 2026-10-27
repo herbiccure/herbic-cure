@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { prisma } from '@/lib/prisma';
 import OrderSuccessClient from './OrderSuccessClient';
-import { CheckCircle2, Truck, Package, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
+import { CheckCircle2, Truck, ArrowRight, Clock } from 'lucide-react';
 
 
 interface OrderSuccessPageProps {
@@ -53,8 +53,18 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
   }
 
   const isPrepaid = order.paymentMethod !== 'COD';
+  const advanceAmount = Number((order as any).advanceAmount ?? 0);
+  const codBalanceAmount = Number(
+    (order as any).codBalanceAmount ?? (order.total - advanceAmount)
+  );
+  const isCodWithAdvance = order.paymentMethod === 'COD' && advanceAmount > 0;
   const isPaid = order.paymentStatus === 'PAID';
-  const isOrderConfirmed = !isPrepaid || isPaid;
+  const isPartiallyPaid = order.paymentStatus === 'PARTIALLY_PAID';
+  const isOrderConfirmed =
+    order.orderStatus === 'CONFIRMED' ||
+    (!isPrepaid && !isCodWithAdvance) ||
+    isPaid ||
+    isPartiallyPaid;
 
   return (
     <div className="bg-[#FCF8F9] min-h-screen py-12 sm:py-16">
@@ -142,7 +152,11 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
                 Payment Status
               </span>
               <p className="text-xs font-bold text-rose-800 bg-rose-100 px-2.5 py-0.5 rounded-full mt-0.5">
-                {order.paymentMethod} • {order.paymentStatus}
+                {isCodWithAdvance
+                  ? (order.paymentStatus === 'PARTIALLY_PAID' || order.paymentStatus === 'PAID'
+                    ? 'COD • Advance Paid'
+                    : 'COD • Advance Pending')
+                  : `${order.paymentMethod} • ${order.paymentStatus}`}
               </p>
             </div>
           </div>
@@ -210,9 +224,21 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
                 <span>{order.shippingFee === 0 ? 'FREE' : `₹${order.shippingFee}`}</span>
               </div>
               <div className="flex justify-between text-base font-extrabold text-stone-900 pt-2 border-t border-stone-100">
-                <span>Total Paid / Payable</span>
+                <span>Total Order Value</span>
                 <span className="text-[#A84358]">₹{order.total}</span>
               </div>
+              {isCodWithAdvance && (
+                <div className="pt-2 border-t border-stone-100 space-y-1">
+                  <div className="flex justify-between text-xs font-bold text-emerald-800 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
+                    <span>Advance Paid Online</span>
+                    <span>₹{advanceAmount}</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-semibold text-stone-800 p-1">
+                    <span>Remaining Balance Due on Delivery</span>
+                    <span>₹{codBalanceAmount}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

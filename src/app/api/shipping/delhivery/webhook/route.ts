@@ -259,6 +259,38 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
+      // 6. Manifested in Delhivery One (Warehouse staff clicked "Get AWB number")
+      if (waybill && (!order.trackingNumber || order.delhiveryStatus === 'PENDING' || mapped.isManifested)) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            trackingNumber: waybill,
+            trackingUrl: `https://www.delhivery.com/track/package/${waybill}`,
+            carrier: 'Delhivery',
+            delhiveryStatus: 'MANIFESTED',
+            delhiverySyncStatus: 'SYNCED',
+            lastDelhiverySyncAt: new Date(),
+          },
+        });
+
+        await prisma.shipmentEvent.create({
+          data: {
+            orderId: order.id,
+            status: 'READY_TO_SHIP',
+            location: 'Delhivery One Dashboard',
+            description: instructions || `AWB generated in Delhivery One: ${waybill}. Order manifested and ready for pickup.`,
+          },
+        });
+
+        results.push({
+          orderNumber: order.orderNumber,
+          waybill,
+          action: 'AWB_BOUND_MANIFESTED',
+          message: `Order #${order.orderNumber} bound to AWB #${waybill} (Manifested in Delhivery One)`,
+        });
+        continue;
+      }
+
       // Unhandled or informational scan
       results.push({
         waybill,

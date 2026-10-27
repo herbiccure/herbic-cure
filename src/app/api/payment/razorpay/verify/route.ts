@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyRazorpayPaymentSignature } from '@/lib/payment/razorpay';
+import { sendOrderToDelhiveryPending } from '@/lib/shipping/delhiveryPending';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
 
@@ -54,32 +55,47 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Update order payment status
+    const isCodAdvanceOrder = order.paymentMethod === 'COD' && order.advanceAmount > 0;
+    const isPartiallyPaid = isCodAdvanceOrder && (order.codBalanceAmount ?? 0) > 0;
+
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        paymentStatus: 'PAID',
+        paymentStatus: isPartiallyPaid ? 'PARTIALLY_PAID' : 'PAID',
         orderStatus: 'CONFIRMED',
-        paymentMethod: 'RAZORPAY',
+        paymentMethod: order.paymentMethod, // Preserve 'COD' for COD advance orders
+        advancePaymentId: isCodAdvanceOrder ? razorpay_payment_id : order.advancePaymentId,
+        advancePaidAt: isCodAdvanceOrder ? new Date() : order.advancePaidAt,
       },
     });
 
     // 4. Log verified event
+    const eventDescription = isCodAdvanceOrder
+      ? `COD advance payment of ₹${order.advanceAmount} confirmed via Razorpay (Payment ID: ${razorpay_payment_id}). Remaining balance ₹${order.codBalanceAmount ?? 0} to be collected on delivery.`
+      : `Payment of ₹${order.total} confirmed via Razorpay (Payment ID: ${razorpay_payment_id})`;
+
     await prisma.shipmentEvent.create({
       data: {
         orderId: order.id,
         status: 'PAYMENT_VERIFIED',
-        description: `Payment of ₹${order.total} confirmed via Razorpay (Payment ID: ${razorpay_payment_id})`,
+        description: eventDescription,
         location: 'Razorpay Secure Gateway',
       },
     }).catch(() => { });
 
-    // 5. Order remains in 'Pending AWB' status until admin verification & acceptance.
-    // Charges are NOT deducted from Delhivery until the admin clicks 'Accept & Generate AWB'.
+    // Stage order in Delhivery One Pending queue (unmanifested, ₹0 charged)
+    sendOrderToDelhiveryPending(order.id).catch((err) => {
+      logger.warn('shipping.delhivery_pending.verify_async_error', {
+        orderId: order.id,
+        error: err?.message,
+      });
+    });
 
     logger.info('payment.verified', {
       orderId: order.orderNumber,
       paymentId: razorpay_payment_id,
-      amount: order.total,
+      amount: isCodAdvanceOrder ? order.advanceAmount : order.total,
+      isCodAdvance: isCodAdvanceOrder,
     });
 
     return NextResponse.json({

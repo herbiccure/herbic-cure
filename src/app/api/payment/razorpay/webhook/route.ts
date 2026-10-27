@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyRazorpayWebhookSignature } from '@/lib/payment/razorpay';
+import { sendOrderToDelhiveryPending } from '@/lib/shipping/delhiveryPending';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -45,8 +46,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true, note: 'Order not found in database' });
       }
 
-      // Verify payment amount matches order total in paise
-      const expectedPaise = Math.round(dbOrder.total * 100);
+      // Verify payment amount matches expected amount (advance for COD with advance, full total for prepaid)
+      const isCodAdvanceOrder = dbOrder.paymentMethod === 'COD' && dbOrder.advanceAmount > 0;
+      const expectedAmount = isCodAdvanceOrder ? dbOrder.advanceAmount : dbOrder.total;
+      const expectedPaise = Math.round(expectedAmount * 100);
       const paidPaise = paymentEntity?.amount || orderEntity?.amount;
 
       if (paidPaise && paidPaise < expectedPaise) {
@@ -61,28 +64,42 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const isPartiallyPaid = isCodAdvanceOrder && (dbOrder.codBalanceAmount ?? 0) > 0;
+      const paymentId = paymentEntity?.id || null;
+
       // Idempotently update order status
       await prisma.order.update({
         where: { id: dbOrder.id },
         data: {
-          paymentStatus: 'PAID',
+          paymentStatus: isPartiallyPaid ? 'PARTIALLY_PAID' : 'PAID',
           orderStatus: 'CONFIRMED',
-          paymentMethod: 'RAZORPAY',
+          paymentMethod: dbOrder.paymentMethod, // Preserve 'COD' for COD advance orders
+          advancePaymentId: isCodAdvanceOrder ? (paymentId || dbOrder.advancePaymentId) : dbOrder.advancePaymentId,
+          advancePaidAt: isCodAdvanceOrder ? (dbOrder.advancePaidAt || new Date()) : dbOrder.advancePaidAt,
         },
       });
+
+      const eventDescription = isCodAdvanceOrder
+        ? `COD advance payment of ₹${dbOrder.advanceAmount} verified via Razorpay Webhook (${event}). Remaining balance ₹${dbOrder.codBalanceAmount ?? 0} to be collected on delivery.`
+        : `Payment of ₹${dbOrder.total} verified via Razorpay Webhook (${event})`;
 
       // Log event
       await prisma.shipmentEvent.create({
         data: {
           orderId: dbOrder.id,
           status: 'PAYMENT_VERIFIED',
-          description: `Payment of ₹${dbOrder.total} verified via Razorpay Webhook (${event})`,
+          description: eventDescription,
           location: 'Razorpay Webhook Service',
         },
       }).catch(() => {});
 
-      // Order remains in 'Pending AWB' status until admin verification & acceptance.
-      // Charges are NOT deducted from Delhivery until the admin clicks 'Accept & Generate AWB'.
+      // Stage order in Delhivery One Pending queue (unmanifested, ₹0 charged)
+      sendOrderToDelhiveryPending(dbOrder.id).catch((err) => {
+        logger.warn('shipping.delhivery_pending.webhook_async_error', {
+          orderId: dbOrder.id,
+          error: err?.message,
+        });
+      });
     } else if (event === 'payment.failed') {
       await prisma.order.updateMany({
         where: { orderNumber },

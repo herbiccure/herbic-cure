@@ -48,6 +48,7 @@ export default function CheckoutPage() {
     finalTotal,
     freeShippingThreshold,
     standardShippingFee,
+    codAdvance,
     clearCart,
   } = useCart();
   const { customer, isLoading } = useAuth();
@@ -140,6 +141,25 @@ export default function CheckoutPage() {
   const currentShippingFee = isPrepaid ? 0 : (isCodFreeShipping ? 0 : standardShippingFee);
   const currentFinalTotal = Math.max(0, subtotal - discountAmount + currentShippingFee);
 
+  // COD Advance calculation preview (visual feedback only; server validates authoritatively)
+  const isCodAdvanceActive = !isPrepaid && Boolean(codAdvance?.enabled);
+  let advancePreview = 0;
+  let balancePreview = currentFinalTotal;
+
+  if (isCodAdvanceActive && codAdvance) {
+    if (codAdvance.type === 'FIXED') {
+      advancePreview = Math.min(Math.round(codAdvance.value), currentFinalTotal);
+    } else {
+      let rawAdv = Math.round((currentFinalTotal * codAdvance.value) / 100);
+      if (codAdvance.maxCap && rawAdv > codAdvance.maxCap) {
+        rawAdv = Math.round(codAdvance.maxCap);
+      }
+      advancePreview = Math.min(rawAdv, currentFinalTotal);
+    }
+    if (advancePreview > 0 && advancePreview < 1) advancePreview = 1;
+    balancePreview = Math.max(0, currentFinalTotal - advancePreview);
+  }
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const cleaned = cleanIndianMobile(e.target.value);
     setFormData((prev) => ({ ...prev, phone: cleaned }));
@@ -214,17 +234,13 @@ export default function CheckoutPage() {
       if (res.ok) {
         const data = await res.json();
 
-        // If Razorpay online payment
-        if (formData.paymentMethod !== 'COD') {
-          if (!data.razorpayOrderId) {
-            toast.error(
-              data.error || 'Payment gateway initialization failed. Please check your credentials or try COD.'
-            );
-            setLoading(false);
-            return;
-          }
-
-          toast.success('Opening secure Razorpay checkout...');
+        // If Razorpay order was initialized (Prepaid or COD with Advance)
+        if (data.razorpayOrderId) {
+          toast.success(
+            formData.paymentMethod === 'COD'
+              ? 'Opening secure payment window for COD advance...'
+              : 'Opening secure Razorpay checkout...'
+          );
           try {
             if (typeof (window as any).Razorpay !== 'undefined') {
               const options = {
@@ -232,7 +248,10 @@ export default function CheckoutPage() {
                 amount: data.razorpayAmount,
                 currency: data.razorpayCurrency || 'INR',
                 name: 'Herbic Cure',
-                description: '21 Herbs Ayurvedic Hair Care',
+                description:
+                  formData.paymentMethod === 'COD'
+                    ? 'COD Advance Payment'
+                    : '21 Herbs Ayurvedic Hair Care',
                 order_id: data.razorpayOrderId,
                 prefill: {
                   name: formData.name,
@@ -259,21 +278,28 @@ export default function CheckoutPage() {
 
                     if (verifyRes.ok) {
                       clearCart();
-                      toast.success('Payment verified successfully!');
+                      toast.success(
+                        formData.paymentMethod === 'COD'
+                          ? 'Advance payment verified! Your COD order is confirmed.'
+                          : 'Payment verified successfully!'
+                      );
                       router.push('/order-success?orderId=' + data.orderId);
                     } else {
                       toast.error(vData.error || 'Payment verification failed. Your card was not charged.');
                       setLoading(false);
                     }
-                  } catch (vEx) {
-                    // Verification network error handled via toast
+                  } catch {
                     toast.error('Network error during payment verification. Please check your order status.');
                     setLoading(false);
                   }
                 },
                 modal: {
                   ondismiss: function () {
-                    toast.info('Payment window closed. Your items are still in your cart.');
+                    toast.info(
+                      formData.paymentMethod === 'COD'
+                        ? 'Advance payment window closed. Complete advance payment to confirm your order.'
+                        : 'Payment window closed. Your items are still in your cart.'
+                    );
                     setLoading(false);
                   },
                 },
@@ -281,7 +307,6 @@ export default function CheckoutPage() {
 
               const rzp = new (window as any).Razorpay(options);
               rzp.on('payment.failed', function (resp: any) {
-                // Payment failure handled via toast
                 toast.error(resp.error?.description || 'Payment was declined or failed.');
                 setLoading(false);
               });
@@ -292,15 +317,14 @@ export default function CheckoutPage() {
               setLoading(false);
               return;
             }
-          } catch (sdkErr) {
-            // SDK error handled via toast
+          } catch {
             toast.error('Failed to launch Razorpay payment.');
             setLoading(false);
             return;
           }
         }
 
-        // COD orders only reach here
+        // Pure COD orders without advance requirement reach here
         clearCart();
         toast.success('Order confirmed successfully!');
         router.push(
@@ -428,9 +452,21 @@ export default function CheckoutPage() {
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-extrabold text-[#2D1B1B] pt-2 border-t border-[#F2DFE4]">
-                  <span>Total Due</span>
+                  <span>Total Order Value</span>
                   <span className="text-[#8C3A4F]">₹{currentFinalTotal}</span>
                 </div>
+                {isCodAdvanceActive && (
+                  <>
+                    <div className="flex justify-between text-xs font-bold text-amber-900 bg-amber-50/80 p-2 rounded-lg border border-amber-200/70">
+                      <span>Pay Now (Advance)</span>
+                      <span>₹{advancePreview}</span>
+                    </div>
+                    <div className="flex justify-between text-xs font-semibold text-[#543E36] px-1">
+                      <span>Due on Delivery</span>
+                      <span>₹{balancePreview}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -679,18 +715,27 @@ export default function CheckoutPage() {
                             Cash on Delivery (COD)
                           </span>
                         </div>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                          isCodFreeShipping
-                            ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                            : 'text-[#8C3A4F] bg-[#F6DFE7] border-[#EAC9D1]'
-                        }`}>
-                          {isCodFreeShipping ? 'FREE Delivery' : `+₹${standardShippingFee} Delivery`}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          {isCodAdvanceActive && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md border text-amber-800 bg-amber-50 border-amber-200">
+                              ₹{advancePreview} Advance
+                            </span>
+                          )}
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                            isCodFreeShipping
+                              ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                              : 'text-[#8C3A4F] bg-[#F6DFE7] border-[#EAC9D1]'
+                          }`}>
+                            {isCodFreeShipping ? 'FREE Delivery' : `+₹${standardShippingFee} Delivery`}
+                          </span>
+                        </div>
                       </div>
                       <span className="block text-[11px] text-[#7A5B64] mt-1 leading-snug">
-                        {isCodFreeShipping
-                          ? `Pay cash or UPI to courier upon delivery (Free express shipping on orders above ₹${freeShippingThreshold})`
-                          : `Pay cash or UPI to courier upon delivery (₹${standardShippingFee} courier charges applicable under ₹${freeShippingThreshold})`}
+                        {isCodAdvanceActive
+                          ? `Pay ₹${advancePreview} advance online now. Remaining ₹${balancePreview} collected upon delivery.`
+                          : (isCodFreeShipping
+                            ? `Pay cash or UPI to courier upon delivery (Free express shipping on orders above ₹${freeShippingThreshold})`
+                            : `Pay cash or UPI to courier upon delivery (₹${standardShippingFee} courier charges applicable under ₹${freeShippingThreshold})`)}
                       </span>
                     </div>
                   </label>
@@ -736,6 +781,29 @@ export default function CheckoutPage() {
                     </div>
                   </label>
                 </div>
+
+                {/* COD Advance notice card */}
+                {isCodAdvanceActive && (
+                  <div className="mt-3.5 p-3.5 rounded-2xl bg-[#FFFBF0] border border-amber-200/90 text-xs">
+                    <div className="flex items-start gap-2.5">
+                      <Sparkles className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                      <div className="space-y-1.5">
+                        <p className="font-semibold text-amber-950 text-[11px] leading-relaxed">
+                          {codAdvance?.message ||
+                            'A small advance payment is required to confirm your COD order. The balance will be collected at your doorstep upon delivery.'}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold text-amber-900 pt-0.5">
+                          <span className="bg-white px-2.5 py-1 rounded-md border border-amber-200/70 shadow-2xs">
+                            Pay Now (Advance): <span className="text-[#8C3A4F]">₹{advancePreview}</span>
+                          </span>
+                          <span className="bg-white px-2.5 py-1 rounded-md border border-amber-200/70 shadow-2xs">
+                            Pay on Delivery: <span className="text-stone-800">₹{balancePreview}</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Submit Button */}
@@ -747,7 +815,11 @@ export default function CheckoutPage() {
                 >
                   <Lock className="w-4 h-4" />
                   <span>
-                    {loading ? 'Confirming Ayurvedic Order...' : ('PLACE ORDER • ₹' + currentFinalTotal)}
+                    {loading
+                      ? 'Confirming Order...'
+                      : isCodAdvanceActive
+                      ? `PAY ₹${advancePreview} ADVANCE & CONFIRM ORDER`
+                      : `PLACE ORDER • ₹${currentFinalTotal}`}
                   </span>
                 </button>
                 <div className="mt-3 flex items-center justify-center gap-4 text-[11px] text-[#7A5B64]">
@@ -813,9 +885,21 @@ export default function CheckoutPage() {
                   </span>
                 </div>
                 <div className="flex justify-between text-base font-extrabold text-[#2D1B1B] pt-3 border-t border-[#F2DFE4]">
-                  <span>Total Amount</span>
+                  <span>Total Order Value</span>
                   <span className="text-[#8C3A4F] text-lg font-serif">₹{currentFinalTotal}</span>
                 </div>
+                {isCodAdvanceActive && (
+                  <div className="pt-2.5 space-y-2">
+                    <div className="flex justify-between items-center text-xs font-bold text-amber-900 bg-amber-50/90 p-2.5 rounded-xl border border-amber-200">
+                      <span>Pay Online Now (Advance)</span>
+                      <span className="text-sm font-extrabold text-[#8C3A4F]">₹{advancePreview}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs font-semibold text-[#543E36] px-1">
+                      <span>Due on Delivery (Cash / UPI)</span>
+                      <span className="font-bold text-[#2D1B1B]">₹{balancePreview}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
