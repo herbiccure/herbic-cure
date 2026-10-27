@@ -16,6 +16,13 @@ describe('Delhivery Express Logistics Integration Tests', () => {
     expect(getShortLabelName('Herbic Cure - Complete Hair Therapy Combo')).toBe('Complete Hair Therapy Combo');
   });
 
+  it('1b. Long product names up to 128 characters: preserves full name without premature dots', () => {
+    const longName = '21 Herbs Hair Oil (190ml) + Shampoo with Conditioner (200ml)';
+    const result = getShortLabelName(longName);
+    expect(result).not.toContain('..');
+    expect(result).toBe('21 Herbs Hair Oil (190ml) + Shampoo & Cond (200ml)');
+  });
+
   it('2. Label description for 1-item order: clean and compact without truncation', () => {
     const order1 = [
       { name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)', quantity: 1 },

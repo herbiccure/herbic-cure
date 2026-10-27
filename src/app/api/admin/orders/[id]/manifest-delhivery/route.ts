@@ -54,19 +54,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const { force } = body;
 
-    // Guard: In 'delhivery_pending' mode, manifestation is managed inside Delhivery One
-    const { getEffectiveShippingMode } = await import('@/lib/shipping/delhiveryPending');
-    const effectiveMode = await getEffectiveShippingMode();
-    if (effectiveMode === 'delhivery_pending' && !force) {
-      return NextResponse.json(
-        {
-          error:
-            'Direct manifestation from Admin UI is disabled in Delhivery Pending mode. Staff must verify and manifest orders inside Delhivery One dashboard (Orders > Forward Orders > Pending). Pass force=true to override.',
-        },
-        { status: 400 }
-      );
-    }
-
     // Idempotency: If order already has an active AWB and force is false
     if (order.trackingNumber && !order.trackingNumber.startsWith('DLH') && !force) {
       return NextResponse.json({
@@ -77,6 +64,30 @@ export async function POST(request: NextRequest, context: RouteContext) {
         message: `Order #${order.orderNumber} is already manifested with AWB ${order.trackingNumber}.`,
         order,
       });
+    }
+
+    // Concurrency guard: atomically claim manifestation to prevent duplicate clicks
+    if (!force) {
+      const claim = await prisma.order.updateMany({
+        where: {
+          id,
+          trackingNumber: null,
+          delhiverySyncStatus: { not: 'IN_PROGRESS' },
+        },
+        data: {
+          delhiverySyncStatus: 'IN_PROGRESS',
+        } as any,
+      });
+
+      if (claim.count === 0) {
+        return NextResponse.json(
+          {
+            error:
+              'Order manifestation is already in progress or order already has an active AWB. Please refresh.',
+          },
+          { status: 409 }
+        );
+      }
     }
 
     // Parse destination address
@@ -132,6 +143,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
         error: errorMsg,
       });
 
+      await prisma.order.update({
+        where: { id },
+        data: {
+          delhiverySyncStatus: 'FAILED',
+          delhiverySyncError: errorMsg,
+        } as any,
+      });
+
       await createAuditLogEntry({
         actorId: session.id,
         actorEmail: session.email,
@@ -157,8 +176,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
         trackingNumber: delhiveryRes.waybill,
         trackingUrl,
         carrier: 'Delhivery',
+        delhiveryStatus: 'MANIFESTED',
+        delhiverySyncStatus: 'SYNCED',
+        delhiverySyncError: null,
+        lastDelhiverySyncAt: new Date(),
         orderStatus: order.orderStatus === 'PENDING' ? 'CONFIRMED' : order.orderStatus,
-      },
+      } as any,
       include: {
         items: true,
         events: { orderBy: { timestamp: 'desc' } },

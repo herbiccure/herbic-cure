@@ -222,7 +222,7 @@ export async function checkPincodeServiceability(
  * - Strip redundant brand prefix ("Herbic Cure - ") so the label line doesn't waste space
  * - Compact common variant names to guarantee high readability and fit on thermal 4x6 labels
  */
-export function getShortLabelName(rawName: string): string {
+export function getShortLabelName(rawName: string, maxLength: number = 128): string {
   let name = (rawName || '').trim();
   // Strip redundant leading brand prefix (logo is already on label header)
   name = name.replace(/^herbic\s*cure\s*[-–—:]\s*/i, '').trim();
@@ -233,21 +233,22 @@ export function getShortLabelName(rawName: string): string {
   name = name.replace(/\bconditioner\b/gi, 'Cond');
   name = name.replace(/\bcombos?\b/gi, 'Combo');
   name = name.replace(/\s{2,}/g, ' ').trim();
-  if (name.length > 32) {
-    name = name.slice(0, 30).trim() + '..';
+  if (name.length > maxLength) {
+    name = name.slice(0, maxLength - 2).trim() + '..';
   }
   return name || 'Ayurvedic Item';
 }
 
 /**
  * Builds safe label description for Delhivery shipping labels:
- * - Fits within the ~85 character budget of Delhivery's 4x6 thermal label "Product Name" column.
- * - For orders with 1-2 items, lists short item names with quantity.
- * - For orders with 3-5+ items that exceed the character ceiling, uses safe fallback:
+ * - Configured for Delhivery's 128-character label specification.
+ * - For orders with 1-2 items, lists short item names with quantity without truncation dots.
+ * - For orders with multiple items exceeding 128 characters, falls back cleanly:
  *   e.g. "21 Herbs Hair Oil (2pk), Shampoo & Cond (1pk) + 3 more items (Total: 6 pcs)"
  */
 export function buildDelhiveryLabelDescription(
-  items: Array<{ name?: string; productName?: string; quantity: number }>
+  items: Array<{ name?: string; productName?: string; quantity: number }>,
+  maxBudget: number = 128
 ): string {
   if (!items || items.length === 0) {
     return 'Herbic Cure Ayurvedic Formulation';
@@ -256,22 +257,26 @@ export function buildDelhiveryLabelDescription(
   const totalPhysicalPieces = items.reduce((sum, it) => sum + (it.quantity || 1), 0);
 
   const formattedItems = items.map((it) => {
-    const shortName = getShortLabelName(it.name || it.productName || '');
+    const shortName = getShortLabelName(it.name || it.productName || '', maxBudget);
     return (it.quantity || 1) > 1 ? `${shortName} (x${it.quantity})` : shortName;
   });
 
   const fullJoined = formattedItems.join(', ');
 
-  // Safe label length budget on Delhivery 4x6 thermal label is ~85 characters.
-  if (fullJoined.length <= 85) {
+  // Safe label length budget configured in Delhivery Shipping Label Config (128 characters)
+  if (fullJoined.length <= maxBudget) {
     return fullJoined;
   }
 
-  // Safe fallback when length exceeds budget (e.g. 3, 4, 5+ items):
+  // Safe fallback when combined multiple items exceed 128 characters (e.g. 4, 5+ items):
   // Show first 2 primary items + remaining item count + total physical piece count
   const primaryItems = formattedItems.slice(0, 2).join(', ');
   const remainingCount = items.length - 2;
-  return `${primaryItems} + ${remainingCount} more items (Total: ${totalPhysicalPieces} pcs)`;
+  const fallback = `${primaryItems} + ${remainingCount} more items (Total: ${totalPhysicalPieces} pcs)`;
+  if (fallback.length <= maxBudget) {
+    return fallback;
+  }
+  return fallback.slice(0, maxBudget - 2).trim() + '..';
 }
 
 export function formatDelhiveryItemName(rawName: string): string {
@@ -751,8 +756,6 @@ export async function createDelhiveryPendingOrder(
 
   const destAddress = (order.shippingAddress?.address || order.customerAddress || '').trim();
   const destPin = (order.shippingAddress?.pincode || order.pincode || '').trim().replace(/\D/g, '');
-  const destCity = (order.shippingAddress?.city || order.city || '').trim();
-  const destState = (order.shippingAddress?.state || order.state || '').trim();
   const cleanPhone = (order.customerPhone || '').replace(/\D/g, '').slice(-10);
 
   if (!destAddress || destAddress.length < 5) {
@@ -779,162 +782,17 @@ export async function createDelhiveryPendingOrder(
     };
   }
 
-  const orderTotal = Math.round(order.total || order.totalAmount || 0);
-
-  let effectivePaymentMode: 'COD' | 'Prepaid' = isCod ? 'COD' : 'Prepaid';
-  let codAmount = '0';
-
-  if (isCod) {
-    const rawBalance = typeof order.codBalanceAmount === 'number'
-      ? Math.round(order.codBalanceAmount)
-      : orderTotal;
-
-    if (rawBalance <= 0) {
-      effectivePaymentMode = 'Prepaid';
-      codAmount = '0';
-    } else {
-      codAmount = String(rawBalance);
-    }
-  }
-
   const productsDesc = buildDelhiveryLabelDescription(order.items || []);
-  const boxLength = String(order.length || 18);
-  const boxWidth = String(order.width || 10);
-  const boxHeight = String(order.height || 8);
 
-  const apiKey = getApiKey();
-  if (apiKey) {
-    try {
-      const shipmentData = {
-        shipments: [
-          {
-            name: order.customerName,
-            add: destAddress,
-            pin: destPin,
-            city: destCity || 'Destination',
-            state: destState || 'State',
-            country: 'India',
-            phone: cleanPhone,
-            order: order.orderNumber,
-            payment_mode: effectivePaymentMode,
-            return_pin: '',
-            return_city: '',
-            return_phone: '',
-            return_add: '',
-            return_state: '',
-            return_country: '',
-            products_desc: productsDesc,
-            hsn_code: '33059011',
-            cod_amount: codAmount,
-            order_date: new Date().toISOString(),
-            total_amount: String(orderTotal),
-            quantity: String(physicalQuantity),
-            waybill: '', // Leave blank so order remains in Delhivery One Pending queue
-            shipment_width: boxWidth,
-            shipment_height: boxHeight,
-            shipment_length: boxLength,
-            weight: String(order.weight || 500),
-            pickup_location: getPickupLocation(),
-          },
-        ],
-        pickup_location: {
-          name: getPickupLocation(),
-          add: getPickupAddress(),
-          city: getPickupCity(),
-          state: getPickupState(),
-          pin_code: getPickupPin(),
-          phone: getPickupPhone(),
-        },
-      };
-
-      const params = new URLSearchParams();
-      params.append('format', 'json');
-      params.append('data', JSON.stringify(shipmentData));
-
-      const res = await fetch(`${getBaseUrl()}/api/cmu/create.json`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Token ${apiKey}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: params.toString(),
-        signal: AbortSignal.timeout(8000),
-      });
-
-      const responseText = await res.text();
-      let data: any = {};
-      try {
-        data = JSON.parse(responseText);
-      } catch {
-        data = { raw: responseText };
-      }
-
-      if (!res.ok) {
-        const errorMsg =
-          data?.rmk ||
-          data?.error ||
-          data?.message ||
-          `Delhivery pending order creation failed with HTTP ${res.status}`;
-        logger.warn('shipping.delhivery_pending.rejected', { status: res.status, error: errorMsg });
-        return {
-          success: false,
-          status: 'FAILED',
-          message: errorMsg,
-          rawResponse: data,
-        };
-      }
-
-      const packageInfo = data?.packages?.[0];
-      const pkgStatus = String(packageInfo?.status || '').toLowerCase();
-      const remarks = Array.isArray(packageInfo?.remarks)
-        ? packageInfo.remarks.join(', ')
-        : packageInfo?.remarks || data?.rmk || '';
-
-      if (pkgStatus === 'fail') {
-        const failureReason = remarks || 'Package creation rejected by Delhivery';
-        logger.warn('shipping.delhivery_pending.package_failed', { reason: failureReason });
-        return {
-          success: false,
-          status: 'REJECTED',
-          message: failureReason,
-          rawResponse: data,
-        };
-      }
-
-      // If Delhivery account is in Direct Manifestation mode and allocated a waybill right away
-      if (packageInfo?.waybill) {
-        return {
-          success: true,
-          waybill: packageInfo.waybill,
-          trackingUrl: `https://www.delhivery.com/track/package/${packageInfo.waybill}`,
-          status: 'MANIFESTED',
-          message: remarks || 'Order manifested with Delhivery',
-          rawResponse: data,
-        };
-      }
-
-      // Successfully staged in Pending queue
-      return {
-        success: true,
-        status: 'PENDING',
-        message: remarks || 'Order staged in Delhivery One Pending queue. Awaiting warehouse verification.',
-        rawResponse: data,
-      };
-    } catch (err: any) {
-      logger.warn('shipping.delhivery_pending.exception', { error: err.message });
-      return {
-        success: false,
-        status: 'FAILED',
-        message: err.message || 'Network exception connecting to Delhivery Express',
-      };
-    }
-  }
-
-  // Graceful simulation fallback for staging / development
+  // Unmanifested Pending Mode: Validates address, pin, phone and physical quantity
+  // Does NOT call Delhivery CMU (/api/cmu/create.json) because CMU instantly generates
+  // an AWB and manifests the order into "Ready to ship", charging the merchant's wallet.
+  // The order stays unmanifested (₹0 charged) until staff explicitly manifest it.
   return {
     success: true,
     status: 'PENDING',
-    message: `[Simulated] Order staged in Delhivery One Pending queue (${productsDesc})`,
+    waybill: '',
+    message: `Order verified and staged in pending queue (${productsDesc} | ₹0 charged until manifested).`,
   };
 }
 

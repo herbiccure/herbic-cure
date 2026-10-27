@@ -52,7 +52,7 @@ interface ProductDetailProps {
 }
 
 export default function ProductDetailClient({ product }: ProductDetailProps) {
-  const { addItem, setIsCartOpen } = useCart();
+  const { addItem } = useCart();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -94,7 +94,6 @@ export default function ProductDetailClient({ product }: ProductDetailProps) {
     );
     toast.success(`Added ${product.name} to bag!`);
     setAdded(true);
-    setIsCartOpen(true);
     setTimeout(() => setAdded(false), 2000);
   };
 

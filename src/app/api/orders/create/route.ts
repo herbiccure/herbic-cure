@@ -5,7 +5,6 @@ import { checkoutSchema } from '@/lib/validations';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { createRazorpayOrder } from '@/lib/payment/razorpay';
 import { calculateCodAdvance } from '@/lib/shipping/codAdvance';
-import { sendOrderToDelhiveryPending } from '@/lib/shipping/delhiveryPending';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -386,15 +385,8 @@ export async function POST(req: NextRequest) {
       return order;
     });
 
-    // For standard COD orders (no online gateway session required), dispatch to Delhivery Pending queue
-    if (!requiresGatewaySession) {
-      sendOrderToDelhiveryPending(createdOrder.id).catch((err) => {
-        logger.warn('shipping.delhivery_pending.async_error', {
-          orderId: createdOrder.id,
-          error: err?.message,
-        });
-      });
-    }
+    // Orders remain in store pending queue (unmanifested, ₹0 charged).
+    // Warehouse / store staff review orders and generate Delhivery AWB when ready to ship.
 
     logger.info('order.created', {
       orderNumber: createdOrder.orderNumber,

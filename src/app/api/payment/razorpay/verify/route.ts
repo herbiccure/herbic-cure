@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyRazorpayPaymentSignature } from '@/lib/payment/razorpay';
-import { sendOrderToDelhiveryPending } from '@/lib/shipping/delhiveryPending';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
 
@@ -88,13 +87,7 @@ export async function POST(req: NextRequest) {
       },
     }).catch(() => { });
 
-    // Stage order in Delhivery One Pending queue (unmanifested, ₹0 charged)
-    sendOrderToDelhiveryPending(order.id).catch((err) => {
-      logger.warn('shipping.delhivery_pending.verify_async_error', {
-        orderId: order.id,
-        error: err?.message,
-      });
-    });
+    // Order remains in store pending queue (unmanifested, ₹0 charged until staff manifest)
 
     logger.info('payment.verified', {
       orderId: order.orderNumber,

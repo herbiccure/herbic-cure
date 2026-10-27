@@ -142,6 +142,7 @@ export default function AdminOrdersPage() {
   const [saving, setSaving] = useState(false);
   const [syncingDelhivery, setSyncingDelhivery] = useState(false);
   const [manifestingDelhivery, setManifestingDelhivery] = useState(false);
+  const [cancellingShipment, setCancellingShipment] = useState(false);
 
   const openModal = (o: OrderItem) => {
     setSelectedOrder(o);
@@ -181,6 +182,43 @@ export default function AdminOrdersPage() {
       toast.error(err.message || 'Error manifesting with Delhivery');
     } finally {
       setManifestingDelhivery(false);
+    }
+  };
+
+  const handleCancelDelhiveryShipment = async () => {
+    if (!selectedOrder?.id || !selectedOrder.trackingNumber) return;
+    if (
+      !confirm(
+        `Are you sure you want to cancel Delhivery AWB #${selectedOrder.trackingNumber}? This will void the shipment on Delhivery, refund the freight charge to your Delhivery wallet, and revert this order to pending.`
+      )
+    ) {
+      return;
+    }
+    setCancellingShipment(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${selectedOrder.id}/cancel-delhivery-shipment`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to cancel Delhivery shipment');
+
+      toast.success(data.message || 'Delhivery shipment cancelled and refunded to wallet.');
+
+      if (data.order) {
+        setSelectedOrder(data.order);
+        setNewTracking('');
+        setNewStatus(data.order.orderStatus);
+        mutate(
+          {
+            orders: orders.map((o) => (o.id === data.order.id ? { ...o, ...data.order } : o)),
+          },
+          false
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error cancelling Delhivery shipment');
+    } finally {
+      setCancellingShipment(false);
     }
   };
 
@@ -782,21 +820,20 @@ export default function AdminOrdersPage() {
                       <span>{syncingDelhivery ? 'Checking...' : 'Check Delhivery Status / Discover AWB'}</span>
                     </button>
 
-                    {selectedOrder.shippingMode === 'auto_manifest' && (
-                      <button
-                        type="button"
-                        disabled={manifestingDelhivery}
-                        onClick={() => handleManifestDelhivery(false)}
-                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
-                      >
-                        <CheckCircle2 className={cn('w-4 h-4', manifestingDelhivery && 'animate-spin')} />
-                        <span>
-                          {manifestingDelhivery
-                            ? 'Manifesting with Delhivery...'
-                            : 'Accept Order & Generate Delhivery AWB'}
-                        </span>
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      disabled={manifestingDelhivery}
+                      onClick={() => handleManifestDelhivery(false)}
+                      className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                      title="Verify order and generate single Delhivery AWB"
+                    >
+                      <CheckCircle2 className={cn('w-4 h-4', manifestingDelhivery && 'animate-spin')} />
+                      <span>
+                        {manifestingDelhivery
+                          ? 'Manifesting with Delhivery...'
+                          : 'Accept Order & Generate Delhivery AWB'}
+                      </span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -881,16 +918,31 @@ export default function AdminOrdersPage() {
                     </a>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleSyncDelhivery}
-                    disabled={syncingDelhivery}
-                    className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
-                    title="Pull live status from Delhivery network and synchronize order state"
-                  >
-                    <RefreshCw className={cn('w-3.5 h-3.5', syncingDelhivery && 'animate-spin')} />
-                    <span>{syncingDelhivery ? 'Syncing...' : 'Sync Live Status'}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {selectedOrder.trackingNumber && selectedOrder.orderStatus !== 'DELIVERED' && selectedOrder.orderStatus !== 'CANCELLED' && (
+                      <button
+                        type="button"
+                        onClick={handleCancelDelhiveryShipment}
+                        disabled={cancellingShipment}
+                        className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-bold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                        title="Cancel the Delhivery shipment, void the AWB, and refund freight charges back to wallet"
+                      >
+                        <X className={cn('w-3.5 h-3.5', cancellingShipment && 'animate-spin')} />
+                        <span>{cancellingShipment ? 'Cancelling...' : 'Cancel Delhivery Shipment (Void AWB & Refund)'}</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleSyncDelhivery}
+                      disabled={syncingDelhivery}
+                      className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                      title="Pull live status from Delhivery network and synchronize order state"
+                    >
+                      <RefreshCw className={cn('w-3.5 h-3.5', syncingDelhivery && 'animate-spin')} />
+                      <span>{syncingDelhivery ? 'Syncing...' : 'Sync Live Status'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

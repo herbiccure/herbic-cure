@@ -34,4 +34,9 @@
    - Client-side error reporting belongs in `@/lib/client-report` using Sentry's client SDK.
    - Shared data models, types, and fallback defaults must reside in neutral files under `src/types/` (never mixed with server database logic or logger calls).
 
+<!-- BEGIN:nextjs-agent-rules -->
+## Next.js App Router Rules
+- Next.js 16 includes breaking changes — APIs, conventions, and file structure may differ from older versions. Read relevant guides in `node_modules/next/dist/docs/`.
+<!-- END:nextjs-agent-rules -->
+
 

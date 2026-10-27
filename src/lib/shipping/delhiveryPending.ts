@@ -146,7 +146,32 @@ export async function sendOrderToDelhiveryPending(
 
   // Branch based on configured shipping mode
   if (shippingMode === 'auto_manifest') {
-    // Legacy / Direct Manifestation
+    // Atomic concurrency guard: prevent duplicate concurrent calls from manifesting twice
+    const claim = await prisma.order.updateMany({
+      where: {
+        id: order.id,
+        trackingNumber: null,
+        delhiverySyncStatus: { not: 'IN_PROGRESS' },
+      },
+      data: {
+        delhiverySyncStatus: 'IN_PROGRESS',
+        lastDelhiverySyncAt: new Date(),
+      } as any,
+    });
+
+    if (claim.count === 0) {
+      logger.info('shipping.delhivery.manifest_already_in_progress', {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+      });
+      return {
+        success: true,
+        status: 'SKIPPED',
+        message: 'Order manifestation is already in progress or already completed.',
+      };
+    }
+
+    // Direct Manifestation
     const manifestRes = await createDelhiveryShipment(shipmentPayload);
     if (manifestRes.success && manifestRes.waybill) {
       await prisma.order.update({
@@ -210,50 +235,11 @@ export async function sendOrderToDelhiveryPending(
     }
   }
 
-  // Recommended: Delhivery Pending Queue Mode
+  // Recommended: Delhivery Pending Queue Mode (Unmanifested, ₹0 charged)
   const pendingRes = await createDelhiveryPendingOrder(shipmentPayload);
 
   if (pendingRes.success) {
-    if (pendingRes.waybill) {
-      // Delhivery account was in direct manifestation mode and returned an AWB immediately
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          trackingNumber: pendingRes.waybill,
-          trackingUrl: pendingRes.trackingUrl || `https://www.delhivery.com/track/package/${pendingRes.waybill}`,
-          carrier: 'Delhivery',
-          delhiveryStatus: 'MANIFESTED',
-          delhiverySyncStatus: 'SYNCED',
-          delhiverySyncError: null,
-          shippingMode: 'delhivery_pending',
-          lastDelhiverySyncAt: new Date(),
-        } as any,
-      });
-
-      await prisma.shipmentEvent.create({
-        data: {
-          orderId: order.id,
-          status: 'READY_TO_SHIP',
-          location: 'Delhivery Express',
-          description: `Order manifested with Delhivery. AWB: ${pendingRes.waybill}`,
-        },
-      });
-
-      logger.info('shipping.delhivery_pending.manifested_immediately', {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        waybill: pendingRes.waybill,
-      });
-
-      return {
-        success: true,
-        status: 'MANIFESTED',
-        waybill: pendingRes.waybill,
-        message: pendingRes.message,
-      };
-    }
-
-    // Normal Pending Mode: Order staged in Delhivery One Pending queue (₹0 charged)
+    // Normal Pending Mode: Order staged in Store Pending queue (₹0 charged)
     await prisma.order.update({
       where: { id: order.id },
       data: {
@@ -269,8 +255,8 @@ export async function sendOrderToDelhiveryPending(
       data: {
         orderId: order.id,
         status: 'PENDING',
-        location: 'Delhivery One Dashboard',
-        description: 'Order staged in Delhivery One Pending queue. Awaiting warehouse staff verification.',
+        location: 'Store Order Management',
+        description: 'Order staged in Pending queue. Awaiting warehouse staff verification and manifestation.',
       },
     });
 
@@ -282,7 +268,7 @@ export async function sendOrderToDelhiveryPending(
     return {
       success: true,
       status: 'PENDING',
-      message: 'Order staged in Delhivery One Pending queue. Awaiting warehouse verification.',
+      message: 'Order staged in Pending queue. Awaiting staff verification (₹0 charged).',
     };
   }
 

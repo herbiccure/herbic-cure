@@ -186,7 +186,7 @@ graph TD
 ### Phase 9: Comprehensive Technical Documentation (Commit 9)
 * Produce complete documentation suite in `/docs`:
   * `README.md` (root rewrite)
-  * `docs/README.md` (documentation index and reading order)
+  * `docs/INDEX.md` (documentation index and reading order)
   * `docs/BUSINESS.md` (already generated)
   * `docs/SEO_RESEARCH.md` (already generated)
   * `docs/KEYWORDS.md` (already generated)

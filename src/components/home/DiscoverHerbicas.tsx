@@ -52,7 +52,7 @@ interface DiscoverHerbicasProps {
 
 export default function DiscoverHerbicas({ contentJson }: DiscoverHerbicasProps) {
   const router = useRouter();
-  const { addItem, setIsCartOpen } = useCart();
+  const { addItem } = useCart();
   const [isAdding, setIsAdding] = useState(false);
   const [isBuying, setIsBuying] = useState(false);
 
@@ -125,7 +125,6 @@ export default function DiscoverHerbicas({ contentJson }: DiscoverHerbicasProps)
       image: image,
     });
     toast.success(`${heading} added to bag!`);
-    setIsCartOpen(true);
     setTimeout(() => setIsAdding(false), 800);
   };
 

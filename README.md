@@ -102,4 +102,10 @@ Open [http://localhost:3000](http://localhost:3000) to view the storefront.
 
 ---
 
+## Documentation
+
+Full architectural specifications, operational runbooks, security audits, and developer guides are organized under the [`/docs`](file:///d:/Codes/Projects/herbicCure-main/docs/INDEX.md) directory. See the [Documentation Index](file:///d:/Codes/Projects/herbicCure-main/docs/INDEX.md) for a categorized guide.
+
+---
+
 © Herbic Cure. All Rights Reserved.

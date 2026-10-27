@@ -130,7 +130,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...prev, { ...newItem, quantity }];
     });
-    setIsCartOpen(true);
   };
 
   const removeItem = (id: string) => {
