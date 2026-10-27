@@ -113,7 +113,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       pincode,
       totalAmount: order.total,
       shippingFee: order.shippingFee,
-      codBalanceAmount: order.codBalanceAmount ?? (order.total - (order.advanceAmount || 0)),
+      codBalanceAmount: Number(
+        (order as any).codBalanceAmount ?? (order.total - Number((order as any).advanceAmount || 0))
+      ),
       paymentMethod: isCod ? 'COD' : 'Prepaid',
       items: order.items.map((it) => ({
         name: it.productName,

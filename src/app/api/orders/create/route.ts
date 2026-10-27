@@ -323,7 +323,7 @@ export async function POST(req: NextRequest) {
           items: {
             create: verifiedOrderItems,
           },
-        },
+        } as any,
       });
 
       // Atomically decrement inventory stock for each product
@@ -400,8 +400,8 @@ export async function POST(req: NextRequest) {
       orderNumber: createdOrder.orderNumber,
       total: createdOrder.total,
       paymentMethod: createdOrder.paymentMethod,
-      advanceAmount: createdOrder.advanceAmount,
-      codBalanceAmount: createdOrder.codBalanceAmount,
+      advanceAmount,
+      codBalanceAmount,
     });
 
     return NextResponse.json({
@@ -409,8 +409,8 @@ export async function POST(req: NextRequest) {
       orderId: createdOrder.orderNumber,
       id: createdOrder.id,
       total: createdOrder.total,
-      advanceAmount: createdOrder.advanceAmount,
-      codBalanceAmount: createdOrder.codBalanceAmount,
+      advanceAmount,
+      codBalanceAmount,
       paymentMethod: createdOrder.paymentMethod,
       carrier: createdOrder.carrier,
       trackingNumber: createdOrder.trackingNumber,

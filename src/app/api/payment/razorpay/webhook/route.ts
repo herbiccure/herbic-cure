@@ -47,8 +47,13 @@ export async function POST(req: NextRequest) {
       }
 
       // Verify payment amount matches expected amount (advance for COD with advance, full total for prepaid)
-      const isCodAdvanceOrder = dbOrder.paymentMethod === 'COD' && dbOrder.advanceAmount > 0;
-      const expectedAmount = isCodAdvanceOrder ? dbOrder.advanceAmount : dbOrder.total;
+      const advanceAmount = Number((dbOrder as any).advanceAmount ?? 0);
+      const codBalanceAmount = Number((dbOrder as any).codBalanceAmount ?? (dbOrder.total - advanceAmount));
+      const existingAdvancePaymentId = (dbOrder as any).advancePaymentId ?? null;
+      const existingAdvancePaidAt = (dbOrder as any).advancePaidAt ?? null;
+
+      const isCodAdvanceOrder = dbOrder.paymentMethod === 'COD' && advanceAmount > 0;
+      const expectedAmount = isCodAdvanceOrder ? advanceAmount : dbOrder.total;
       const expectedPaise = Math.round(expectedAmount * 100);
       const paidPaise = paymentEntity?.amount || orderEntity?.amount;
 
@@ -64,7 +69,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const isPartiallyPaid = isCodAdvanceOrder && (dbOrder.codBalanceAmount ?? 0) > 0;
+      const isPartiallyPaid = isCodAdvanceOrder && codBalanceAmount > 0;
       const paymentId = paymentEntity?.id || null;
 
       // Idempotently update order status
@@ -74,13 +79,13 @@ export async function POST(req: NextRequest) {
           paymentStatus: isPartiallyPaid ? 'PARTIALLY_PAID' : 'PAID',
           orderStatus: 'CONFIRMED',
           paymentMethod: dbOrder.paymentMethod, // Preserve 'COD' for COD advance orders
-          advancePaymentId: isCodAdvanceOrder ? (paymentId || dbOrder.advancePaymentId) : dbOrder.advancePaymentId,
-          advancePaidAt: isCodAdvanceOrder ? (dbOrder.advancePaidAt || new Date()) : dbOrder.advancePaidAt,
-        },
+          advancePaymentId: isCodAdvanceOrder ? (paymentId || existingAdvancePaymentId) : existingAdvancePaymentId,
+          advancePaidAt: isCodAdvanceOrder ? (existingAdvancePaidAt || new Date()) : existingAdvancePaidAt,
+        } as any,
       });
 
       const eventDescription = isCodAdvanceOrder
-        ? `COD advance payment of ₹${dbOrder.advanceAmount} verified via Razorpay Webhook (${event}). Remaining balance ₹${dbOrder.codBalanceAmount ?? 0} to be collected on delivery.`
+        ? `COD advance payment of ₹${advanceAmount} verified via Razorpay Webhook (${event}). Remaining balance ₹${codBalanceAmount} to be collected on delivery.`
         : `Payment of ₹${dbOrder.total} verified via Razorpay Webhook (${event})`;
 
       // Log event
@@ -118,3 +123,12 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function GET() {
+  return NextResponse.json({
+    status: 'ACTIVE',
+    service: 'Herbic Cure Razorpay Payment Webhook Service',
+    timestamp: new Date().toISOString(),
+  });
+}
+

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import crypto from 'crypto';
 import {
   verifyRazorpayPaymentSignature,
@@ -92,6 +92,14 @@ describe('Razorpay Payment Security & Signature Verification', () => {
     it('rejects empty payloads or missing signatures safely', () => {
       expect(verifyRazorpayWebhookSignature('', 'some_sig')).toBe(false);
       expect(verifyRazorpayWebhookSignature('{"event":"test"}', '')).toBe(false);
+    });
+
+    it('GET /api/webhooks/razorpay returns active status for health checks', async () => {
+      const { GET } = await import('@/app/api/webhooks/razorpay/route');
+      const res = await GET();
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.status).toBe('ACTIVE');
     });
   });
 });

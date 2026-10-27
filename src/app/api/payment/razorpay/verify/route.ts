@@ -55,8 +55,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Update order payment status
-    const isCodAdvanceOrder = order.paymentMethod === 'COD' && order.advanceAmount > 0;
-    const isPartiallyPaid = isCodAdvanceOrder && (order.codBalanceAmount ?? 0) > 0;
+    const advanceAmount = Number((order as any).advanceAmount ?? 0);
+    const codBalanceAmount = Number((order as any).codBalanceAmount ?? (order.total - advanceAmount));
+    const existingAdvancePaymentId = (order as any).advancePaymentId ?? null;
+    const existingAdvancePaidAt = (order as any).advancePaidAt ?? null;
+
+    const isCodAdvanceOrder = order.paymentMethod === 'COD' && advanceAmount > 0;
+    const isPartiallyPaid = isCodAdvanceOrder && codBalanceAmount > 0;
 
     await prisma.order.update({
       where: { id: order.id },
@@ -64,14 +69,14 @@ export async function POST(req: NextRequest) {
         paymentStatus: isPartiallyPaid ? 'PARTIALLY_PAID' : 'PAID',
         orderStatus: 'CONFIRMED',
         paymentMethod: order.paymentMethod, // Preserve 'COD' for COD advance orders
-        advancePaymentId: isCodAdvanceOrder ? razorpay_payment_id : order.advancePaymentId,
-        advancePaidAt: isCodAdvanceOrder ? new Date() : order.advancePaidAt,
-      },
+        advancePaymentId: isCodAdvanceOrder ? razorpay_payment_id : existingAdvancePaymentId,
+        advancePaidAt: isCodAdvanceOrder ? new Date() : existingAdvancePaidAt,
+      } as any,
     });
 
     // 4. Log verified event
     const eventDescription = isCodAdvanceOrder
-      ? `COD advance payment of ₹${order.advanceAmount} confirmed via Razorpay (Payment ID: ${razorpay_payment_id}). Remaining balance ₹${order.codBalanceAmount ?? 0} to be collected on delivery.`
+      ? `COD advance payment of ₹${advanceAmount} confirmed via Razorpay (Payment ID: ${razorpay_payment_id}). Remaining balance ₹${codBalanceAmount} to be collected on delivery.`
       : `Payment of ₹${order.total} confirmed via Razorpay (Payment ID: ${razorpay_payment_id})`;
 
     await prisma.shipmentEvent.create({
@@ -94,7 +99,7 @@ export async function POST(req: NextRequest) {
     logger.info('payment.verified', {
       orderId: order.orderNumber,
       paymentId: razorpay_payment_id,
-      amount: isCodAdvanceOrder ? order.advanceAmount : order.total,
+      amount: isCodAdvanceOrder ? advanceAmount : order.total,
       isCodAdvance: isCodAdvanceOrder,
     });
 

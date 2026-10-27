@@ -74,9 +74,8 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
         {/* Banner: Confirmed vs Payment Pending */}
         <div className="bg-white p-6 sm:p-10 rounded-3xl border border-stone-200 text-center shadow-sm space-y-4">
           <div
-            className={`w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full flex items-center justify-center animate-scaleIn ${
-              isOrderConfirmed ? 'bg-rose-100 text-[#A84358]' : 'bg-amber-100 text-amber-700'
-            }`}
+            className={`w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full flex items-center justify-center animate-scaleIn ${isOrderConfirmed ? 'bg-rose-100 text-[#A84358]' : 'bg-amber-100 text-amber-700'
+              }`}
           >
             {isOrderConfirmed ? (
               <CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12 stroke-[2.5]" />

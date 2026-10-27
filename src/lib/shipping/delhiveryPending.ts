@@ -80,10 +80,11 @@ export async function sendOrderToDelhiveryPending(
   }
 
   // Idempotency: Already successfully staged and awaiting warehouse verification
+  const ord = order as any;
   if (
-    order.delhiverySyncStatus === 'SYNCED' &&
-    order.delhiveryStatus === 'PENDING' &&
-    order.shippingMode === 'delhivery_pending'
+    ord.delhiverySyncStatus === 'SYNCED' &&
+    ord.delhiveryStatus === 'PENDING' &&
+    ord.shippingMode === 'delhivery_pending'
   ) {
     return {
       success: true,
@@ -116,7 +117,10 @@ export async function sendOrderToDelhiveryPending(
   }
 
   const isCod = order.paymentMethod === 'COD';
-  const effectiveCodBalance = order.codBalanceAmount ?? (order.total - (order.advanceAmount || 0));
+  const orderAdv = Number((order as any).advanceAmount ?? 0);
+  const effectiveCodBalance = Number(
+    (order as any).codBalanceAmount ?? (order.total - orderAdv)
+  );
 
   const shipmentPayload: DelhiveryShipmentOrder = {
     orderNumber: order.orderNumber,
@@ -156,7 +160,7 @@ export async function sendOrderToDelhiveryPending(
           delhiverySyncError: null,
           shippingMode: 'auto_manifest',
           lastDelhiverySyncAt: new Date(),
-        },
+        } as any,
       });
 
       await prisma.shipmentEvent.create({
@@ -189,7 +193,7 @@ export async function sendOrderToDelhiveryPending(
           shippingMode: 'auto_manifest',
           delhiverySyncAttempts: { increment: 1 },
           lastDelhiverySyncAt: new Date(),
-        },
+        } as any,
       });
 
       logger.warn('shipping.delhivery.auto_manifest_failed', {
@@ -223,7 +227,7 @@ export async function sendOrderToDelhiveryPending(
           delhiverySyncError: null,
           shippingMode: 'delhivery_pending',
           lastDelhiverySyncAt: new Date(),
-        },
+        } as any,
       });
 
       await prisma.shipmentEvent.create({
@@ -258,7 +262,7 @@ export async function sendOrderToDelhiveryPending(
         delhiverySyncError: null,
         shippingMode: 'delhivery_pending',
         lastDelhiverySyncAt: new Date(),
-      },
+      } as any,
     });
 
     await prisma.shipmentEvent.create({
@@ -292,7 +296,7 @@ export async function sendOrderToDelhiveryPending(
       shippingMode: 'delhivery_pending',
       delhiverySyncAttempts: { increment: 1 },
       lastDelhiverySyncAt: new Date(),
-    },
+    } as any,
   });
 
   logger.warn('shipping.delhivery_pending.failed', {
@@ -339,7 +343,7 @@ export async function syncOrderFromDelhiveryRefId(orderId: string): Promise<{
         delhiveryStatus: 'MANIFESTED',
         delhiverySyncStatus: 'SYNCED',
         lastDelhiverySyncAt: new Date(),
-      },
+      } as any,
     });
 
     await prisma.shipmentEvent.create({
@@ -371,7 +375,7 @@ export async function syncOrderFromDelhiveryRefId(orderId: string): Promise<{
     data: {
       lastDelhiverySyncAt: new Date(),
       delhiveryStatus: 'PENDING',
-    },
+    } as any,
   });
 
   return {
