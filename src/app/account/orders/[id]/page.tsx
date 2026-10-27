@@ -40,7 +40,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             </p>
           </div>
           <div className="sm:text-right flex flex-col sm:items-end gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span
                 className={`px-3 py-1 rounded-full text-xs font-bold ${
                   order.orderStatus === 'DELIVERED'
@@ -50,7 +50,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     : 'bg-amber-100 text-amber-800'
                 }`}
               >
-                {order.orderStatus}
+                {order.trackingNumber
+                  ? order.orderStatus
+                  : order.orderStatus === 'CANCELLED'
+                  ? 'CANCELLED'
+                  : 'Order confirmed, shipment being prepared'}
               </span>
               <CancelOrderButton
                 orderId={order.id}

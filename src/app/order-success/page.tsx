@@ -174,9 +174,15 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
             <div>
               <span className="font-bold text-stone-900 block mb-1">Carrier & Shipping:</span>
               <p className="text-stone-800 font-semibold">{order.carrier || 'Delhivery Express'}</p>
-              <p className="text-rose-700 font-medium">Estimated Delivery: 2–4 Business Days</p>
-              <p className="text-stone-400 text-[11px] mt-2">
-                Live AWB tracking number will be sent via SMS and WhatsApp once picked up.
+              <p className="text-rose-700 font-medium">
+                {order.trackingNumber
+                  ? `AWB #${order.trackingNumber}`
+                  : 'Order confirmed, shipment being prepared'}
+              </p>
+              <p className="text-stone-500 text-[11px] mt-2">
+                {order.trackingNumber
+                  ? 'Tracking link sent to your phone and email.'
+                  : 'Live AWB tracking number will be sent via SMS and WhatsApp once dispatched.'}
               </p>
             </div>
           </div>

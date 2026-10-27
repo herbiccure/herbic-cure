@@ -103,19 +103,21 @@ export default function TrackOrderPage() {
                         <Truck className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="text-sm font-bold text-stone-900">
                             Order {order.orderNumber}
                           </h4>
-                          <span className="text-[10px] font-bold text-rose-800 bg-rose-100 px-2 py-0.5 rounded-full uppercase">
-                            {order.orderStatus}
+                          <span className="text-[10px] font-bold text-rose-800 bg-rose-100 px-2.5 py-0.5 rounded-full uppercase">
+                            {order.trackingNumber
+                              ? order.orderStatus
+                              : 'Order confirmed, shipment being prepared'}
                           </span>
                         </div>
                         <p className="text-xs text-stone-600 mt-0.5">
                           Carrier: {order.carrier || 'Delhivery Express'} • AWB: {order.trackingNumber ? (
                             <strong className="font-mono text-stone-800">{order.trackingNumber}</strong>
                           ) : (
-                            <span className="text-amber-700 italic font-medium">Allocated upon dispatch</span>
+                            <span className="text-amber-800 font-medium">Order confirmed, shipment being prepared</span>
                           )}
                         </p>
                       </div>

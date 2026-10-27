@@ -21,6 +21,7 @@ export interface AdminDataTableProps<T> {
   searchPlaceholder?: string;
   searchFilter?: (item: T, query: string) => boolean;
   statusTabs?: string[];
+  statusTabLabels?: Record<string, string>;
   activeStatus?: string;
   onStatusChange?: (status: string) => void;
   statusFilter?: (item: T, status: string) => boolean;
@@ -39,6 +40,7 @@ export function AdminDataTable<T>({
   searchPlaceholder = 'Search...',
   searchFilter,
   statusTabs,
+  statusTabLabels,
   activeStatus,
   onStatusChange,
   statusFilter: customStatusFilter,
@@ -95,7 +97,7 @@ export function AdminDataTable<T>({
                       : 'text-slate-400 hover:text-white hover:bg-slate-800'
                   )}
                 >
-                  {tab}
+                  {statusTabLabels?.[tab] || tab}
                 </button>
               ))}
             </div>

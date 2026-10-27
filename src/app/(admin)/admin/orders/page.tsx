@@ -131,6 +131,14 @@ export default function AdminOrdersPage() {
   );
   const orders = data?.orders ?? [];
 
+  const { data: settingsData } = useSWR<{ settings: Record<string, string> }>(
+    '/api/admin/settings',
+    fetcher
+  );
+  const storeShippingMode =
+    (settingsData?.settings?.shipping_mode as 'delhivery_pending' | 'auto_manifest') ||
+    'auto_manifest';
+
   const [activeStatus, setActiveStatus] = useState('ALL');
   const [selectedOrder, setSelectedOrder] = useState<OrderItem | null>(null);
 
@@ -433,22 +441,22 @@ export default function AdminOrdersPage() {
           ) : o.delhiverySyncStatus === 'FAILED' ? (
             <span
               className={cn(
-                'inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border',
+                'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border',
                 isLight ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-rose-950/80 text-rose-300 border-rose-800'
               )}
               title={o.delhiverySyncError || 'Delhivery staging failed'}
             >
-              Sync Failed
+              Shipping Sync Failed
             </span>
           ) : (
             <span
               className={cn(
-                'inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border',
+                'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border',
                 isLight ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-950/80 text-amber-300 border-amber-800'
               )}
               title="Staged in Delhivery One Pending queue. Awaiting warehouse staff verification."
             >
-              Delhivery Pending
+              Awaiting verification in Delhivery
             </span>
           )}
           <span
@@ -517,12 +525,26 @@ export default function AdminOrdersPage() {
           o.customerEmail.toLowerCase().includes(q) ||
           (o.trackingNumber ? o.trackingNumber.toLowerCase().includes(q) : false)
         }
-        statusTabs={['ALL', 'PENDING_AWB', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']}
+        statusTabs={['ALL', 'PENDING_AWB', 'STUCK_PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']}
+        statusTabLabels={{
+          ALL: 'All Orders',
+          PENDING_AWB: 'Pending in Delhivery',
+          STUCK_PENDING: 'Stuck in Pending (>24h)',
+          CONFIRMED: 'Confirmed',
+          PROCESSING: 'Processing',
+          SHIPPED: 'Shipped',
+          DELIVERED: 'Delivered',
+          CANCELLED: 'Cancelled',
+        }}
         activeStatus={activeStatus}
         onStatusChange={setActiveStatus}
         statusFilter={(o, st) => {
           if (st === 'PENDING_AWB') {
             return !o.trackingNumber && o.orderStatus !== 'CANCELLED';
+          }
+          if (st === 'STUCK_PENDING') {
+            const ageHours = (Date.now() - new Date(o.createdAt).getTime()) / (1000 * 60 * 60);
+            return (!o.trackingNumber && o.orderStatus !== 'CANCELLED' && ageHours >= 24) || o.delhiverySyncStatus === 'FAILED';
           }
           return o.orderStatus === st;
         }}
@@ -700,13 +722,18 @@ export default function AdminOrdersPage() {
                     <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                     <div>
                       <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
-                        {selectedOrder.shippingMode === 'auto_manifest'
+                        {(selectedOrder.shippingMode || storeShippingMode) === 'auto_manifest'
                           ? 'Order Verification (Direct Manifestation Mode)'
-                          : 'Order Verification in Delhivery One (Pending Queue)'}
+                          : 'Awaiting verification in Delhivery'}
                       </h4>
                       <p className={cn('text-[11px]', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                        Delhivery Charges: <strong className="text-emerald-600 dark:text-emerald-400">₹0 Deducted</strong> (Order is not manifested yet)
+                        Delhivery Status: <strong className="font-semibold text-amber-700 dark:text-amber-400">{selectedOrder.delhiveryStatus || 'PENDING'}</strong> • Charges: <strong className="text-emerald-600 dark:text-emerald-400">₹0 Deducted</strong> (unmanifested)
                       </p>
+                      {selectedOrder.lastDelhiverySyncAt && (
+                        <p className={cn('text-[10px] text-slate-500 font-mono mt-0.5')}>
+                          Last Synced with Delhivery: {new Date(selectedOrder.lastDelhiverySyncAt).toLocaleString('en-IN')}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <span
@@ -717,7 +744,7 @@ export default function AdminOrdersPage() {
                         : isLight ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-950 text-amber-300 border-amber-800'
                     )}
                   >
-                    {selectedOrder.delhiverySyncStatus === 'FAILED' ? 'Delhivery Sync Failed' : 'Awaiting Warehouse Verification'}
+                    {selectedOrder.delhiverySyncStatus === 'FAILED' ? 'Shipping Sync Failed' : 'Awaiting verification in Delhivery'}
                   </span>
                 </div>
 
@@ -732,7 +759,7 @@ export default function AdminOrdersPage() {
                     <div className="space-y-0.5">
                       <p className="font-bold flex items-center gap-1.5">
                         <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                        <span>Staging to Delhivery Failed</span>
+                        <span>Shipping Sync Failed</span>
                       </p>
                       <p className="text-[11px] opacity-90 leading-relaxed font-mono">
                         {selectedOrder.delhiverySyncError || 'Network or authorization error communicating with Delhivery API.'}
@@ -751,12 +778,12 @@ export default function AdminOrdersPage() {
                 )}
 
                 <div className={cn('p-3 rounded-xl border text-[11px] leading-relaxed', isLight ? 'bg-white border-amber-200/80 text-slate-700' : 'bg-slate-900/80 border-amber-900/40 text-slate-300')}>
-                  {selectedOrder.shippingMode === 'auto_manifest' ? (
+                  {(selectedOrder.shippingMode || storeShippingMode) === 'auto_manifest' ? (
                     <span>Verify customer phone and delivery address before accepting. Delhivery wallet balance will <strong>ONLY</strong> be deducted after you click <strong>&quot;Accept &amp; Generate AWB&quot;</strong>. If this is a fake order, reject it with zero charges.</span>
                   ) : (
                     <span>
-                      This order is staged in your <strong>Delhivery One</strong> dashboard under <strong>Main Menu &gt; Orders &gt; Forward Orders &gt; Pending</strong>.
-                      Warehouse staff should verify phone/address and click <strong>&quot;Get AWB number&quot;</strong> in Delhivery One. Once manifested, the AWB automatically syncs here.
+                      Our admin panel is in <strong>read-only tracking mode</strong>. This order is staged in your <strong>Delhivery One</strong> dashboard under <strong>Main Menu &gt; Orders &gt; Forward Orders &gt; Pending</strong>.
+                      Warehouse staff should verify the customer phone and address, and click <strong>&quot;Get AWB number&quot;</strong> directly in Delhivery One. Once manifested, the AWB and tracking details sync back automatically.
                     </span>
                   )}
                 </div>
@@ -820,20 +847,22 @@ export default function AdminOrdersPage() {
                       <span>{syncingDelhivery ? 'Checking...' : 'Check Delhivery Status / Discover AWB'}</span>
                     </button>
 
-                    <button
-                      type="button"
-                      disabled={manifestingDelhivery}
-                      onClick={() => handleManifestDelhivery(false)}
-                      className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
-                      title="Verify order and generate single Delhivery AWB"
-                    >
-                      <CheckCircle2 className={cn('w-4 h-4', manifestingDelhivery && 'animate-spin')} />
-                      <span>
-                        {manifestingDelhivery
-                          ? 'Manifesting with Delhivery...'
-                          : 'Accept Order & Generate Delhivery AWB'}
-                      </span>
-                    </button>
+                    {(selectedOrder.shippingMode || storeShippingMode) === 'auto_manifest' && (
+                      <button
+                        type="button"
+                        disabled={manifestingDelhivery}
+                        onClick={() => handleManifestDelhivery(false)}
+                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                        title="Verify order and generate single Delhivery AWB"
+                      >
+                        <CheckCircle2 className={cn('w-4 h-4', manifestingDelhivery && 'animate-spin')} />
+                        <span>
+                          {manifestingDelhivery
+                            ? 'Manifesting with Delhivery...'
+                            : 'Accept Order & Generate Delhivery AWB'}
+                        </span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -857,6 +886,11 @@ export default function AdminOrdersPage() {
                       {selectedOrder.trackingNumber && (
                         <p className={cn('text-[11px] font-mono mt-0.5', isLight ? 'text-slate-600' : 'text-slate-300')}>
                           AWB: <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{selectedOrder.trackingNumber}</strong>
+                        </p>
+                      )}
+                      {selectedOrder.lastDelhiverySyncAt && (
+                        <p className={cn('text-[10px] text-slate-500 font-mono mt-0.5')}>
+                          Last Synced: {new Date(selectedOrder.lastDelhiverySyncAt).toLocaleString('en-IN')}
                         </p>
                       )}
                     </div>

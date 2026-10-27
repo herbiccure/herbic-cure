@@ -47,7 +47,7 @@ export default function AdminSettingsPage() {
   const [codAdvanceMessage, setCodAdvanceMessage] = useState(
     'Pay a small advance online to confirm your COD order. The rest is paid on delivery.'
   );
-  const [shippingMode, setShippingMode] = useState<'delhivery_pending' | 'auto_manifest'>('delhivery_pending');
+  const [shippingMode, setShippingMode] = useState<'delhivery_pending' | 'auto_manifest'>('auto_manifest');
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   
   const [uploadingLogo, setUploadingLogo] = useState(false);

@@ -5,7 +5,9 @@ import {
   mapDelhiveryStatusToOrderStatus,
   DelhiveryShipmentOrder,
 } from '@/lib/shipping/delhivery';
+import { getEffectiveShippingMode } from '@/lib/shipping/delhiveryPending';
 import { settingsSchema } from '@/lib/schemas/settings';
+import { prisma } from '@/lib/prisma';
 
 describe('Delhivery One Pending Order Fulfillment Flow Tests', () => {
   beforeEach(() => {
@@ -134,5 +136,95 @@ describe('Delhivery One Pending Order Fulfillment Flow Tests', () => {
       shipping_mode: 'immediate_dispatch',
     });
     expect(invalidMode.success).toBe(false);
+  });
+
+  it('6. getEffectiveShippingMode: Defaults to auto_manifest so live store behavior is unchanged', async () => {
+    vi.spyOn(prisma.siteSetting, 'findUnique').mockResolvedValue(null as any);
+    const modeDefault = await getEffectiveShippingMode();
+    expect(modeDefault).toBe('auto_manifest');
+
+    vi.spyOn(prisma.siteSetting, 'findUnique').mockResolvedValue({
+      id: 's1',
+      key: 'shipping_mode',
+      value: 'delhivery_pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any);
+    const modePending = await getEffectiveShippingMode();
+    expect(modePending).toBe('delhivery_pending');
+  });
+
+  it('7. createDelhiveryPendingOrder: Correctly handles prepaid vs COD balance amount', async () => {
+    const prepaidOrder: DelhiveryShipmentOrder = {
+      ...sampleOrder,
+      paymentMethod: 'Prepaid',
+      total: 799,
+      codBalanceAmount: 0,
+    };
+    const resPrepaid = await createDelhiveryPendingOrder(prepaidOrder);
+    expect(resPrepaid.success).toBe(true);
+    expect(resPrepaid.status).toBe('PENDING');
+    const payload = resPrepaid.rawResponse?.payload?.shipments?.[0];
+    if (payload) {
+      expect(payload.payment_mode).toBe('Prepaid');
+      expect(payload.cod_amount).toBe('0');
+      expect(payload.quantity).toBe('3'); // 1 hair oil + 2 combs = 3 physical items
+      expect(payload.waybill).toBe('');
+    }
+  });
+
+  it('8. createDelhiveryPendingOrder: Mocked API handles unmanifested pending response vs direct manifestation', async () => {
+    const origEnv = process.env.DELHIVERY_PUSH_PENDING_TO_API;
+    const origKey = process.env.DELHIVERY_API_KEY;
+    try {
+      process.env.DELHIVERY_PUSH_PENDING_TO_API = 'true';
+      process.env.DELHIVERY_API_KEY = 'mock_api_token_12345';
+
+      // Case A: Delhivery staging accepts into Pending queue without AWB
+      const mockFetchPending = vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(JSON.stringify({
+          packages: [{ remarks: 'Order ingested in pending queue' }],
+        })),
+      });
+      global.fetch = mockFetchPending as any;
+
+      const pendingRes = await createDelhiveryPendingOrder(sampleOrder);
+      expect(pendingRes.success).toBe(true);
+      expect(pendingRes.status).toBe('PENDING');
+      expect(pendingRes.waybill).toBe('');
+
+      // Case B: Delhivery unexpectedly returns an AWB (account in Direct Manifestation mode)
+      const mockFetchManifested = vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(JSON.stringify({
+          packages: [{ waybill: '320098765432', status: 'Success' }],
+        })),
+      });
+      global.fetch = mockFetchManifested as any;
+
+      const directRes = await createDelhiveryPendingOrder(sampleOrder);
+      expect(directRes.success).toBe(true);
+      expect(directRes.status).toBe('MANIFESTED');
+      expect(directRes.waybill).toBe('320098765432');
+
+      // Case C: Delhivery returns HTTP 400 error / rejection
+      const mockFetchError = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        text: () => Promise.resolve(JSON.stringify({
+          rmk: 'Invalid warehouse pickup location',
+        })),
+      });
+      global.fetch = mockFetchError as any;
+
+      const failRes = await createDelhiveryPendingOrder(sampleOrder);
+      expect(failRes.success).toBe(false);
+      expect(failRes.status).toBe('FAILED');
+      expect(failRes.message).toContain('Invalid warehouse pickup location');
+    } finally {
+      process.env.DELHIVERY_PUSH_PENDING_TO_API = origEnv;
+      process.env.DELHIVERY_API_KEY = origKey;
+    }
   });
 });
