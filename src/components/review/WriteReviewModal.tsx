@@ -79,39 +79,39 @@ export default function WriteReviewModal({ products }: WriteReviewModalProps) {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl border border-stone-200 p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl border border-[#EAC9D1] p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
             <button
               onClick={() => setIsOpen(false)}
-              className="absolute top-5 right-5 text-stone-400 hover:text-stone-700 transition-colors"
+              className="absolute top-5 right-5 text-[#9E828A] hover:text-[#2D1B1B] hover:bg-[#F6DFE7] rounded-full p-1.5 transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
 
             {submitted ? (
               <div className="text-center py-8 space-y-3">
-                <CheckCircle2 className="w-12 h-12 text-rose-600 mx-auto" />
-                <h3 className="text-lg font-bold text-stone-900 font-serif">Review Submitted!</h3>
-                <p className="text-xs text-stone-600 max-w-sm mx-auto">
+                <CheckCircle2 className="w-12 h-12 text-[#8C3A4F] mx-auto" />
+                <h3 className="text-lg font-bold text-[#2D1B1B] font-serif">Review Submitted!</h3>
+                <p className="text-xs text-[#543E36] max-w-sm mx-auto">
                   Thank you for sharing your authentic experience. Your review helps thousands of people choose natural Ayurvedic hair care.
                 </p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-extrabold text-stone-900 font-serif">
+                  <h3 className="text-lg font-extrabold text-[#2D1B1B] font-serif">
                     Share Your Ayurvedic Experience
                   </h3>
-                  <p className="text-xs text-stone-500 mt-0.5">
+                  <p className="text-xs text-[#7A5B64] mt-0.5">
                     Your real feedback empowers the community.
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Select Formulation *</label>
+                  <label className="block text-xs font-bold text-[#2D1B1B] mb-1">Select Formulation *</label>
                   <select
                     value={productId}
                     onChange={(e) => setProductId(e.target.value)}
-                    className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3 py-2.5 text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#A84358]"
+                    className="w-full bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl px-3 py-2.5 text-xs text-[#2D1B1B] focus:outline-none focus:ring-2 focus:ring-[#8C3A4F]/20 focus:border-[#8C3A4F]"
                     required
                   >
                     {products.map((p) => (
@@ -149,48 +149,48 @@ export default function WriteReviewModal({ products }: WriteReviewModalProps) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1">Your Name *</label>
+                    <label className="block text-xs font-bold text-[#2D1B1B] mb-1">Your Name *</label>
                     <input
                       type="text"
                       placeholder="e.g. Priya Sharma, Bengaluru"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       required
-                      className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#A84358]"
+                      className="w-full bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl px-3 py-2 text-xs text-[#2D1B1B] focus:outline-none focus:ring-2 focus:ring-[#8C3A4F]/20 focus:border-[#8C3A4F]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1">Email (Optional)</label>
+                    <label className="block text-xs font-bold text-[#2D1B1B] mb-1">Email (Optional)</label>
                     <input
                       type="email"
                       placeholder="priya@example.com"
                       value={customerEmail}
                       onChange={(e) => setCustomerEmail(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#A84358]"
+                      className="w-full bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl px-3 py-2 text-xs text-[#2D1B1B] focus:outline-none focus:ring-2 focus:ring-[#8C3A4F]/20 focus:border-[#8C3A4F]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Review Headline</label>
+                  <label className="block text-xs font-bold text-[#2D1B1B] mb-1">Review Headline</label>
                   <input
                     type="text"
                     placeholder="e.g. Hair fall stopped within 3 weeks!"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#A84358]"
+                    className="w-full bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl px-3 py-2 text-xs text-[#2D1B1B] focus:outline-none focus:ring-2 focus:ring-[#8C3A4F]/20 focus:border-[#8C3A4F]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Detailed Review *</label>
+                  <label className="block text-xs font-bold text-[#2D1B1B] mb-1">Detailed Review *</label>
                   <textarea
                     rows={3}
                     placeholder="Describe how the oil or neem comb affected your hair density, roots, and scalp..."
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     required
-                    className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#A84358]"
+                    className="w-full bg-[#FCF8F9] border border-[#EAC9D1] rounded-xl px-3 py-2 text-xs text-[#2D1B1B] focus:outline-none focus:ring-2 focus:ring-[#8C3A4F]/20 focus:border-[#8C3A4F]"
                   />
                 </div>
 
@@ -198,14 +198,14 @@ export default function WriteReviewModal({ products }: WriteReviewModalProps) {
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
-                    className="px-4 py-2 text-xs font-bold text-stone-600 hover:bg-stone-100 rounded-xl"
+                    className="px-4 py-2 text-xs font-bold text-[#7A5B64] hover:bg-[#F6DFE7] hover:text-[#2D1B1B] rounded-xl transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-6 py-2.5 bg-[#A84358] hover:bg-[#45363B] text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+                    className="px-6 py-2.5 bg-[#8C3A4F] hover:bg-[#722E3F] text-white rounded-xl text-xs font-bold shadow-md shadow-rose-900/10 transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {submitting ? 'Submitting...' : 'Submit Review'}
                   </button>

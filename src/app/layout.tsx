@@ -5,7 +5,7 @@ import { CartProvider } from '@/context/CartContext';
 import { AuthProvider } from '@/context/AuthContext';
 import StorefrontShell from '@/components/layout/StorefrontShell';
 import NextTopLoader from 'nextjs-toploader';
-import { Toaster } from 'sonner';
+import StoreToaster from '@/components/ui/StoreToaster';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const sansFont = Plus_Jakarta_Sans({
@@ -114,7 +114,7 @@ export default function RootLayout({
         <AuthProvider>
           <CartProvider>
             <StorefrontShell>{children}</StorefrontShell>
-            <Toaster richColors position="top-right" closeButton />
+            <StoreToaster />
             <SpeedInsights />
           </CartProvider>
         </AuthProvider>
