@@ -3,6 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 import {
 
   Sparkles,
@@ -27,10 +28,15 @@ export const metadata: Metadata = {
 };
 
 export default async function HowToUsePage() {
-  const posts = await prisma.blogPost.findMany({
-    where: { published: true },
-    orderBy: { createdAt: 'desc' },
-  });
+  let posts: any[] = [];
+  try {
+    posts = await prisma.blogPost.findMany({
+      where: { published: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  } catch (err) {
+    logger.debug('hair_care_tips.query_deferred', { error: (err as any)?.message });
+  }
 
   const steps = [
     {

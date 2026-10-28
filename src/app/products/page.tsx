@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 import React from 'react';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 import ProductCard from '@/components/product/ProductCard';
 import ProductSortSelect from '@/components/product/ProductSortSelect';
 import { ArrowUpDown, X } from 'lucide-react';
@@ -98,36 +99,44 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     orderByClause = { createdAt: 'desc' };
   }
 
-  const [products, categories] = await Promise.all([
-    prisma.product.findMany({
-      where: whereClause,
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        regularPrice: true,
-        salePrice: true,
-        stockQuantity: true,
-        isBestSeller: true,
-        isFeatured: true,
-        isOnSale: true,
-        hasTimer: true,
-        rating: true,
-        reviewCount: true,
-        displayOrder: true,
-        images: {
-          select: { url: true, alt: true },
-          orderBy: { displayOrder: 'asc' },
-          take: 1,
+  let products: any[] = [];
+  let categories: any[] = [];
+  try {
+    const [fetchedProducts, fetchedCategories] = await Promise.all([
+      prisma.product.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          regularPrice: true,
+          salePrice: true,
+          stockQuantity: true,
+          isBestSeller: true,
+          isFeatured: true,
+          isOnSale: true,
+          hasTimer: true,
+          rating: true,
+          reviewCount: true,
+          displayOrder: true,
+          images: {
+            select: { url: true, alt: true },
+            orderBy: { displayOrder: 'asc' },
+            take: 1,
+          },
         },
-      },
-      orderBy: orderByClause,
-    }),
-    prisma.category.findMany({
-      where: { active: true },
-      orderBy: { displayOrder: 'asc' },
-    }),
-  ]);
+        orderBy: orderByClause,
+      }),
+      prisma.category.findMany({
+        where: { active: true },
+        orderBy: { displayOrder: 'asc' },
+      }),
+    ]);
+    products = fetchedProducts;
+    categories = fetchedCategories;
+  } catch (err) {
+    logger.debug('products.query_deferred', { error: (err as any)?.message });
+  }
 
   const sortOptions = [
     { value: 'featured', label: 'Featured' },

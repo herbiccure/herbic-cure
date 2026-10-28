@@ -24,15 +24,39 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
     );
   }
 
-  const order = await prisma.order.findFirst({
-    where: {
-      OR: [{ id: orderId }, { orderNumber: orderId }],
-    },
-    include: {
-      items: true,
-      events: { orderBy: { timestamp: 'desc' } },
-    },
-  });
+  let order:
+    | (NonNullable<Awaited<ReturnType<typeof prisma.order.findFirst>>> & {
+        items: Array<{
+          id: string;
+          productName: string;
+          productImage?: string | null;
+          price: number;
+          quantity: number;
+          total: number;
+        }>;
+        events: Array<{
+          id: string;
+          status: string;
+          description: string;
+          location?: string | null;
+          timestamp: Date;
+        }>;
+      })
+    | null = null;
+
+  try {
+    order = (await prisma.order.findFirst({
+      where: {
+        OR: [{ id: orderId }, { orderNumber: orderId }],
+      },
+      include: {
+        items: true,
+        events: { orderBy: { timestamp: 'desc' } },
+      },
+    })) as any;
+  } catch {
+    order = null;
+  }
 
   if (!order) {
     return (
