@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   createDelhiveryShipment,
+  createDelhiveryPendingOrder,
   isDelhiveryCancelled,
   getShortLabelName,
   buildDelhiveryLabelDescription,
@@ -187,5 +188,60 @@ describe('Delhivery Express Logistics Integration Tests', () => {
     expect(result[0].sku).toBe('HC-OIL-Q1');
     expect(result[0].quantity).toBe(2);
     expect(result[0].total).toBe('698.00');
+  });
+
+  it('10. createDelhiveryPendingOrder: Validates order and creates unmanifested pending order without AWB (0 freight charged)', async () => {
+    const codOrder: DelhiveryShipmentOrder = {
+      orderNumber: 'HC-998877',
+      customerName: 'Aarav Sharma',
+      customerPhone: '9876543210',
+      customerEmail: 'aarav@example.com',
+      shippingAddress: {
+        address: 'Flat 402, Green Valley Apartments',
+        city: 'Hyderabad',
+        state: 'Telangana',
+        pincode: '500081',
+      },
+      paymentMethod: 'COD',
+      shippingFee: 89,
+      codBalanceAmount: 738,
+      items: [
+        {
+          name: 'Herbic cure - 21 herbs hair oil + shampoo with conditioner',
+          sku: 'HC-HO-S',
+          quantity: 1,
+          price: 649,
+        },
+      ],
+      total: 738,
+    };
+
+    const result = await createDelhiveryPendingOrder(codOrder);
+    expect(result.success).toBe(true);
+    expect(result.status).toBe('PENDING');
+    expect(result.waybill).toBe('');
+    expect(result.message).toContain('₹0 charged');
+  });
+
+  it('11. createDelhiveryPendingOrder: Rejects orders with incomplete addresses or invalid phone', async () => {
+    const invalidOrder: DelhiveryShipmentOrder = {
+      orderNumber: 'HC-998878',
+      customerName: 'Test Customer',
+      customerEmail: 'test@example.com',
+      customerPhone: '123',
+      shippingAddress: {
+        address: 'B',
+        city: 'Hyderabad',
+        state: 'Telangana',
+        pincode: '500',
+      },
+      paymentMethod: 'Prepaid',
+      items: [],
+      total: 349,
+    };
+
+    const result = await createDelhiveryPendingOrder(invalidOrder);
+    expect(result.success).toBe(false);
+    expect(result.status).toBe('FAILED');
   });
 });

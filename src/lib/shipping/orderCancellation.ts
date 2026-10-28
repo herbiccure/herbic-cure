@@ -93,7 +93,39 @@ export async function cancelOrderWithLogistics({
       }
     }
 
-    // C. Create ShipmentEvent entry for tracking history
+    // C. Flag refund for admin review if money was paid (prepaid or COD advance)
+    const refundableAmount =
+      order.paymentStatus === 'PAID'
+        ? order.total
+        : Number((order as any).advanceAmount || 0);
+
+    if (refundableAmount > 0) {
+      const existingRefund = await tx.refundRequest.findFirst({
+        where: { orderId: order.id },
+      });
+      if (!existingRefund) {
+        await tx.refundRequest.create({
+          data: {
+            orderId: order.id,
+            amount: refundableAmount,
+            reason: `Order cancelled (${cancelledBy}). Reason: ${reason || 'Shipment cancelled in Delhivery One'}`,
+            status: 'PENDING',
+            requestedBy: `SYSTEM (${cancelledBy})`,
+          },
+        });
+
+        await tx.shipmentEvent.create({
+          data: {
+            orderId: order.id,
+            status: 'REFUND_PENDING',
+            location: 'Admin Refund Management',
+            description: `Refund of ₹${refundableAmount.toLocaleString('en-IN')} flagged for admin review due to order cancellation.`,
+          },
+        });
+      }
+    }
+
+    // D. Create ShipmentEvent entry for tracking history
     const delhiveryNotice = delhiveryResult?.waybill
       ? ` | Delhivery AWB: ${delhiveryResult.waybill} (${delhiveryResult.message})`
       : '';

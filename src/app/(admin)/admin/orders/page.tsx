@@ -17,6 +17,9 @@ import {
   CheckCircle2,
   Phone,
   MessageCircle,
+  Download,
+  Info,
+  Sparkles,
 } from 'lucide-react';
 import { fetcher } from '@/lib/fetcher';
 import { AdminDataTable, Column } from '@/components/admin/AdminDataTable';
@@ -121,6 +124,82 @@ function parseShippingAddress(raw: string | null | undefined): ParsedAddress {
   return { lines: [raw], cityStatePin: '', formattedText: raw };
 }
 
+export type UnifiedOrderStatus =
+  | 'Placed'
+  | 'Sent to Delhivery (Pending)'
+  | 'Ready to Ship'
+  | 'Ready for Pickup'
+  | 'In Transit'
+  | 'Out for Delivery'
+  | 'Delivered'
+  | 'Cancelled'
+  | 'RTO'
+  | 'Shipping sync failed';
+
+export function getOrderStatusInfo(o: OrderItem): {
+  label: UnifiedOrderStatus;
+  colorClass: string;
+} {
+  if (o.delhiverySyncStatus === 'FAILED') {
+    return {
+      label: 'Shipping sync failed',
+      colorClass: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-800',
+    };
+  }
+  if (o.orderStatus === 'CANCELLED') {
+    return {
+      label: 'Cancelled',
+      colorClass: 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
+    };
+  }
+  if (o.orderStatus === 'RTO' || o.delhiveryStatus === 'RTO') {
+    return {
+      label: 'RTO',
+      colorClass: 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-950/80 dark:text-orange-300 dark:border-orange-800',
+    };
+  }
+  if (o.orderStatus === 'DELIVERED') {
+    return {
+      label: 'Delivered',
+      colorClass: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800',
+    };
+  }
+  if (o.orderStatus === 'OUT_FOR_DELIVERY') {
+    return {
+      label: 'Out for Delivery',
+      colorClass: 'bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-950/80 dark:text-cyan-300 dark:border-cyan-800',
+    };
+  }
+  if (o.orderStatus === 'SHIPPED' || o.orderStatus === 'IN_TRANSIT') {
+    return {
+      label: 'In Transit',
+      colorClass: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/80 dark:text-blue-300 dark:border-blue-800',
+    };
+  }
+  if (o.pickupStatus === 'SCHEDULED') {
+    return {
+      label: 'Ready for Pickup',
+      colorClass: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/80 dark:text-purple-300 dark:border-purple-800',
+    };
+  }
+  if (o.trackingNumber) {
+    return {
+      label: 'Ready to Ship',
+      colorClass: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/80 dark:text-indigo-300 dark:border-indigo-800',
+    };
+  }
+  if (o.delhiveryStatus === 'PENDING' || o.delhiverySyncStatus === 'SYNCED') {
+    return {
+      label: 'Sent to Delhivery (Pending)',
+      colorClass: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800',
+    };
+  }
+  return {
+    label: 'Placed',
+    colorClass: 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700',
+  };
+}
+
 export default function AdminOrdersPage() {
   const { theme } = useAdminTheme();
   const isLight = theme === 'light';
@@ -129,7 +208,7 @@ export default function AdminOrdersPage() {
     '/api/admin/orders',
     fetcher
   );
-  const orders = data?.orders ?? [];
+  const orders = useMemo(() => data?.orders ?? [], [data?.orders]);
 
   const { data: settingsData } = useSWR<{ settings: Record<string, string> }>(
     '/api/admin/settings',
@@ -151,6 +230,43 @@ export default function AdminOrdersPage() {
   const [syncingDelhivery, setSyncingDelhivery] = useState(false);
   const [manifestingDelhivery, setManifestingDelhivery] = useState(false);
   const [cancellingShipment, setCancellingShipment] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
+
+  const [currentTime] = useState(() => Date.now());
+
+  const newOrdersCount = useMemo(() => {
+    const oneDayAgo = currentTime - 24 * 60 * 60 * 1000;
+    return orders.filter((o) => new Date(o.createdAt).getTime() > oneDayAgo).length;
+  }, [orders, currentTime]);
+
+  const pendingAwbCount = useMemo(() => {
+    return orders.filter((o) => !o.trackingNumber && o.orderStatus !== 'CANCELLED').length;
+  }, [orders]);
+
+  const handleExportDelhiveryCsv = async () => {
+    setExportingCsv(true);
+    try {
+      const res = await fetch('/api/admin/orders/export-delhivery-csv');
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.error || 'No pending unmanifested orders available for CSV export');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `delhivery_pending_orders_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Official Delhivery One CSV downloaded! You can upload it in Delhivery One > Orders > Forward Orders.');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to export Delhivery CSV');
+    } finally {
+      setExportingCsv(false);
+    }
+  };
 
   const openModal = (o: OrderItem) => {
     setSelectedOrder(o);
@@ -342,11 +458,21 @@ export default function AdminOrdersPage() {
       header: 'Order #',
       headerClassName: 'px-4 sm:px-6',
       className: 'px-4 sm:px-6',
-      cell: (o) => (
-        <span className={cn('font-mono font-bold', isLight ? 'text-slate-900' : 'text-white')}>
-          {o.orderNumber}
-        </span>
-      ),
+      cell: (o) => {
+        const isNew = currentTime - new Date(o.createdAt).getTime() < 24 * 60 * 60 * 1000;
+        return (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className={cn('font-mono font-bold', isLight ? 'text-slate-900' : 'text-white')}>
+              {o.orderNumber}
+            </span>
+            {isNew && (
+              <span className="px-1.5 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wide bg-[#A84358] text-white">
+                NEW
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       header: 'Customer',
@@ -409,17 +535,20 @@ export default function AdminOrdersPage() {
       },
     },
     {
-      header: 'Status',
-      cell: (o) => (
-        <span
-          className={cn(
-            'px-2.5 py-0.5 rounded-full text-[10px] font-bold border',
-            isLight ? 'bg-slate-100 text-slate-800 border-slate-200' : 'bg-slate-800 text-slate-200 border-slate-700'
-          )}
-        >
-          {o.orderStatus}
-        </span>
-      ),
+      header: 'Shipping Status',
+      cell: (o) => {
+        const info = getOrderStatusInfo(o);
+        return (
+          <span
+            className={cn(
+              'px-2.5 py-0.5 rounded-full text-[10px] font-bold border inline-block whitespace-nowrap',
+              info.colorClass
+            )}
+          >
+            {info.label}
+          </span>
+        );
+      },
     },
     {
       header: 'AWB / Pickup',
@@ -504,14 +633,84 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className={cn('text-2xl font-bold font-serif', isLight ? 'text-slate-900' : 'text-white')}>
-          Order Management
-        </h1>
-        <p className={cn('text-xs mt-1', isLight ? 'text-slate-500' : 'text-slate-400')}>
-          Track customer orders, update AWB courier numbers, and print dispatch invoices.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className={cn('text-2xl font-bold font-serif', isLight ? 'text-slate-900' : 'text-white')}>
+              Order Management
+            </h1>
+            {newOrdersCount > 0 && (
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#A84358] text-white flex items-center gap-1 shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{newOrdersCount} New Placed</span>
+              </span>
+            )}
+          </div>
+          <p className={cn('text-xs mt-1', isLight ? 'text-slate-500' : 'text-slate-400')}>
+            Track customer orders, monitor Delhivery Pending verification, and export dispatch CSVs.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <a
+            href="https://one.delhivery.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              'px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all shadow-2xs',
+              isLight
+                ? 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+                : 'bg-slate-900 border-slate-700 text-slate-200 hover:bg-slate-800'
+            )}
+          >
+            <span>Delhivery One Portal</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+
+          <button
+            type="button"
+            onClick={handleExportDelhiveryCsv}
+            disabled={exportingCsv}
+            className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+            title="Export unmanifested orders in official Delhivery One Forward Orders bulk upload CSV format"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>{exportingCsv ? 'Exporting...' : 'Export Delhivery One CSV'}</span>
+          </button>
+        </div>
       </div>
+
+      {pendingAwbCount > 0 && (
+        <div
+          className={cn(
+            'p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs',
+            isLight ? 'bg-amber-50/80 border-amber-200 text-amber-950' : 'bg-amber-950/30 border-amber-800 text-amber-200'
+          )}
+        >
+          <div className="flex items-start sm:items-center gap-2.5">
+            <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5 sm:mt-0" />
+            <div>
+              <p className="font-bold">
+                {pendingAwbCount} order{pendingAwbCount > 1 ? 's' : ''} awaiting warehouse verification in Delhivery One
+              </p>
+              <p className="text-[11px] opacity-90 leading-relaxed">
+                Verify customer addresses and click <strong>&quot;Get AWB number&quot;</strong> in <strong>Delhivery One &gt; Orders &gt; Forward Orders &gt; Pending</strong>. Once manifested, AWBs sync here automatically.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="https://one.delhivery.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1 transition-colors shadow-2xs"
+            >
+              <span>Open Pending Queue</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </div>
+      )}
 
       <AdminDataTable
         data={orders}
@@ -525,28 +724,44 @@ export default function AdminOrdersPage() {
           o.customerEmail.toLowerCase().includes(q) ||
           (o.trackingNumber ? o.trackingNumber.toLowerCase().includes(q) : false)
         }
-        statusTabs={['ALL', 'PENDING_AWB', 'STUCK_PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']}
+        statusTabs={['ALL', 'PENDING_AWB', 'READY_TO_SHIP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'STUCK_PENDING', 'SYNC_FAILED']}
         statusTabLabels={{
           ALL: 'All Orders',
           PENDING_AWB: 'Pending in Delhivery',
-          STUCK_PENDING: 'Stuck in Pending (>24h)',
-          CONFIRMED: 'Confirmed',
-          PROCESSING: 'Processing',
-          SHIPPED: 'Shipped',
+          READY_TO_SHIP: 'Ready to Ship',
+          IN_TRANSIT: 'In Transit',
           DELIVERED: 'Delivered',
           CANCELLED: 'Cancelled',
+          STUCK_PENDING: 'Stuck in Pending (>24h)',
+          SYNC_FAILED: 'Sync Failed',
         }}
         activeStatus={activeStatus}
         onStatusChange={setActiveStatus}
         statusFilter={(o, st) => {
+          const info = getOrderStatusInfo(o);
           if (st === 'PENDING_AWB') {
-            return !o.trackingNumber && o.orderStatus !== 'CANCELLED';
+            return info.label === 'Sent to Delhivery (Pending)' || info.label === 'Placed';
+          }
+          if (st === 'READY_TO_SHIP') {
+            return info.label === 'Ready to Ship' || info.label === 'Ready for Pickup';
+          }
+          if (st === 'IN_TRANSIT') {
+            return info.label === 'In Transit' || info.label === 'Out for Delivery';
+          }
+          if (st === 'DELIVERED') {
+            return info.label === 'Delivered';
+          }
+          if (st === 'CANCELLED') {
+            return info.label === 'Cancelled' || info.label === 'RTO';
           }
           if (st === 'STUCK_PENDING') {
-            const ageHours = (Date.now() - new Date(o.createdAt).getTime()) / (1000 * 60 * 60);
+            const ageHours = (currentTime - new Date(o.createdAt).getTime()) / (1000 * 60 * 60);
             return (!o.trackingNumber && o.orderStatus !== 'CANCELLED' && ageHours >= 24) || o.delhiverySyncStatus === 'FAILED';
           }
-          return o.orderStatus === st;
+          if (st === 'SYNC_FAILED') {
+            return o.delhiverySyncStatus === 'FAILED';
+          }
+          return true;
         }}
         emptyMessage="No customer orders recorded yet."
       />
@@ -606,7 +821,7 @@ export default function AdminOrdersPage() {
 
               <div>
                 <span className={cn('block font-bold text-[11px] uppercase tracking-wider mb-1.5', isLight ? 'text-slate-600' : 'text-slate-400')}>
-                  Delivery Address:
+                  Address entered by customer:
                 </span>
                 {parsedAddress && parsedAddress.lines.length > 0 ? (
                   <div className={cn('space-y-0.5 leading-relaxed text-xs', isLight ? 'text-slate-800' : 'text-slate-200')}>
@@ -627,6 +842,10 @@ export default function AdminOrdersPage() {
                     {selectedOrder.shippingAddress}
                   </p>
                 )}
+                <p className={cn('text-[11px] mt-2 italic flex items-center gap-1.5', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                  <Info className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+                  <span>Final address edits &amp; customer verification are managed directly in Delhivery One &gt; Pending.</span>
+                </p>
               </div>
             </div>
 
@@ -993,10 +1212,24 @@ export default function AdminOrdersPage() {
                 <div className="flex items-center gap-2">
                   <Edit className="w-4 h-4 text-slate-500" />
                   <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
-                    Manual Override &amp; Notes
+                    Internal Notes &amp; Status Override
                   </h4>
                 </div>
               </div>
+
+              {(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' && (
+                <div
+                  className={cn(
+                    'p-3 rounded-xl border text-xs flex items-center gap-2',
+                    isLight ? 'bg-amber-50/80 border-amber-200 text-amber-900' : 'bg-amber-950/40 border-amber-800 text-amber-200'
+                  )}
+                >
+                  <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span className="text-[11px] leading-relaxed">
+                    Logistics mode is <strong>Delhivery Pending</strong>. AWBs, manifests, and package details are generated in Delhivery One and sync automatically. Our admin panel operates in read-only logistics mode.
+                  </span>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
@@ -1025,15 +1258,17 @@ export default function AdminOrdersPage() {
 
                 <div>
                   <label className={cn('block font-semibold mb-1 text-[11px]', isLight ? 'text-slate-700' : 'text-slate-300')}>
-                    Carrier Name
+                    Carrier Name {(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' ? '(Managed in Delhivery)' : ''}
                   </label>
                   <input
                     type="text"
                     value={newCarrier}
                     onChange={(e) => setNewCarrier(e.target.value)}
+                    disabled={(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending'}
                     placeholder="e.g. Shiprocket Express"
                     className={cn(
                       'w-full rounded-xl p-2.5 text-xs border transition-colors outline-hidden',
+                      (selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' && 'opacity-60 cursor-not-allowed',
                       isLight
                         ? 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-rose-600'
                         : 'bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-rose-500'
@@ -1043,15 +1278,17 @@ export default function AdminOrdersPage() {
 
                 <div>
                   <label className={cn('block font-semibold mb-1 text-[11px]', isLight ? 'text-slate-700' : 'text-slate-300')}>
-                    AWB Tracking Number
+                    AWB Tracking Number {(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' ? '(Managed in Delhivery)' : ''}
                   </label>
                   <input
                     type="text"
                     value={newTracking}
                     onChange={(e) => setNewTracking(e.target.value)}
+                    disabled={(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending'}
                     placeholder="e.g. SR-HYD-998241"
                     className={cn(
                       'w-full rounded-xl p-2.5 text-xs font-mono border transition-colors outline-hidden',
+                      (selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' && 'opacity-60 cursor-not-allowed',
                       isLight
                         ? 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-rose-600'
                         : 'bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-rose-500'
