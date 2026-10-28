@@ -283,6 +283,92 @@ export function formatDelhiveryItemName(rawName: string): string {
   return getShortLabelName(rawName);
 }
 
+export interface DelhiveryManifestLineItem {
+  name: string;
+  sku: string;
+  price: string;
+  quantity: number;
+  total: string;
+  hsn?: string;
+  hsn_code?: string;
+}
+
+/**
+ * Builds itemized product lines for Delhivery One shipping labels and packing slips.
+ * If delivery charges are present (shippingFee > 0), appends 'Delivery charges' (SKU: Del-Charges)
+ * as a separate line item exactly matching Delhivery One's standard packing slip format.
+ */
+export function buildDelhiveryShipmentItems(
+  items: Array<{
+    name?: string;
+    productName?: string;
+    sku?: string;
+    quantity: number;
+    price: number;
+    product?: { sku?: string | null; name?: string } | null;
+  }>,
+  shippingFee: number = 0
+): DelhiveryManifestLineItem[] {
+  const result: DelhiveryManifestLineItem[] = [];
+
+  for (const it of items || []) {
+    const rawName = it.productName || it.name || 'Herbic Cure Formulation';
+    const unitPrice = Number(it.price || 0);
+    const qty = Number(it.quantity || 1);
+    const lineTotal = unitPrice * qty;
+
+    // Resolve clean SKU matching Delhivery invoice label format
+    let itemSku = it.sku || it.product?.sku || '';
+    if (!itemSku || itemSku.length > 36) {
+      if (it.product?.sku) {
+        itemSku = it.product.sku;
+      }
+    }
+    // Clean standardized SKU mappings
+    if (!itemSku || itemSku.length > 25) {
+      const lower = rawName.toLowerCase();
+      if (lower.includes('oil') && lower.includes('shampoo')) {
+        itemSku = 'HC-HO-S';
+      } else if (lower.includes('shampoo')) {
+        itemSku = 'HC-SHMP-Q1';
+      } else if (lower.includes('comb')) {
+        itemSku = 'HC-COMB-01';
+      } else {
+        itemSku = 'HC-OIL-Q1';
+      }
+    } else if (itemSku === 'HC-COMBO-OIL-SHMP') {
+      itemSku = 'HC-HO-S';
+    }
+
+    result.push({
+      name: rawName,
+      sku: itemSku,
+      price: unitPrice.toFixed(2),
+      quantity: qty,
+      total: lineTotal.toFixed(2),
+      hsn: '33059011',
+      hsn_code: '33059011',
+    });
+  }
+
+  // Delivery Charges sent separately as an itemized line row
+  // exactly matching Delhivery One shipping label schema
+  const deliveryCharge = Number(shippingFee || 0);
+  if (deliveryCharge > 0) {
+    result.push({
+      name: 'Delivery charges',
+      sku: 'Del-Charges',
+      price: deliveryCharge.toFixed(2),
+      quantity: 1,
+      total: deliveryCharge.toFixed(2),
+      hsn: '996813',
+      hsn_code: '996813',
+    });
+  }
+
+  return result;
+}
+
 export function getNextAvailablePickupSlot(): { pickupDate: string; pickupTime: string } {
   const now = new Date();
   const istFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -584,6 +670,8 @@ export async function createDelhiveryShipment(
 
   // If live Delhivery API Key is available
   const apiKey = getApiKey();
+  const delhiveryItems = buildDelhiveryShipmentItems(order.items || [], Number(order.shippingFee || 0));
+
   if (apiKey) {
     try {
       const shipmentData = {
@@ -616,6 +704,9 @@ export async function createDelhiveryShipment(
             shipment_length: boxLength,
             weight: String(order.weight || 500),
             pickup_location: getPickupLocation(),
+            items: delhiveryItems,
+            products: delhiveryItems,
+            order_items: delhiveryItems,
           },
         ],
         // Complete registered warehouse pickup location matching Delhivery One
@@ -815,6 +906,7 @@ export async function createDelhiveryPendingOrder(
   }
 
   const productsDesc = buildDelhiveryLabelDescription(order.items || []);
+  const delhiveryItems = buildDelhiveryShipmentItems(order.items || [], Number(order.shippingFee || 0));
 
   const pendingShipmentData = {
     shipments: [
@@ -846,6 +938,9 @@ export async function createDelhiveryPendingOrder(
         shipment_length: String(order.length || 18),
         weight: String(order.weight || 500),
         pickup_location: getPickupLocation(),
+        items: delhiveryItems,
+        products: delhiveryItems,
+        order_items: delhiveryItems,
       },
     ],
     pickup_location: {

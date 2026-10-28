@@ -4,6 +4,7 @@ import {
   isDelhiveryCancelled,
   getShortLabelName,
   buildDelhiveryLabelDescription,
+  buildDelhiveryShipmentItems,
   DelhiveryShipmentOrder,
 } from '@/lib/shipping/delhivery';
 
@@ -141,5 +142,50 @@ describe('Delhivery Express Logistics Integration Tests', () => {
         },
       ])
     ).toBe(true);
+  });
+
+  it('8. buildDelhiveryShipmentItems: Delivery charges sent separately as an itemized line row (SKU: Del-Charges)', () => {
+    const items = [
+      {
+        name: 'Herbic cure - 21 herbs hair oil + shampoo with conditioner',
+        sku: 'HC-HO-S',
+        quantity: 1,
+        price: 649,
+      },
+    ];
+
+    const result = buildDelhiveryShipmentItems(items, 89);
+    expect(result).toHaveLength(2);
+
+    // Product Line Item
+    expect(result[0].name).toBe('Herbic cure - 21 herbs hair oil + shampoo with conditioner');
+    expect(result[0].sku).toBe('HC-HO-S');
+    expect(result[0].quantity).toBe(1);
+    expect(result[0].price).toBe('649.00');
+    expect(result[0].total).toBe('649.00');
+
+    // Delivery Charges Line Item (as shown in Delhivery label specification)
+    expect(result[1].name).toBe('Delivery charges');
+    expect(result[1].sku).toBe('Del-Charges');
+    expect(result[1].quantity).toBe(1);
+    expect(result[1].price).toBe('89.00');
+    expect(result[1].total).toBe('89.00');
+  });
+
+  it('9. buildDelhiveryShipmentItems: Omits delivery charges row if shipping is free (0)', () => {
+    const items = [
+      {
+        name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)',
+        sku: 'HC-OIL-Q1',
+        quantity: 2,
+        price: 349,
+      },
+    ];
+
+    const result = buildDelhiveryShipmentItems(items, 0);
+    expect(result).toHaveLength(1);
+    expect(result[0].sku).toBe('HC-OIL-Q1');
+    expect(result[0].quantity).toBe(2);
+    expect(result[0].total).toBe('698.00');
   });
 });

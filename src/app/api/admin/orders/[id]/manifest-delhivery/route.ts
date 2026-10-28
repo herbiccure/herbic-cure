@@ -29,7 +29,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const order = await prisma.order.findUnique({
       where: { id },
       include: {
-        items: true,
+        items: { include: { product: true } },
         events: { orderBy: { timestamp: 'desc' } },
       },
     });
@@ -140,9 +140,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
         (order as any).codBalanceAmount ?? (order.total - Number((order as any).advanceAmount || 0))
       ),
       paymentMethod: isCod ? 'COD' : 'Prepaid',
-      items: order.items.map((it) => ({
+      items: order.items.map((it: any) => ({
         name: it.productName,
-        sku: it.productId || it.productName,
+        productName: it.productName,
+        sku: it.product?.sku === 'HC-COMBO-OIL-SHMP' ? 'HC-HO-S' : (it.product?.sku || it.productId || 'HC-PROD'),
         quantity: it.quantity,
         price: it.price,
       })),

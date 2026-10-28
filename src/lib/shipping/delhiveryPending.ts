@@ -49,7 +49,11 @@ export async function sendOrderToDelhiveryPending(
 ): Promise<SendToPendingResult> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: { items: true },
+    include: {
+      items: {
+        include: { product: true },
+      },
+    },
   });
 
   if (!order) {
@@ -163,10 +167,10 @@ export async function sendOrderToDelhiveryPending(
       shippingFee: order.shippingFee,
       codBalanceAmount: isCod ? effectiveCodBalance : 0,
       paymentMethod: isCod ? 'COD' : 'Prepaid',
-      items: order.items.map((it) => ({
+      items: order.items.map((it: any) => ({
         name: it.productName,
         productName: it.productName,
-        sku: it.productId || it.productName,
+        sku: it.product?.sku === 'HC-COMBO-OIL-SHMP' ? 'HC-HO-S' : (it.product?.sku || it.productId || 'HC-PROD'),
         quantity: it.quantity,
         price: it.price,
       })),

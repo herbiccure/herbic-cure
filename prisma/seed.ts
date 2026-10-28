@@ -696,7 +696,7 @@ Step 4: Wash with mild shampoo. Repeat 2 to 3 times per week for optimal results
     {
       name: 'Herbic Cure - 21 Herbs Fusion Hair Oil + Shampoo with Conditioner',
       slug: 'herbic-cure-21-herbs-hair-oil-shampoo-with-conditioner',
-      sku: 'HC-COMBO-OIL-SHMP',
+      sku: 'HC-HO-S',
       shortDescription: 'Complete Hair Care Duo: 190ml 21 Herbs Fusion Hair Oil + 200ml Daily Cleansing Shampoo with Conditioner. Nourish, Cleanse & Strengthen.',
       fullDescription: `<h6>Herbic Cure Complete Hair Care Duo 🌿🧴</h6>
 <p><strong>Nourish • Cleanse • Strengthen.</strong> The ultimate two-part Ayurvedic harmony for complete hair fall reversal:</p>
