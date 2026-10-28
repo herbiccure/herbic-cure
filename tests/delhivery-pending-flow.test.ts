@@ -139,19 +139,27 @@ describe('Delhivery One Pending Order Fulfillment Flow Tests', () => {
   });
 
   it('6. getEffectiveShippingMode: Defaults to auto_manifest so live store behavior is unchanged', async () => {
-    vi.spyOn(prisma.siteSetting, 'findUnique').mockResolvedValue(null as any);
-    const modeDefault = await getEffectiveShippingMode();
-    expect(modeDefault).toBe('auto_manifest');
+    const originalEnv = process.env.SHIPPING_MODE;
+    delete process.env.SHIPPING_MODE;
+    try {
+      vi.spyOn(prisma.siteSetting, 'findUnique').mockResolvedValue(null as any);
+      const modeDefault = await getEffectiveShippingMode();
+      expect(modeDefault).toBe('auto_manifest');
 
-    vi.spyOn(prisma.siteSetting, 'findUnique').mockResolvedValue({
-      id: 's1',
-      key: 'shipping_mode',
-      value: 'delhivery_pending',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as any);
-    const modePending = await getEffectiveShippingMode();
-    expect(modePending).toBe('delhivery_pending');
+      vi.spyOn(prisma.siteSetting, 'findUnique').mockResolvedValue({
+        id: 's1',
+        key: 'shipping_mode',
+        value: 'delhivery_pending',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
+      const modePending = await getEffectiveShippingMode();
+      expect(modePending).toBe('delhivery_pending');
+    } finally {
+      if (originalEnv !== undefined) {
+        process.env.SHIPPING_MODE = originalEnv;
+      }
+    }
   });
 
   it('7. createDelhiveryPendingOrder: Correctly handles prepaid vs COD balance amount', async () => {

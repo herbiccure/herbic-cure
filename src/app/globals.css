@@ -917,11 +917,29 @@ body {
 /* Sonner Toaster Container */
 [data-sonner-toaster] {
   --font-family: var(--font-sans, system-ui, -apple-system, sans-serif) !important;
+  --normal-bg: #FFF4F7 !important;
+  --normal-border: #EAC9D1 !important;
+  --normal-text: #2D1B1B !important;
+  --success-bg: #FFF4F7 !important;
+  --success-border: #EAC9D1 !important;
+  --success-text: #2D1B1B !important;
+  --info-bg: #FAF0F4 !important;
+  --info-border: #E2CBD2 !important;
+  --info-text: #2D1B1B !important;
+  --warning-bg: #FFFDF7 !important;
+  --warning-border: #FDE68A !important;
+  --warning-text: #78350F !important;
+  --error-bg: #FFF0F3 !important;
+  --error-border: #FDA4AF !important;
+  --error-text: #881337 !important;
   z-index: 999999 !important;
 }
 
-/* Bottom placement and responsive offset for all device sizes */
+/* Bottom placement and responsive offset for all device sizes (forces bottom even if top requested) */
+[data-sonner-toaster],
+[data-sonner-toaster][data-y-position='top'],
 [data-sonner-toaster][data-y-position='bottom'] {
+  top: auto !important;
   bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
 }
 

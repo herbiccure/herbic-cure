@@ -43,6 +43,21 @@ export default function StoreToaster() {
       }}
       toastOptions={{
         className: 'herbic-toast-card',
+        classNames: {
+          toast: '!bg-[#FFF4F7] !text-[#2D1B1B] !border-[#EAC9D1] !rounded-2xl !shadow-xl herbic-toast-card',
+          title: '!text-[#2D1B1B] !font-semibold !text-xs sm:!text-sm',
+          description: '!text-[#6B2E3D] !text-xs',
+          success: '!bg-[#FFF4F7] !border-[#EAC9D1] !text-[#2D1B1B]',
+          error: '!bg-[#FFF0F3] !border-[#FDA4AF] !text-[#2D1B1B]',
+          info: '!bg-[#FAF0F4] !border-[#E2CBD2] !text-[#2D1B1B]',
+          warning: '!bg-[#FFFDF7] !border-[#FDE68A] !text-[#78350F]',
+          closeButton: '!bg-[#FFF0F4] !border-[#EAC9D1] !text-[#8C3A4F] hover:!bg-[#F6DFE7]',
+        },
+        style: {
+          backgroundColor: '#FFF4F7',
+          borderColor: '#EAC9D1',
+          color: '#2D1B1B',
+        },
       }}
     />
   );
