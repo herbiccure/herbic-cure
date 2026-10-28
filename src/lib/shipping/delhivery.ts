@@ -859,8 +859,7 @@ export async function createDelhiveryPendingOrder(
   };
 
   // If live Delhivery API integration is enabled for pending queue
-  const isStaging = process.env.DELHIVERY_ENV === 'staging';
-  const isPendingPushActive = process.env.DELHIVERY_PUSH_PENDING_TO_API === 'true' || isStaging;
+  const isPendingPushActive = process.env.DELHIVERY_PUSH_PENDING_TO_API !== 'false';
   const apiKey = getApiKey();
 
   if (apiKey && isPendingPushActive) {

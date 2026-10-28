@@ -99,12 +99,14 @@ export async function POST(req: NextRequest) {
       }).catch(() => {});
 
       // Stage order into Delhivery One Pending queue (or manifest if auto_manifest enabled)
-      sendOrderToDelhiveryPending(dbOrder.id).catch((err: any) => {
+      try {
+        await sendOrderToDelhiveryPending(dbOrder.id);
+      } catch (err: any) {
         logger.warn('shipping.delhivery_pending.webhook_dispatch_failed', {
           orderId: dbOrder.id,
           error: err?.message,
         });
-      });
+      }
     } else if (event === 'payment.failed') {
       await prisma.order.updateMany({
         where: { orderNumber },

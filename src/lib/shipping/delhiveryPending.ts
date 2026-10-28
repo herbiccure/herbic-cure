@@ -242,6 +242,45 @@ export async function sendOrderToDelhiveryPending(
     const pendingRes = await createDelhiveryPendingOrder(shipmentPayload);
 
     if (pendingRes.success) {
+      if (pendingRes.waybill) {
+        // Delhivery assigned an AWB (account in Direct Manifestation mode)
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            trackingNumber: pendingRes.waybill,
+            trackingUrl: pendingRes.trackingUrl || `https://www.delhivery.com/track/package/${pendingRes.waybill}`,
+            carrier: 'Delhivery',
+            delhiveryStatus: 'MANIFESTED',
+            delhiverySyncStatus: 'SYNCED',
+            delhiverySyncError: null,
+            shippingMode: 'delhivery_pending',
+            lastDelhiverySyncAt: new Date(),
+          } as any,
+        });
+
+        await prisma.shipmentEvent.create({
+          data: {
+            orderId: order.id,
+            status: 'READY_TO_SHIP',
+            location: 'Delhivery Logistics Hub',
+            description: `Shipment manifested with Delhivery. AWB: ${pendingRes.waybill}`,
+          },
+        });
+
+        logger.info('shipping.delhivery_pending.manifested_with_awb', {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          waybill: pendingRes.waybill,
+        });
+
+        return {
+          success: true,
+          status: 'MANIFESTED',
+          waybill: pendingRes.waybill,
+          message: pendingRes.message || `Order manifested with AWB ${pendingRes.waybill}`,
+        };
+      }
+
       // Normal Pending Mode: Order staged in Store Pending queue (₹0 charged)
       await prisma.order.update({
         where: { id: order.id },

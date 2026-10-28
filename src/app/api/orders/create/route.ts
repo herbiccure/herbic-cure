@@ -388,34 +388,43 @@ export async function POST(req: NextRequest) {
 
     // 8. Logistics Staging:
     // If standard COD (confirmed order), stage into Delhivery One Pending queue (or manifest if auto_manifest enabled)
+    let finalOrder = createdOrder;
     if (createdOrder.orderStatus === 'CONFIRMED' && !requiresGatewaySession) {
-      sendOrderToDelhiveryPending(createdOrder.id).catch((err: any) => {
+      try {
+        await sendOrderToDelhiveryPending(createdOrder.id);
+        const refreshed = await prisma.order.findUnique({
+          where: { id: createdOrder.id },
+        });
+        if (refreshed) {
+          finalOrder = refreshed;
+        }
+      } catch (err: any) {
         logger.warn('shipping.delhivery_pending.create_dispatch_failed', {
           orderId: createdOrder.id,
           error: err?.message,
         });
-      });
+      }
     }
 
     logger.info('order.created', {
-      orderNumber: createdOrder.orderNumber,
-      total: createdOrder.total,
-      paymentMethod: createdOrder.paymentMethod,
+      orderNumber: finalOrder.orderNumber,
+      total: finalOrder.total,
+      paymentMethod: finalOrder.paymentMethod,
       advanceAmount,
       codBalanceAmount,
     });
 
     return NextResponse.json({
       success: true,
-      orderId: createdOrder.orderNumber,
-      id: createdOrder.id,
-      total: createdOrder.total,
+      orderId: finalOrder.orderNumber,
+      id: finalOrder.id,
+      total: finalOrder.total,
       advanceAmount,
       codBalanceAmount,
-      paymentMethod: createdOrder.paymentMethod,
-      carrier: createdOrder.carrier,
-      trackingNumber: createdOrder.trackingNumber,
-      trackingUrl: createdOrder.trackingUrl,
+      paymentMethod: finalOrder.paymentMethod,
+      carrier: finalOrder.carrier,
+      trackingNumber: finalOrder.trackingNumber,
+      trackingUrl: finalOrder.trackingUrl,
       razorpayOrderId: razorpaySession?.razorpayOrderId || null,
       razorpayAmount: razorpaySession?.amount || null,
       razorpayCurrency: razorpaySession?.currency || null,

@@ -89,12 +89,14 @@ export async function POST(req: NextRequest) {
     }).catch(() => { });
 
     // Stage order into Delhivery One Pending queue (or manifest if auto_manifest enabled)
-    sendOrderToDelhiveryPending(order.id).catch((err: any) => {
+    try {
+      await sendOrderToDelhiveryPending(order.id);
+    } catch (err: any) {
       logger.warn('shipping.delhivery_pending.verify_dispatch_failed', {
         orderId: order.id,
         error: err?.message,
       });
-    });
+    }
 
     logger.info('payment.verified', {
       orderId: order.orderNumber,
