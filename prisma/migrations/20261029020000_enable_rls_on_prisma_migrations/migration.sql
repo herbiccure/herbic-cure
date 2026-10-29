@@ -4,3 +4,4 @@ ALTER TABLE public._prisma_migrations ENABLE ROW LEVEL SECURITY;
 
 -- Revoke read/write access from anon and authenticated PostgREST roles
 REVOKE ALL ON TABLE public._prisma_migrations FROM anon, authenticated;
+
