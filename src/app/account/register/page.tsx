@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { authClient } from '@/lib/auth/auth-client';
 import { ArrowRight, Lock, Mail, User, Phone, AlertCircle, Loader2, Sparkles, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { validateIndianMobile } from '@/lib/utils';
 
 function RegisterContent() {
   const router = useRouter();
@@ -38,6 +39,14 @@ function RegisterContent() {
     if (password.length < 10) {
       setError('Password must be at least 10 characters long.');
       return;
+    }
+
+    if (phone && phone.trim()) {
+      const phoneValidation = validateIndianMobile(phone);
+      if (!phoneValidation.valid) {
+        setError(phoneValidation.error || 'Please enter a valid 10-digit Indian mobile number.');
+        return;
+      }
     }
 
     setLoading(true);

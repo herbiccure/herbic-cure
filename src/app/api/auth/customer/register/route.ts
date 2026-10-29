@@ -3,17 +3,25 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { signSessionToken } from '@/lib/auth/session';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { validateIndianMobile } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Rate limiting
-    const rateLimitError = enforceRateLimit(request, 'customer_register', 10, 60 * 1000);
+    // 1. Rate limiting: max 5 registration attempts per min per IP to prevent bot spam
+    const rateLimitError = enforceRateLimit(request, 'customer_register', 5, 60 * 1000);
     if (rateLimitError) return rateLimitError;
 
     const body = await request.json().catch(() => ({}));
+
+    // 2. Anti-bot honeypot check: automated bots frequently populate hidden form parameters
+    if (body.website || body.bot_trap || body.address_extra || body.fax) {
+      logger.warn('auth.customer.register.bot_blocked', { reason: 'honeypot_triggered' });
+      return NextResponse.json({ error: 'Automated submissions are not permitted.' }, { status: 400 });
+    }
+
     const { name, email, password, phone } = body;
 
     if (!name || !email || !password) {
@@ -22,6 +30,19 @@ export async function POST(request: NextRequest) {
 
     if (password.length < 6) {
       return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+    }
+
+    // 3. Indian 10-digit mobile validation
+    let cleanPhone: string | null = null;
+    if (phone && typeof phone === 'string' && phone.trim().length > 0) {
+      const phoneValidation = validateIndianMobile(phone);
+      if (!phoneValidation.valid) {
+        return NextResponse.json(
+          { error: phoneValidation.error || 'Please enter a valid 10-digit Indian mobile number.' },
+          { status: 400 }
+        );
+      }
+      cleanPhone = phoneValidation.phone;
     }
 
     const cleanEmail = email.toLowerCase().trim();
@@ -41,7 +62,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         email: cleanEmail,
         passwordHash,
-        phone: phone ? phone.trim() : null,
+        phone: cleanPhone,
       },
     });
 

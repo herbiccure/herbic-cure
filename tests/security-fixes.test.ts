@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { signSessionToken, verifySessionToken } from '@/lib/auth/session';
-import { generatePhoneOtp, verifyPhoneOtp } from '@/lib/otp';
+import { cleanIndianMobile, validateIndianMobile } from '@/lib/utils';
+import { POST as sendOtpHandler } from '@/app/api/auth/customer/send-otp/route';
+import { POST as verifyOtpHandler } from '@/app/api/auth/customer/verify-otp/route';
 import crypto from 'crypto';
 
 describe('Security Fixes Validation Suite', () => {
@@ -37,44 +39,52 @@ describe('Security Fixes Validation Suite', () => {
     });
   });
 
-  describe('Customer Phone OTP Cryptographic Protection (customer-otp-secret-exposure)', () => {
-    it('encrypts verification token so sessionSecret is not visible in plaintext base64', () => {
-      const phone = '9876543210';
-      const result = generatePhoneOtp(phone);
-
-      const decoded = Buffer.from(result.verificationToken, 'base64').toString('utf8');
-      // Must NOT contain unencrypted JSON with sessionSecret
-      expect(decoded).not.toContain('sessionSecret');
-      expect(decoded).not.toContain('"phone"');
-      // Format must be iv:tag:ciphertext
-      const parts = decoded.split(':');
-      expect(parts.length).toBe(3);
+  describe('Indian 10-Digit Mobile Number Validation & Formatting', () => {
+    it('accepts valid 10-digit Indian mobile numbers starting with 6, 7, 8, or 9', () => {
+      expect(validateIndianMobile('9876543210').valid).toBe(true);
+      expect(validateIndianMobile('8688888114').valid).toBe(true);
+      expect(validateIndianMobile('7012345678').valid).toBe(true);
+      expect(validateIndianMobile('6234567890').valid).toBe(true);
     });
 
-    it('successfully verifies a valid OTP code', () => {
-      const phone = '9876543210';
-      const result = generatePhoneOtp(phone);
+    it('cleans and normalizes prefixes (+91, 91, 0, spaces, dashes)', () => {
+      expect(cleanIndianMobile('+91 98765 43210')).toBe('9876543210');
+      expect(cleanIndianMobile('919876543210')).toBe('9876543210');
+      expect(cleanIndianMobile('09876543210')).toBe('9876543210');
+      expect(cleanIndianMobile('9876-543-210')).toBe('9876543210');
 
-      const verifyCheck = verifyPhoneOtp(phone, result.otp, result.verificationToken);
-      expect(verifyCheck.valid).toBe(true);
+      const res = validateIndianMobile('+91 98765 43210');
+      expect(res.valid).toBe(true);
+      expect(res.phone).toBe('9876543210');
     });
 
-    it('rejects an incorrect OTP code', () => {
-      const phone = '9876543210';
-      const result = generatePhoneOtp(phone);
-
-      const wrongOtp = result.otp === '123456' ? '654321' : '123456';
-      const verifyCheck = verifyPhoneOtp(phone, wrongOtp, result.verificationToken);
-      expect(verifyCheck.valid).toBe(false);
-      expect(verifyCheck.error).toContain('Incorrect OTP code');
+    it('rejects numbers that do not start with 6, 7, 8, or 9', () => {
+      expect(validateIndianMobile('5551234567').valid).toBe(false);
+      expect(validateIndianMobile('1234567890').valid).toBe(false);
+      expect(validateIndianMobile('0123456789').valid).toBe(false);
     });
 
-    it('rejects verification token used with a mismatched phone number', () => {
-      const phone = '9876543210';
-      const result = generatePhoneOtp(phone);
+    it('rejects numbers with fewer or more than 10 digits', () => {
+      expect(validateIndianMobile('987654321').valid).toBe(false); // 9 digits
+      expect(validateIndianMobile('987654321012').valid).toBe(false); // too long
+      expect(validateIndianMobile('').valid).toBe(false);
+      expect(validateIndianMobile(null).valid).toBe(false);
+    });
+  });
 
-      const verifyCheck = verifyPhoneOtp('9123456780', result.otp, result.verificationToken);
-      expect(verifyCheck.valid).toBe(false);
+  describe('Anti-Bot & Disabled SMS OTP Protection', () => {
+    it('decommissioned send-otp endpoint returns HTTP 410 Gone with zero SMS dispatch', async () => {
+      const response = await sendOtpHandler();
+      expect(response.status).toBe(410);
+      const json = await response.json();
+      expect(json.error).toContain('disabled');
+    });
+
+    it('decommissioned verify-otp endpoint returns HTTP 410 Gone', async () => {
+      const response = await verifyOtpHandler();
+      expect(response.status).toBe(410);
+      const json = await response.json();
+      expect(json.error).toContain('disabled');
     });
   });
 

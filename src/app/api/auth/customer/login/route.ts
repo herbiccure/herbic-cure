@@ -9,11 +9,17 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Rate limiting
-    const rateLimitError = enforceRateLimit(request, 'customer_login', 10, 60 * 1000);
+    // 1. Rate limiting: max 5 login attempts per min per IP to prevent credential brute force
+    const rateLimitError = enforceRateLimit(request, 'customer_login', 5, 60 * 1000);
     if (rateLimitError) return rateLimitError;
 
     const body = await request.json().catch(() => ({}));
+
+    // 2. Anti-bot honeypot check
+    if (body.website || body.bot_trap || body.address_extra || body.fax) {
+      return NextResponse.json({ error: 'Automated submissions are not permitted.' }, { status: 400 });
+    }
+
     const { email, password } = body;
 
     const identifier = (email || '').trim();

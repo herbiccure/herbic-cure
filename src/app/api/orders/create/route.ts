@@ -23,6 +23,12 @@ export async function POST(req: NextRequest) {
 
     // 2. Strict Zod Schema Validation
     const body = await req.json().catch(() => null);
+
+    // Anti-bot honeypot check: reject automated bot orders
+    if (body?.website || body?.bot_trap || body?.address_extra || body?.fax) {
+      return NextResponse.json({ error: 'Automated submissions are not permitted.' }, { status: 400 });
+    }
+
     const parsed = checkoutSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
