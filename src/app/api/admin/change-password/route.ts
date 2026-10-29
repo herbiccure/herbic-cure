@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger';
+import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import * as argon2 from '@node-rs/argon2';
@@ -86,8 +87,14 @@ export async function POST(request: NextRequest) {
     ].filter(Boolean);
 
     if (recoveryKey && validRecoveryKeys.length > 0) {
-      const cleanKey = recoveryKey.trim();
-      if (validRecoveryKeys.some((k) => k === cleanKey || k?.slice(0, 16) === cleanKey)) {
+      const cleanKeyBuf = Buffer.from(recoveryKey.trim());
+      if (
+        validRecoveryKeys.some((k) => {
+          if (!k) return false;
+          const kBuf = Buffer.from(k);
+          return kBuf.length === cleanKeyBuf.length && crypto.timingSafeEqual(kBuf, cleanKeyBuf);
+        })
+      ) {
         isAuthorized = true;
       }
     }

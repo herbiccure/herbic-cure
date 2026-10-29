@@ -191,6 +191,15 @@ export async function POST(request: NextRequest) {
     } else {
       ext = '.svg';
       finalMimeType = 'image/svg+xml';
+      // Sanitize SVG to eliminate XSS vectors while preserving legitimate vector graphics
+      let svgStr = originalBuffer.toString('utf8');
+      svgStr = svgStr
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/<script\b[^>]*>/gi, '')
+        .replace(/\s+on[a-z]+\s*=\s*(['"]).*?\1/gi, '')
+        .replace(/\s+on[a-z]+\s*=\s*[^>\s]+/gi, '')
+        .replace(/(?:href|xlink:href)\s*=\s*(['"])javascript:.*?\1/gi, '$1#$1');
+      processedBuffer = Buffer.from(svgStr, 'utf8');
     }
 
     const safeBase = (file.name || (isVideo ? 'video' : 'image'))

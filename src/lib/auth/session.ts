@@ -94,15 +94,6 @@ export function verifySessionToken<T>(token: string | undefined | null): T | nul
     }
   }
 
-  // Graceful fallback for legacy raw JSON during transition
-  try {
-    const parsed = JSON.parse(token);
-    if (parsed && (parsed.id || parsed.email)) {
-      return parsed as T;
-    }
-  } catch {
-    // Not valid JSON
-  }
-
+  // Reject all tokens that are not valid HMAC-signed tokens
   return null;
 }

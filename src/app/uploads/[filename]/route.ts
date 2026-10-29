@@ -54,12 +54,17 @@ export async function GET(
             if (matches) {
               const contentType = matches[1];
               const buffer = Buffer.from(matches[2], 'base64');
+              const responseHeaders: Record<string, string> = {
+                'Content-Type': contentType,
+                'Content-Length': String(buffer.length),
+                'Cache-Control': 'public, max-age=31536000, immutable',
+              };
+              if (contentType === 'image/svg+xml') {
+                responseHeaders['Content-Security-Policy'] = "default-src 'none'; style-src 'unsafe-inline'";
+                responseHeaders['X-Content-Type-Options'] = 'nosniff';
+              }
               return new NextResponse(buffer, {
-                headers: {
-                  'Content-Type': contentType,
-                  'Content-Length': String(buffer.length),
-                  'Cache-Control': 'public, max-age=31536000, immutable',
-                },
+                headers: responseHeaders,
               });
             }
           } else if (media.url.startsWith('http')) {
@@ -149,16 +154,22 @@ export async function GET(
       },
     });
 
+    const responseHeaders: Record<string, string> = {
+      'Content-Length': String(fileSize),
+      'Accept-Ranges': 'bytes',
+      'Content-Type': contentType,
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    };
+    if (contentType === 'image/svg+xml') {
+      responseHeaders['Content-Security-Policy'] = "default-src 'none'; style-src 'unsafe-inline'";
+      responseHeaders['X-Content-Type-Options'] = 'nosniff';
+    }
+
     return new NextResponse(readable as unknown as BodyInit, {
       status: 200,
-      headers: {
-        'Content-Length': String(fileSize),
-        'Accept-Ranges': 'bytes',
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable',
-      },
+      headers: responseHeaders,
     });
-  } catch (error) {
+  } catch {
     return new NextResponse('Internal server error', { status: 500 });
   }
 }

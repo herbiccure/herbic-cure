@@ -1,5 +1,6 @@
 import { getServerSession } from '@/lib/auth/server';
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { checkoutSchema } from '@/lib/validations';
 import { enforceRateLimit } from '@/lib/rateLimit';
@@ -226,7 +227,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const orderNumber = `HC-${Date.now().toString().slice(-6)}`;
+    // Generate unpredictable cryptographically secure 6-digit order number
+    let orderNumber = `HC-${crypto.randomInt(100000, 999999)}`;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const existing = await prisma.order.findUnique({ where: { orderNumber } });
+      if (!existing) break;
+      orderNumber = `HC-${crypto.randomInt(100000, 999999)}`;
+    }
     const isOnlinePayment = paymentMethod !== 'COD' || isCodWithAdvance;
     const payableOnlineAmount = isCodWithAdvance ? advanceAmount : calculatedFinalTotal;
     const requiresGatewaySession = isOnlinePayment && payableOnlineAmount > 0;

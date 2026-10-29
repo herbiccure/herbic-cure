@@ -51,3 +51,5 @@ scraped_products.json
 *.db-wal
 *.db-shm
 prisma/*.db*
+.agents/
+skills-lock.json

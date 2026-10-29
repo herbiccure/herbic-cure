@@ -12,6 +12,7 @@ authenticator.options = {
 };
 
 const OTP_SECRET_KEY = process.env.OTP_SIGNING_SECRET || 'herbic_cure_secret_otp_signing_key_2026';
+const OTP_CIPHER_KEY = crypto.createHash('sha256').update(OTP_SECRET_KEY).digest();
 
 // In-memory rate limiting map: phone -> array of timestamps
 const rateLimitMap = new Map<string, number[]>();
@@ -67,7 +68,7 @@ export interface GeneratedOtpResult {
 }
 
 /**
- * Generates a 6-digit OTP using otplib and returns a cryptographically signed verification token
+ * Generates a 6-digit OTP using otplib and returns a cryptographically encrypted verification token
  */
 export function generatePhoneOtp(phone: string): GeneratedOtpResult {
   const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
@@ -82,12 +83,14 @@ export function generatePhoneOtp(phone: string): GeneratedOtpResult {
     salt: crypto.randomBytes(8).toString('hex'),
   });
 
-  const signature = crypto
-    .createHmac('sha256', OTP_SECRET_KEY)
-    .update(payload)
-    .digest('hex');
+  // Encrypt payload with AES-256-GCM so sessionSecret is never exposed to the client
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', OTP_CIPHER_KEY, iv);
+  let encrypted = cipher.update(payload, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const tag = cipher.getAuthTag().toString('hex');
 
-  const verificationToken = Buffer.from(`${payload}::${signature}`).toString('base64');
+  const verificationToken = Buffer.from(`${iv.toString('hex')}:${tag}:${encrypted}`).toString('base64');
 
   return {
     otp,
@@ -102,7 +105,7 @@ export interface VerifyOtpResult {
 }
 
 /**
- * Verifies a 6-digit OTP using otplib against the signed verification token
+ * Verifies a 6-digit OTP using otplib against the encrypted verification token
  */
 export function verifyPhoneOtp(
   phone: string,
@@ -122,26 +125,20 @@ export function verifyPhoneOtp(
 
   try {
     const decoded = Buffer.from(verificationToken, 'base64').toString('utf-8');
-    const [payloadStr, signature] = decoded.split('::');
 
-    if (!payloadStr || !signature) {
+    // Parse encrypted format: iv:tag:ciphertext
+    const parts = decoded.split(':');
+    if (parts.length !== 3) {
       return { valid: false, error: 'Invalid or malformed verification token.' };
     }
 
-    // Verify HMAC signature
-    const expectedSignature = crypto
-      .createHmac('sha256', OTP_SECRET_KEY)
-      .update(payloadStr)
-      .digest('hex');
+    const [ivHex, tagHex, encrypted] = parts;
+    const decipher = crypto.createDecipheriv('aes-256-gcm', OTP_CIPHER_KEY, Buffer.from(ivHex, 'hex'));
+    decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
 
-    const expectedBuf = Buffer.from(expectedSignature);
-    const actualBuf = Buffer.from(signature);
-
-    if (expectedBuf.length !== actualBuf.length || !crypto.timingSafeEqual(expectedBuf, actualBuf)) {
-      return { valid: false, error: 'Verification token signature mismatch or expired.' };
-    }
-
-    const { phone: tokenPhone, sessionSecret, expiresAt } = JSON.parse(payloadStr);
+    const { phone: tokenPhone, sessionSecret, expiresAt } = JSON.parse(decrypted);
 
     if (tokenPhone !== normalizedPhone) {
       return { valid: false, error: 'Verification token does not match the provided phone number.' };

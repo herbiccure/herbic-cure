@@ -12,11 +12,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { phone, otp, verificationToken, name, email, password } = body;
 
-    // Note: OTP verification has been removed for users as per store policy.
-    // Allow direct registration without requiring SMS OTP code.
-    if (!phone && !email) {
+    if (!phone) {
       return NextResponse.json(
-        { error: 'Mobile number or email address is required.' },
+        { error: 'Mobile number is required for OTP verification.' },
+        { status: 400 }
+      );
+    }
+
+    if (!otp || !verificationToken) {
+      return NextResponse.json(
+        { error: 'OTP code and verification token are required.' },
+        { status: 400 }
+      );
+    }
+
+    // Verify phone OTP with cryptographic token
+    const otpCheck = verifyPhoneOtp(phone, otp, verificationToken);
+    if (!otpCheck.valid) {
+      return NextResponse.json(
+        { error: otpCheck.error || 'Invalid or expired OTP code.' },
         { status: 400 }
       );
     }

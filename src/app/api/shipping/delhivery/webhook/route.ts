@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { cancelOrderWithLogistics } from '@/lib/shipping/orderCancellation';
 import { mapDelhiveryStatusToOrderStatus } from '@/lib/shipping/delhivery';
@@ -12,6 +13,28 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: NextRequest) {
   try {
+    // 1. Verify caller authentication if a secret/token is configured
+    const webhookToken = process.env.DELHIVERY_WEBHOOK_TOKEN || process.env.DELHIVERY_WEBHOOK_SECRET;
+    if (webhookToken) {
+      const providedToken =
+        request.headers.get('x-delhivery-token') ||
+        request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ||
+        request.nextUrl.searchParams.get('token');
+
+      if (!providedToken) {
+        logger.warn('shipping.webhook.unauthorized', { reason: 'missing_token' });
+        return NextResponse.json({ error: 'Unauthorized webhook request' }, { status: 401 });
+      }
+
+      const tokenBuf = Buffer.from(providedToken);
+      const secretBuf = Buffer.from(webhookToken);
+
+      if (tokenBuf.length !== secretBuf.length || !crypto.timingSafeEqual(tokenBuf, secretBuf)) {
+        logger.warn('shipping.webhook.unauthorized', { reason: 'token_mismatch' });
+        return NextResponse.json({ error: 'Unauthorized webhook request' }, { status: 401 });
+      }
+    }
+
     let body: any = null;
     const contentType = request.headers.get('content-type') || '';
 

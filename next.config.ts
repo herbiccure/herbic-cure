@@ -100,11 +100,7 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '**',
       },
-      {
-        protocol: 'http',
-        hostname: '**',
-      },
-    ],
+          ],
   },
   turbopack: {
     rules: {
