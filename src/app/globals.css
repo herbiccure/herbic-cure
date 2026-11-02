@@ -1016,9 +1016,11 @@ body {
   color: #2D1B1B !important;
 }
 
+[data-sonner-toast][data-type='success'] [data-icon],
 [data-sonner-toast][data-type='success'] [data-icon] svg {
   color: #8C374A !important;
   stroke: #8C374A !important;
+  fill: currentColor !important;
 }
 
 /* Error Popout - Soft Berry Rose */

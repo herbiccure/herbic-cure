@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const orderIdsParam = searchParams.get('orderIds');
 
     let whereClause: any = {
-      orderStatus: { in: ['CONFIRMED', 'PROCESSING'] },
+      orderStatus: { in: ['READY_TO_SHIP', 'CONFIRMED', 'PROCESSING'] },
       trackingNumber: null,
     };
 
@@ -136,6 +136,23 @@ export async function GET(request: NextRequest) {
       for (const it of order.items) {
         let skuCode = it.product?.sku || it.productId || 'HC-PROD';
         if (skuCode === 'HC-COMBO-OIL-SHMP') skuCode = 'HC-HO-S';
+        if (skuCode === 'HC-COMB-01') skuCode = 'HC-CO-1';
+        if (!skuCode || skuCode.length > 25) {
+          const lower = (it.productName || '').toLowerCase();
+          if (lower.includes('oil') && lower.includes('shampoo') && lower.includes('comb')) {
+            skuCode = 'HC-TRIO-01';
+          } else if (lower.includes('oil') && lower.includes('shampoo')) {
+            skuCode = 'HC-HO-S';
+          } else if (lower.includes('oil') && lower.includes('comb')) {
+            skuCode = 'HC-OIL-COMB';
+          } else if (lower.includes('shampoo')) {
+            skuCode = 'HC-SHMP-Q1';
+          } else if (lower.includes('comb')) {
+            skuCode = 'HC-CO-1';
+          } else {
+            skuCode = 'HC-OIL-Q1';
+          }
+        }
 
         const row = [
           escapeCsvField(order.orderNumber),

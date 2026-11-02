@@ -18,8 +18,9 @@ import {
   Phone,
   MessageCircle,
   Download,
-  Info,
   Sparkles,
+  PackageCheck,
+  MapPin,
 } from 'lucide-react';
 import { fetcher } from '@/lib/fetcher';
 import { AdminDataTable, Column } from '@/components/admin/AdminDataTable';
@@ -81,9 +82,14 @@ interface OrderItem {
 }
 
 interface ParsedAddress {
+  name?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
   lines: string[];
   cityStatePin: string;
-  phone?: string;
   formattedText: string;
 }
 
@@ -98,13 +104,18 @@ function parseShippingAddress(raw: string | null | undefined): ParsedAddress {
       const parsed = JSON.parse(trimmed);
       if (typeof parsed === 'object' && parsed !== null) {
         const lines: string[] = [];
+        const addrLine = parsed.address || parsed.addressLine1 || '';
         if (parsed.addressLine1) lines.push(parsed.addressLine1);
         if (parsed.addressLine2) lines.push(parsed.addressLine2);
         if (parsed.address && !parsed.addressLine1) lines.push(parsed.address);
 
+        const pin = parsed.pinCode || parsed.pincode || '';
+        const city = parsed.city || '';
+        const state = parsed.state || '';
+
         const locParts = [
-          parsed.city,
-          parsed.state ? ((parsed.pinCode || parsed.pincode) ? `${parsed.state} - ${parsed.pinCode || parsed.pincode}` : parsed.state) : (parsed.pinCode || parsed.pincode),
+          city,
+          state ? (pin ? `${state} - ${pin}` : state) : pin,
         ].filter(Boolean);
 
         const cityStatePin = locParts.join(', ');
@@ -112,16 +123,21 @@ function parseShippingAddress(raw: string | null | undefined): ParsedAddress {
         if (cityStatePin) allParts.push(cityStatePin);
 
         return {
+          name: parsed.name,
+          phone: parsed.phone,
+          address: addrLine || lines.join(', '),
+          city,
+          state,
+          pincode: pin,
           lines: lines.length > 0 ? lines : [trimmed],
           cityStatePin,
-          phone: parsed.phone,
           formattedText: allParts.join(', '),
         };
       }
     }
   } catch {}
 
-  return { lines: [raw], cityStatePin: '', formattedText: raw };
+  return { lines: [raw], address: raw, cityStatePin: '', formattedText: raw };
 }
 
 export type UnifiedOrderStatus =
@@ -182,10 +198,10 @@ export function getOrderStatusInfo(o: OrderItem): {
       colorClass: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/80 dark:text-purple-300 dark:border-purple-800',
     };
   }
-  if (o.trackingNumber) {
+  if (o.orderStatus === 'READY_TO_SHIP' || o.delhiveryStatus === 'READY_TO_SHIP' || o.trackingNumber) {
     return {
       label: 'Ready to Ship',
-      colorClass: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/80 dark:text-indigo-300 dark:border-indigo-800',
+      colorClass: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800',
     };
   }
   if (o.delhiveryStatus === 'PENDING' || o.delhiverySyncStatus === 'SYNCED') {
@@ -232,6 +248,25 @@ export default function AdminOrdersPage() {
   const [cancellingShipment, setCancellingShipment] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
 
+  // Order Acceptance & Rejection
+  const [acceptingOrder, setAcceptingOrder] = useState(false);
+  const [rejectingOrder, setRejectingOrder] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+
+  // Editable Customer & Shipping Address details
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editStreet, setEditStreet] = useState('');
+  const [editCity, setEditCity] = useState('');
+  const [editState, setEditState] = useState('');
+  const [editPincode, setEditPincode] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [editCodBalance, setEditCodBalance] = useState<number | ''>('');
+
   const [currentTime] = useState(() => Date.now());
 
   const newOrdersCount = useMemo(() => {
@@ -274,6 +309,134 @@ export default function AdminOrdersPage() {
     setNewTracking(o.trackingNumber || '');
     setNewCarrier(o.carrier || 'Delhivery');
     setEventDesc('');
+    setShowRejectModal(false);
+    setRejectReason('');
+
+    const addr = parseShippingAddress(o.shippingAddress);
+    setEditName(o.customerName || addr.name || '');
+    setEditEmail(o.customerEmail || '');
+    setEditPhone(o.customerPhone || addr.phone || '');
+    setEditStreet(addr.address || addr.lines.join(', ') || '');
+    setEditCity(addr.city || '');
+    setEditState(addr.state || '');
+    setEditPincode(addr.pincode || '');
+    setEditNotes('');
+    setEditCodBalance(o.codBalanceAmount !== null && o.codBalanceAmount !== undefined ? o.codBalanceAmount : '');
+    setIsEditingAddress(false);
+  };
+
+  const handleAcceptOrder = async () => {
+    if (!selectedOrder?.id) return;
+    setAcceptingOrder(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${selectedOrder.id}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          note: 'Order accepted by store administrator and marked Ready to Ship',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to accept order');
+
+      toast.success(data.message || `Order #${selectedOrder.orderNumber} accepted! Moved to Ready to Ship.`);
+
+      if (data.order) {
+        setSelectedOrder(data.order);
+        setNewStatus(data.order.orderStatus);
+        mutate(
+          {
+            orders: orders.map((o) => (o.id === data.order.id ? { ...o, ...data.order } : o)),
+          },
+          false
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error accepting order');
+    } finally {
+      setAcceptingOrder(false);
+    }
+  };
+
+  const handleRejectOrder = async () => {
+    if (!selectedOrder?.id) return;
+    setRejectingOrder(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${selectedOrder.id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason: rejectReason.trim() || 'Order rejected by store administrator during review',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to reject order');
+
+      toast.warning(data.message || `Order #${selectedOrder.orderNumber} rejected and cancelled.`);
+
+      if (data.order) {
+        setSelectedOrder(data.order);
+        setNewStatus(data.order.orderStatus);
+        mutate(
+          {
+            orders: orders.map((o) => (o.id === data.order.id ? { ...o, ...data.order } : o)),
+          },
+          false
+        );
+      }
+      setShowRejectModal(false);
+      setRejectReason('');
+    } catch (err: any) {
+      toast.error(err.message || 'Error rejecting order');
+    } finally {
+      setRejectingOrder(false);
+    }
+  };
+
+  const handleSaveAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrder?.id) return;
+    setSavingAddress(true);
+    try {
+      const payload: Record<string, any> = {
+        customerName: editName.trim(),
+        customerPhone: editPhone.trim(),
+        customerEmail: editEmail.trim(),
+        address: editStreet.trim(),
+        city: editCity.trim(),
+        state: editState.trim(),
+        pincode: editPincode.trim(),
+      };
+      if (editNotes.trim()) payload.notes = editNotes.trim();
+      if (selectedOrder.paymentMethod === 'COD' && editCodBalance !== '') {
+        payload.codBalanceAmount = Number(editCodBalance);
+      }
+
+      const res = await fetch(`/api/admin/orders/${selectedOrder.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update customer & address details');
+
+      toast.success('Customer details and shipping address saved successfully!');
+
+      if (data.order) {
+        setSelectedOrder(data.order);
+        mutate(
+          {
+            orders: orders.map((o) => (o.id === data.order.id ? { ...o, ...data.order } : o)),
+          },
+          false
+        );
+      }
+      setIsEditingAddress(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Error updating address');
+    } finally {
+      setSavingAddress(false);
+    }
   };
 
   const handleManifestDelhivery = async (force: boolean = false) => {
@@ -724,26 +887,35 @@ export default function AdminOrdersPage() {
           o.customerEmail.toLowerCase().includes(q) ||
           (o.trackingNumber ? o.trackingNumber.toLowerCase().includes(q) : false)
         }
-        statusTabs={['ALL', 'PENDING_AWB', 'READY_TO_SHIP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'STUCK_PENDING', 'SYNC_FAILED']}
+        statusTabs={['ALL', 'PENDING_ORDERS', 'READY_TO_SHIP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED']}
         statusTabLabels={{
           ALL: 'All Orders',
-          PENDING_AWB: 'Pending in Delhivery',
+          PENDING_ORDERS: 'Pending Verification',
           READY_TO_SHIP: 'Ready to Ship',
           IN_TRANSIT: 'In Transit',
           DELIVERED: 'Delivered',
           CANCELLED: 'Cancelled',
-          STUCK_PENDING: 'Stuck in Pending (>24h)',
-          SYNC_FAILED: 'Sync Failed',
         }}
         activeStatus={activeStatus}
         onStatusChange={setActiveStatus}
         statusFilter={(o, st) => {
           const info = getOrderStatusInfo(o);
-          if (st === 'PENDING_AWB') {
-            return info.label === 'Sent to Delhivery (Pending)' || info.label === 'Placed';
+          if (st === 'PENDING_ORDERS' || st === 'PENDING_AWB') {
+            return (
+              o.orderStatus !== 'CANCELLED' &&
+              o.orderStatus !== 'READY_TO_SHIP' &&
+              o.orderStatus !== 'SHIPPED' &&
+              o.orderStatus !== 'DELIVERED' &&
+              (info.label === 'Placed' || info.label === 'Sent to Delhivery (Pending)' || !o.trackingNumber)
+            );
           }
           if (st === 'READY_TO_SHIP') {
-            return info.label === 'Ready to Ship' || info.label === 'Ready for Pickup';
+            return (
+              o.orderStatus === 'READY_TO_SHIP' ||
+              o.delhiveryStatus === 'READY_TO_SHIP' ||
+              info.label === 'Ready to Ship' ||
+              info.label === 'Ready for Pickup'
+            );
           }
           if (st === 'IN_TRANSIT') {
             return info.label === 'In Transit' || info.label === 'Out for Delivery';
@@ -753,13 +925,6 @@ export default function AdminOrdersPage() {
           }
           if (st === 'CANCELLED') {
             return info.label === 'Cancelled' || info.label === 'RTO';
-          }
-          if (st === 'STUCK_PENDING') {
-            const ageHours = (currentTime - new Date(o.createdAt).getTime()) / (1000 * 60 * 60);
-            return (!o.trackingNumber && o.orderStatus !== 'CANCELLED' && ageHours >= 24) || o.delhiverySyncStatus === 'FAILED';
-          }
-          if (st === 'SYNC_FAILED') {
-            return o.delhiverySyncStatus === 'FAILED';
           }
           return true;
         }}
@@ -797,57 +962,365 @@ export default function AdminOrdersPage() {
               </button>
             </div>
 
-            {/* Customer & Address Details */}
+            {/* Action Bar: Accept or Reject Order */}
+            {selectedOrder.orderStatus !== 'CANCELLED' && (
+              <div
+                className={cn(
+                  'p-4 sm:p-5 rounded-2xl border transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3.5',
+                  selectedOrder.orderStatus === 'READY_TO_SHIP' || selectedOrder.delhiveryStatus === 'READY_TO_SHIP'
+                    ? isLight ? 'bg-emerald-50/80 border-emerald-300' : 'bg-emerald-950/30 border-emerald-800'
+                    : isLight ? 'bg-indigo-50/70 border-indigo-200' : 'bg-indigo-950/20 border-indigo-900/50'
+                )}
+              >
+                <div className="flex items-start sm:items-center gap-3">
+                  <div
+                    className={cn(
+                      'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs',
+                      selectedOrder.orderStatus === 'READY_TO_SHIP' || selectedOrder.delhiveryStatus === 'READY_TO_SHIP'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-[#A84358] text-white'
+                    )}
+                  >
+                    <PackageCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className={cn('font-bold text-sm flex items-center gap-2', isLight ? 'text-slate-900' : 'text-white')}>
+                      {selectedOrder.orderStatus === 'READY_TO_SHIP' || selectedOrder.delhiveryStatus === 'READY_TO_SHIP' ? (
+                        <span className="text-emerald-700 dark:text-emerald-300">Ready to Ship Queue</span>
+                      ) : (
+                        <span>Order Verification &amp; Approval</span>
+                      )}
+                    </h4>
+                    <p className={cn('text-xs mt-0.5 leading-relaxed', isLight ? 'text-slate-600' : 'text-slate-300')}>
+                      {selectedOrder.orderStatus === 'READY_TO_SHIP' || selectedOrder.delhiveryStatus === 'READY_TO_SHIP' ? (
+                        'This order has been verified & accepted. It is now staged on the "Ready to Ship" tab.'
+                      ) : (
+                        'Verify customer address below. Click "Accept Order" to approve and move to Ready to Ship.'
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                  {selectedOrder.orderStatus !== 'READY_TO_SHIP' && selectedOrder.delhiveryStatus !== 'READY_TO_SHIP' && (
+                    <button
+                      type="button"
+                      onClick={handleAcceptOrder}
+                      disabled={acceptingOrder}
+                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <CheckCircle2 className={cn('w-4 h-4', acceptingOrder && 'animate-spin')} />
+                      <span>{acceptingOrder ? 'Accepting...' : 'Accept Order (Ready to Ship)'}</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setShowRejectModal(true)}
+                    disabled={rejectingOrder}
+                    className="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>Reject Order</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Customer & Address Details Card */}
             <div
               className={cn(
-                'grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs p-4.5 rounded-2xl border transition-colors',
+                'p-5 rounded-2xl border transition-colors space-y-4',
                 isLight ? 'bg-slate-50/90 border-slate-200 text-slate-700' : 'bg-slate-800/50 border-slate-700/60 text-slate-300'
               )}
             >
-              <div>
-                <span className={cn('block font-bold text-[11px] uppercase tracking-wider mb-1.5', isLight ? 'text-slate-600' : 'text-slate-400')}>
-                  Customer Info:
-                </span>
-                <p className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
-                  {selectedOrder.customerName}
-                </p>
-                <p className={cn('mt-0.5', isLight ? 'text-slate-600' : 'text-slate-300')}>
-                  {selectedOrder.customerEmail}
-                </p>
-                <p className={cn('font-mono mt-0.5', isLight ? 'text-slate-600' : 'text-slate-400')}>
-                  {selectedOrder.customerPhone}
-                </p>
+              <div className="flex items-center justify-between gap-2 border-b pb-3">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-[#A84358]" />
+                  <span className={cn('font-bold text-xs uppercase tracking-wider', isLight ? 'text-slate-800' : 'text-slate-200')}>
+                    Customer &amp; Shipping Details
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingAddress(!isEditingAddress)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Edit className="w-3.5 h-3.5 text-[#A84358]" />
+                  <span>{isEditingAddress ? 'Cancel Edit' : 'Edit Address & Customer'}</span>
+                </button>
               </div>
 
-              <div>
-                <span className={cn('block font-bold text-[11px] uppercase tracking-wider mb-1.5', isLight ? 'text-slate-600' : 'text-slate-400')}>
-                  Address entered by customer:
-                </span>
-                {parsedAddress && parsedAddress.lines.length > 0 ? (
-                  <div className={cn('space-y-0.5 leading-relaxed text-xs', isLight ? 'text-slate-800' : 'text-slate-200')}>
-                    {parsedAddress.lines.map((line, idx) => (
-                      <p key={idx} className="font-medium">{line}</p>
-                    ))}
-                    {parsedAddress.cityStatePin && (
-                      <p className="font-semibold">{parsedAddress.cityStatePin}</p>
-                    )}
-                    {parsedAddress.phone && parsedAddress.phone !== selectedOrder.customerPhone && (
-                      <p className={cn('text-[11px] font-mono mt-1', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                        Alt Phone: {parsedAddress.phone}
+              {!isEditingAddress ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className={cn('block font-bold text-[11px] uppercase tracking-wider mb-1', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                      Customer:
+                    </span>
+                    <p className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
+                      {selectedOrder.customerName}
+                    </p>
+                    <p className={cn('mt-0.5', isLight ? 'text-slate-600' : 'text-slate-300')}>
+                      {selectedOrder.customerEmail}
+                    </p>
+                    <p className={cn('font-mono mt-0.5 font-semibold text-rose-700 dark:text-rose-400')}>
+                      {selectedOrder.customerPhone}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span className={cn('block font-bold text-[11px] uppercase tracking-wider mb-1', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                      Delivery Address:
+                    </span>
+                    {parsedAddress && parsedAddress.lines.length > 0 ? (
+                      <div className={cn('space-y-0.5 leading-relaxed text-xs', isLight ? 'text-slate-800' : 'text-slate-200')}>
+                        {parsedAddress.lines.map((line, idx) => (
+                          <p key={idx} className="font-medium">{line}</p>
+                        ))}
+                        {parsedAddress.cityStatePin && (
+                          <p className="font-semibold">{parsedAddress.cityStatePin}</p>
+                        )}
+                        {parsedAddress.phone && parsedAddress.phone !== selectedOrder.customerPhone && (
+                          <p className={cn('text-[11px] font-mono mt-1', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                            Alt Phone: {parsedAddress.phone}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className={cn('whitespace-pre-line leading-relaxed', isLight ? 'text-slate-800' : 'text-slate-200')}>
+                        {selectedOrder.shippingAddress}
                       </p>
                     )}
                   </div>
-                ) : (
-                  <p className={cn('whitespace-pre-line leading-relaxed', isLight ? 'text-slate-800' : 'text-slate-200')}>
-                    {selectedOrder.shippingAddress}
-                  </p>
-                )}
-                <p className={cn('text-[11px] mt-2 italic flex items-center gap-1.5', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                  <Info className="w-3.5 h-3.5 shrink-0 text-amber-500" />
-                  <span>Final address edits &amp; customer verification are managed directly in Delhivery One &gt; Pending.</span>
-                </p>
-              </div>
+                </div>
+              ) : (
+                /* Editable Customer & Address Form */
+                <form onSubmit={handleSaveAddress} className="space-y-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold mb-1">Customer Name</label>
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        required
+                        className={cn(
+                          'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                          isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold mb-1">Customer Phone (10 digits)</label>
+                      <input
+                        type="tel"
+                        value={editPhone}
+                        onChange={(e) => setEditPhone(e.target.value)}
+                        required
+                        className={cn(
+                          'w-full rounded-xl p-2.5 text-xs font-mono border outline-hidden transition-colors',
+                          isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold mb-1">Customer Email</label>
+                      <input
+                        type="email"
+                        value={editEmail}
+                        onChange={(e) => setEditEmail(e.target.value)}
+                        required
+                        className={cn(
+                          'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                          isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold mb-1">Street Address / House / Flat / Area</label>
+                    <input
+                      type="text"
+                      value={editStreet}
+                      onChange={(e) => setEditStreet(e.target.value)}
+                      required
+                      placeholder="House/Flat No, Apartment, Street, Landmark"
+                      className={cn(
+                        'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                        isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold mb-1">City</label>
+                      <input
+                        type="text"
+                        value={editCity}
+                        onChange={(e) => setEditCity(e.target.value)}
+                        required
+                        className={cn(
+                          'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                          isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold mb-1">State</label>
+                      <input
+                        type="text"
+                        value={editState}
+                        onChange={(e) => setEditState(e.target.value)}
+                        required
+                        className={cn(
+                          'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                          isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold mb-1">Pincode (6 digits)</label>
+                      <input
+                        type="text"
+                        value={editPincode}
+                        onChange={(e) => setEditPincode(e.target.value)}
+                        required
+                        maxLength={6}
+                        className={cn(
+                          'w-full rounded-xl p-2.5 text-xs font-mono border outline-hidden transition-colors',
+                          isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  {selectedOrder.paymentMethod === 'COD' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold mb-1">COD Balance to Collect (₹)</label>
+                        <input
+                          type="number"
+                          value={editCodBalance}
+                          onChange={(e) => setEditCodBalance(e.target.value === '' ? '' : Number(e.target.value))}
+                          placeholder="e.g. 599"
+                          className={cn(
+                            'w-full rounded-xl p-2.5 text-xs font-mono border outline-hidden transition-colors',
+                            isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                          )}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold mb-1">Internal / Customer Notes</label>
+                        <input
+                          type="text"
+                          value={editNotes}
+                          onChange={(e) => setEditNotes(e.target.value)}
+                          placeholder="e.g. Verified by phone, deliver after 2 PM"
+                          className={cn(
+                            'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                            isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                          )}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-[11px] font-bold mb-1">Internal / Customer Notes</label>
+                      <input
+                        type="text"
+                        value={editNotes}
+                        onChange={(e) => setEditNotes(e.target.value)}
+                        placeholder="e.g. Prepaid order verified, dispatch urgently"
+                        className={cn(
+                          'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                          isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                        )}
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingAddress(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-semibold border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingAddress}
+                      className="px-4 py-2 bg-[#A84358] hover:bg-[#8C374A] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md disabled:opacity-50 transition-all cursor-pointer"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span>{savingAddress ? 'Saving...' : 'Save Address & Details'}</span>
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
+
+            {/* Quick Rejection Confirmation Modal */}
+            {showRejectModal && (
+              <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+                <div
+                  className={cn(
+                    'rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border transition-colors',
+                    isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+                  )}
+                >
+                  <div className="flex items-center justify-between border-b pb-3">
+                    <h4 className="font-bold text-base text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
+                      <AlertTriangle className="w-5 h-5" />
+                      <span>Reject Order #{selectedOrder.orderNumber}</span>
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setShowRejectModal(false)}
+                      className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Rejecting this order will mark it as <strong>CANCELLED</strong>, void any active carrier shipment/AWB, and restock reserved inventory items back into available stock.
+                  </p>
+                  <div>
+                    <label className="block text-[11px] font-bold mb-1">Rejection Reason</label>
+                    <textarea
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      rows={3}
+                      placeholder="e.g. Unreachable phone number, customer requested cancellation, fake address"
+                      className={cn(
+                        'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                        isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                      )}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowRejectModal(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-semibold border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRejectOrder}
+                      disabled={rejectingOrder}
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md disabled:opacity-50"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>{rejectingOrder ? 'Rejecting...' : 'Confirm Reject & Cancel'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Items Box */}
             <div className="space-y-2.5">
@@ -899,7 +1372,27 @@ export default function AdminOrdersPage() {
               </div>
 
               <div className={cn('space-y-1.5 pt-2 px-1 border-t text-xs', isLight ? 'border-slate-200 text-slate-900' : 'border-slate-800 text-white')}>
-                <div className="flex justify-between items-center font-bold text-sm">
+                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+                  <span>Subtotal:</span>
+                  <span className="font-mono">₹{selectedOrder.subtotal?.toLocaleString() ?? selectedOrder.total.toLocaleString()}</span>
+                </div>
+                {selectedOrder.discount && selectedOrder.discount > 0 ? (
+                  <div className="flex justify-between items-center text-rose-600 dark:text-rose-400 font-semibold">
+                    <span>Discount:</span>
+                    <span className="font-mono">-₹{selectedOrder.discount.toLocaleString()}</span>
+                  </div>
+                ) : null}
+                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+                  <span>Delivery Charges:</span>
+                  <span className="font-mono">
+                    {selectedOrder.shippingFee === 0 || !selectedOrder.shippingFee ? (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">FREE</span>
+                    ) : (
+                      `₹${selectedOrder.shippingFee.toLocaleString()}`
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center font-bold text-sm pt-1 border-t border-dashed border-slate-200 dark:border-slate-800">
                   <span>Total Amount:</span>
                   <span className="text-rose-600 dark:text-rose-400 text-base font-extrabold font-mono">
                     ₹{selectedOrder.total.toLocaleString()}
@@ -1248,6 +1741,7 @@ export default function AdminOrdersPage() {
                   >
                     <option value="CONFIRMED">CONFIRMED</option>
                     <option value="PROCESSING">PROCESSING</option>
+                    <option value="READY_TO_SHIP">READY TO SHIP</option>
                     <option value="PACKED">PACKED</option>
                     <option value="SHIPPED">SHIPPED</option>
                     <option value="OUT_FOR_DELIVERY">OUT FOR DELIVERY</option>

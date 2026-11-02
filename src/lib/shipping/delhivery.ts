@@ -218,33 +218,25 @@ export async function checkPincodeServiceability(
  * Manifest and register a shipment with Delhivery (Generates Waybill / AWB)
  */
 /**
- * Format product name for courier shipping labels according to Amazon / Flipkart standards:
- * - Strip redundant brand prefix ("Herbic Cure - ") so the label line doesn't waste space
- * - Compact common variant names to guarantee high readability and fit on thermal 4x6 labels
+ * Format product name for courier shipping labels and invoices:
+ * - Maintains exact product name as displayed across the storefront workflow
+ * - Trims excess whitespace safely without mutating brand name or variant details
  */
 export function getShortLabelName(rawName: string, maxLength: number = 128): string {
   let name = (rawName || '').trim();
-  // Strip redundant leading brand prefix (logo is already on label header)
-  name = name.replace(/^herbic\s*cure\s*[-–—:]\s*/i, '').trim();
-  // Compact common variants
-  name = name.replace(/\bfusion\s+/gi, '');
-  name = name.replace(/\(pack of (\d+)\)/i, '($1pk)');
-  name = name.replace(/\bwith\b/gi, '&');
-  name = name.replace(/\bconditioner\b/gi, 'Cond');
-  name = name.replace(/\bcombos?\b/gi, 'Combo');
   name = name.replace(/\s{2,}/g, ' ').trim();
   if (name.length > maxLength) {
     name = name.slice(0, maxLength - 2).trim() + '..';
   }
-  return name || 'Ayurvedic Item';
+  return name || 'Herbic Cure Formulation';
 }
 
 /**
  * Builds safe label description for Delhivery shipping labels:
  * - Configured for Delhivery's 128-character label specification.
- * - For orders with 1-2 items, lists short item names with quantity without truncation dots.
+ * - Preserves complete product names across all items.
  * - For orders with multiple items exceeding 128 characters, falls back cleanly:
- *   e.g. "21 Herbs Hair Oil (2pk), Shampoo & Cond (1pk) + 3 more items (Total: 6 pcs)"
+ *   e.g. "Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1) + 2 more items (Total: 3 pcs)"
  */
 export function buildDelhiveryLabelDescription(
   items: Array<{ name?: string; productName?: string; quantity: number }>,
@@ -257,8 +249,8 @@ export function buildDelhiveryLabelDescription(
   const totalPhysicalPieces = items.reduce((sum, it) => sum + (it.quantity || 1), 0);
 
   const formattedItems = items.map((it) => {
-    const shortName = getShortLabelName(it.name || it.productName || '', maxBudget);
-    return (it.quantity || 1) > 1 ? `${shortName} (x${it.quantity})` : shortName;
+    const fullName = getShortLabelName(it.productName || it.name || '', maxBudget);
+    return (it.quantity || 1) > 1 ? `${fullName} (x${it.quantity})` : fullName;
   });
 
   const fullJoined = formattedItems.join(', ');
@@ -269,14 +261,20 @@ export function buildDelhiveryLabelDescription(
   }
 
   // Safe fallback when combined multiple items exceed 128 characters (e.g. 4, 5+ items):
-  // Show first 2 primary items + remaining item count + total physical piece count
+  // Show primary items + remaining item count + total physical piece count
   const primaryItems = formattedItems.slice(0, 2).join(', ');
   const remainingCount = items.length - 2;
   const fallback = `${primaryItems} + ${remainingCount} more items (Total: ${totalPhysicalPieces} pcs)`;
   if (fallback.length <= maxBudget) {
     return fallback;
   }
-  return fallback.slice(0, maxBudget - 2).trim() + '..';
+
+  // If 2 full product names + suffix exceed budget, use 1st product name + remaining count
+  const singleFallback = `${formattedItems[0]} + ${items.length - 1} more items (Total: ${totalPhysicalPieces} pcs)`;
+  if (singleFallback.length <= maxBudget) {
+    return singleFallback;
+  }
+  return singleFallback.slice(0, maxBudget - 2).trim() + '..';
 }
 
 export function formatDelhiveryItemName(rawName: string): string {
@@ -285,16 +283,30 @@ export function formatDelhiveryItemName(rawName: string): string {
 
 export interface DelhiveryManifestLineItem {
   name: string;
+  product_name: string;
+  item_name?: string;
+  descr?: string;
+  description?: string;
   sku: string;
+  sku_code: string;
+  item_sku?: string;
   price: string;
+  selling_price?: string;
+  p_price?: string;
+  unit_price?: string;
   quantity: number;
+  qty: number;
+  units: number;
   total: string;
+  item_total?: string;
+  tax?: string | number;
   hsn?: string;
   hsn_code?: string;
 }
 
 /**
- * Builds itemized product lines for Delhivery One shipping labels and packing slips.
+ * Builds itemized product lines for Delhivery One shipping labels, packing slips, and API manifests.
+ * Maintains full website product name throughout the entire workflow.
  * If delivery charges are present (shippingFee > 0), appends 'Delivery charges' (SKU: Del-Charges)
  * as a separate line item exactly matching Delhivery One's standard packing slip format.
  */
@@ -312,7 +324,7 @@ export function buildDelhiveryShipmentItems(
   const result: DelhiveryManifestLineItem[] = [];
 
   for (const it of items || []) {
-    const rawName = it.productName || it.name || 'Herbic Cure Formulation';
+    const rawName = (it.productName || it.name || 'Herbic Cure Formulation').trim();
     const unitPrice = Number(it.price || 0);
     const qty = Number(it.quantity || 1);
     const lineTotal = unitPrice * qty;
@@ -324,28 +336,47 @@ export function buildDelhiveryShipmentItems(
         itemSku = it.product.sku;
       }
     }
-    // Clean standardized SKU mappings
+    // Clean standardized SKU mappings matching Delhivery One portal
     if (!itemSku || itemSku.length > 25) {
       const lower = rawName.toLowerCase();
-      if (lower.includes('oil') && lower.includes('shampoo')) {
+      if (lower.includes('oil') && lower.includes('shampoo') && lower.includes('comb')) {
+        itemSku = 'HC-TRIO-01';
+      } else if (lower.includes('oil') && lower.includes('shampoo')) {
         itemSku = 'HC-HO-S';
+      } else if (lower.includes('oil') && lower.includes('comb')) {
+        itemSku = 'HC-OIL-COMB';
       } else if (lower.includes('shampoo')) {
         itemSku = 'HC-SHMP-Q1';
       } else if (lower.includes('comb')) {
-        itemSku = 'HC-COMB-01';
+        itemSku = 'HC-CO-1';
       } else {
         itemSku = 'HC-OIL-Q1';
       }
     } else if (itemSku === 'HC-COMBO-OIL-SHMP') {
       itemSku = 'HC-HO-S';
+    } else if (itemSku === 'HC-COMB-01') {
+      itemSku = 'HC-CO-1';
     }
 
     result.push({
       name: rawName,
+      product_name: rawName,
+      item_name: rawName,
+      descr: rawName,
+      description: rawName,
       sku: itemSku,
+      sku_code: itemSku,
+      item_sku: itemSku,
       price: unitPrice.toFixed(2),
+      selling_price: unitPrice.toFixed(2),
+      p_price: unitPrice.toFixed(2),
+      unit_price: unitPrice.toFixed(2),
       quantity: qty,
+      qty: qty,
+      units: qty,
       total: lineTotal.toFixed(2),
+      item_total: lineTotal.toFixed(2),
+      tax: '0.00',
       hsn: '33059011',
       hsn_code: '33059011',
     });
@@ -357,10 +388,23 @@ export function buildDelhiveryShipmentItems(
   if (deliveryCharge > 0) {
     result.push({
       name: 'Delivery charges',
+      product_name: 'Delivery charges',
+      item_name: 'Delivery charges',
+      descr: 'Delivery charges',
+      description: 'Delivery charges',
       sku: 'Del-Charges',
+      sku_code: 'Del-Charges',
+      item_sku: 'Del-Charges',
       price: deliveryCharge.toFixed(2),
+      selling_price: deliveryCharge.toFixed(2),
+      p_price: deliveryCharge.toFixed(2),
+      unit_price: deliveryCharge.toFixed(2),
       quantity: 1,
+      qty: 1,
+      units: 1,
       total: deliveryCharge.toFixed(2),
+      item_total: deliveryCharge.toFixed(2),
+      tax: '0.00',
       hsn: '996813',
       hsn_code: '996813',
     });
@@ -707,6 +751,8 @@ export async function createDelhiveryShipment(
             items: delhiveryItems,
             products: delhiveryItems,
             order_items: delhiveryItems,
+            product_details: delhiveryItems,
+            order_lines: delhiveryItems,
           },
         ],
         // Complete registered warehouse pickup location matching Delhivery One
@@ -941,6 +987,8 @@ export async function createDelhiveryPendingOrder(
         items: delhiveryItems,
         products: delhiveryItems,
         order_items: delhiveryItems,
+        product_details: delhiveryItems,
+        order_lines: delhiveryItems,
       },
     ],
     pickup_location: {
