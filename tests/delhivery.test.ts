@@ -5,46 +5,61 @@ import {
   isDelhiveryCancelled,
   getShortLabelName,
   buildDelhiveryLabelDescription,
-  buildDelhiveryShipmentItems,
+  sanitizeDelhiveryText,
   DelhiveryShipmentOrder,
 } from '@/lib/shipping/delhivery';
 
 describe('Delhivery Express Logistics Integration Tests', () => {
-  it('1. Exact storefront product names: maintains full official product names throughout workflow', () => {
-    expect(getShortLabelName('Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)')).toBe('Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)');
-    expect(getShortLabelName('Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 2)')).toBe('Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 2)');
-    expect(getShortLabelName('Herbic Cure - Shampoo with Conditioner (Pack of 1)')).toBe('Herbic Cure - Shampoo with Conditioner (Pack of 1)');
+  it('1. getShortLabelName: avoids long names and strips "Herbic Cure -" brand prefix', () => {
+    expect(getShortLabelName('Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)')).toBe('21 Herbs Fusion Hair Oil (Pack of 1)');
+    expect(getShortLabelName('Herbic Cure - Shampoo with Conditioner (Pack of 1)')).toBe('Shampoo with Conditioner (Pack of 1)');
     expect(getShortLabelName('Neem Wood Wide-Tooth Comb')).toBe('Neem Wood Wide-Tooth Comb');
-    expect(getShortLabelName('Herbic Cure - Complete Hair Therapy Combo')).toBe('Herbic Cure - Complete Hair Therapy Combo');
+    expect(getShortLabelName('Herbic Cure - Complete Hair Therapy Combo')).toBe('Complete Hair Therapy Combo');
   });
 
-  it('1b. Long product names up to 128 characters: preserves full name without premature dots', () => {
-    const longName = 'Herbic Cure - 21 Herbs Fusion Hair Oil (190ml) + Shampoo with Conditioner (200ml)';
-    const result = getShortLabelName(longName);
-    expect(result).not.toContain('..');
-    expect(result).toBe('Herbic Cure - 21 Herbs Fusion Hair Oil (190ml) + Shampoo with Conditioner (200ml)');
+  it('1b. getShortLabelName: uses explicit labelName when provided on product', () => {
+    const itemWithLabel = {
+      name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (190ml) + Shampoo (200ml)',
+      labelName: 'Hair Oil + Shampoo Combo',
+    };
+    expect(getShortLabelName(itemWithLabel)).toBe('Hair Oil + Shampoo Combo');
+
+    const itemFromCatalog = {
+      productName: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)',
+      product: {
+        name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)',
+        labelName: '21 Herbs Hair Oil (1pk)',
+      },
+    };
+    expect(getShortLabelName(itemFromCatalog)).toBe('21 Herbs Hair Oil (1pk)');
   });
 
-  it('2. Label description for 1-item order: maintains full storefront product name', () => {
+  it('1c. sanitizeDelhiveryText: sanitizes forbidden characters & # % ; \\', () => {
+    expect(sanitizeDelhiveryText('Oil & Shampoo')).toBe('Oil and Shampoo');
+    expect(sanitizeDelhiveryText('Plot #12, Phase-2')).toBe('Plot No. 12, Phase-2');
+    expect(sanitizeDelhiveryText('100% Ayurvedic; Clean\\Path')).toBe('100 pct Ayurvedic Clean Path');
+  });
+
+  it('2. Label description for 1-item order: formats as "<Item> x<Qty>, Delivery Rs <Fee>"', () => {
     const order1 = [
-      { name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)', quantity: 1 },
+      { name: '21 Herbs Hair Oil (1pk)', quantity: 1 },
     ];
-    const desc = buildDelhiveryLabelDescription(order1);
-    expect(desc).toBe('Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)');
+    const desc = buildDelhiveryLabelDescription(order1, 89);
+    expect(desc).toBe('21 Herbs Hair Oil (1pk) x1, Delivery Rs 89');
     expect(desc.length).toBeLessThanOrEqual(128);
   });
 
-  it('3. Label description for 2-item order: lists full storefront product names', () => {
+  it('3. Label description for 2-item order: "Hair Oil x1, Shampoo x1, Delivery Rs 89"', () => {
     const order2 = [
-      { name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)', quantity: 1 },
-      { name: 'Herbic Cure - Shampoo with Conditioner (Pack of 1)', quantity: 1 },
+      { name: 'Hair Oil', quantity: 1 },
+      { name: 'Shampoo', quantity: 1 },
     ];
-    const desc = buildDelhiveryLabelDescription(order2);
-    expect(desc).toBe('Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1), Herbic Cure - Shampoo with Conditioner (Pack of 1)');
+    const desc = buildDelhiveryLabelDescription(order2, 89);
+    expect(desc).toBe('Hair Oil x1, Shampoo x1, Delivery Rs 89');
     expect(desc.length).toBeLessThanOrEqual(128);
   });
 
-  it('4. Label description for 5-item order: uses safe fallback to prevent label truncation', () => {
+  it('4. Label description for 5-item order: shortens product names first and ALWAYS keeps delivery suffix', () => {
     const order5 = [
       { name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 2)', quantity: 1 },
       { name: 'Herbic Cure - Shampoo with Conditioner (Pack of 1)', quantity: 1 },
@@ -52,13 +67,14 @@ describe('Delhivery Express Logistics Integration Tests', () => {
       { name: 'Herbic Cure - Scalp Therapy Serum (50ml)', quantity: 1 },
       { name: 'Herbic Cure - Ayurvedic Hair Growth Mask', quantity: 1 },
     ];
-    const desc = buildDelhiveryLabelDescription(order5);
-    // Verifies safe fallback pattern: primary product name + remaining count + total physical piece count
-    expect(desc).toBe('Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 2) + 4 more items (Total: 6 pcs)');
+    const desc = buildDelhiveryLabelDescription(order5, 89);
+    // Verifies delivery suffix is strictly preserved at the end and total length is <= 128 chars
+    expect(desc).toContain('Delivery Rs 89');
+    expect(desc.endsWith('Delivery Rs 89')).toBe(true);
     expect(desc.length).toBeLessThanOrEqual(128);
   });
 
-  it('5. Physical Quantity: counts physical items only (delivery charges never counted as an item)', async () => {
+  it('5. Physical Quantity: counts physical items only (delivery charge is not an item)', async () => {
     const codOrder: DelhiveryShipmentOrder = {
       orderNumber: 'HC-100002',
       customerName: 'Rahul Verma',
@@ -73,20 +89,19 @@ describe('Delhivery Express Logistics Integration Tests', () => {
       paymentMethod: 'COD',
       shippingFee: 89,
       items: [
-        { name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)', quantity: 1, price: 349 },
-        { name: 'Herbic Cure - Shampoo with Conditioner (Pack of 1)', quantity: 1, price: 349 },
+        { name: 'Hair Oil', labelName: 'Hair Oil (1pk)', quantity: 1, price: 349 },
+        { name: 'Shampoo', labelName: 'Shampoo (1pk)', quantity: 1, price: 349 },
       ],
       total: 787, // 349 + 349 + 89
     };
 
     const res = await createDelhiveryShipment(codOrder);
     expect(res.success).toBe(true);
-    // In our order of 2 physical items, physical piece count is 2 (NOT 3!)
+    // In our order of 2 physical items, physical piece count is strictly 2
     const totalPhysicalPieces = codOrder.items.reduce((sum, it) => sum + it.quantity, 0);
     expect(totalPhysicalPieces).toBe(2);
-    // Verifies label description contains full storefront product names
-    expect(res.message).toContain('Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)');
-    expect(res.message).toContain('Herbic Cure - Shampoo with Conditioner (Pack of 1)');
+    // Description contains plain text items + delivery charge
+    expect(res.message).toContain('Hair Oil (1pk) x1, Shampoo (1pk) x1, Delivery Rs 89');
   });
 
   it('6. Full payable amount is placed in cod_amount for COD, and 0 for Prepaid', async () => {
@@ -104,7 +119,7 @@ describe('Delhivery Express Logistics Integration Tests', () => {
       paymentMethod: 'COD',
       shippingFee: 89,
       items: [
-        { name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)', quantity: 1, price: 349 },
+        { name: 'Hair Oil', labelName: 'Hair Oil', quantity: 1, price: 349 },
       ],
       total: 438, // 349 + 89
     };
@@ -145,52 +160,7 @@ describe('Delhivery Express Logistics Integration Tests', () => {
     ).toBe(true);
   });
 
-  it('8. buildDelhiveryShipmentItems: Delivery charges sent separately as an itemized line row (SKU: Del-Charges)', () => {
-    const items = [
-      {
-        name: 'Herbic cure - 21 herbs hair oil + shampoo with conditioner',
-        sku: 'HC-HO-S',
-        quantity: 1,
-        price: 649,
-      },
-    ];
-
-    const result = buildDelhiveryShipmentItems(items, 89);
-    expect(result).toHaveLength(2);
-
-    // Product Line Item
-    expect(result[0].name).toBe('Herbic cure - 21 herbs hair oil + shampoo with conditioner');
-    expect(result[0].sku).toBe('HC-HO-S');
-    expect(result[0].quantity).toBe(1);
-    expect(result[0].price).toBe('649.00');
-    expect(result[0].total).toBe('649.00');
-
-    // Delivery Charges Line Item (as shown in Delhivery label specification)
-    expect(result[1].name).toBe('Delivery charges');
-    expect(result[1].sku).toBe('Del-Charges');
-    expect(result[1].quantity).toBe(1);
-    expect(result[1].price).toBe('89.00');
-    expect(result[1].total).toBe('89.00');
-  });
-
-  it('9. buildDelhiveryShipmentItems: Omits delivery charges row if shipping is free (0)', () => {
-    const items = [
-      {
-        name: 'Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1)',
-        sku: 'HC-OIL-Q1',
-        quantity: 2,
-        price: 349,
-      },
-    ];
-
-    const result = buildDelhiveryShipmentItems(items, 0);
-    expect(result).toHaveLength(1);
-    expect(result[0].sku).toBe('HC-OIL-Q1');
-    expect(result[0].quantity).toBe(2);
-    expect(result[0].total).toBe('698.00');
-  });
-
-  it('10. createDelhiveryPendingOrder: Validates order and creates unmanifested pending order without AWB (0 freight charged)', async () => {
+  it('8. createDelhiveryPendingOrder: Validates order and creates unmanifested pending order without AWB', async () => {
     const codOrder: DelhiveryShipmentOrder = {
       orderNumber: 'HC-998877',
       customerName: 'Aarav Sharma',
@@ -223,7 +193,7 @@ describe('Delhivery Express Logistics Integration Tests', () => {
     expect(result.message).toContain('₹0 charged');
   });
 
-  it('11. createDelhiveryPendingOrder: Rejects orders with incomplete addresses or invalid phone', async () => {
+  it('9. createDelhiveryPendingOrder: Rejects orders with incomplete addresses or invalid phone', async () => {
     const invalidOrder: DelhiveryShipmentOrder = {
       orderNumber: 'HC-998878',
       customerName: 'Test Customer',

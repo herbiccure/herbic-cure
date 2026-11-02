@@ -41,11 +41,14 @@ export async function createAuditLogEntry(data: {
   action: string;
   resource: string;
   resourceId?: string | null;
+  diff?: any;
   diffJson?: string | null;
   ipAddress?: string;
   userAgent?: string;
   status?: string;
+  request?: Request;
 }) {
+  if (!prisma?.auditLog?.create) return null;
   return prisma.auditLog.create({
     data: {
       actorId: data.actorId,

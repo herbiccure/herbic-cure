@@ -1,32 +1,53 @@
 import 'server-only';
 import { prisma } from '@/lib/prisma';
 import {
-  createDelhiveryPendingOrder,
   createDelhiveryShipment,
   pollDelhiveryOrderByRefIds,
   DelhiveryShipmentOrder,
+  scheduleDailyDelhiveryPickup,
 } from '@/lib/shipping/delhivery';
 import { logger } from '@/lib/logger';
 
-export type EffectiveShippingMode = 'delhivery_pending' | 'auto_manifest';
+export type EffectiveShippingMode = 'confirm_then_send' | 'delhivery_pending' | 'auto_manifest';
 
 /**
  * Retrieves the effective logistics shipping mode from store settings or environment.
  * Default is 'auto_manifest' so existing live store behavior remains untouched
- * until the merchant explicitly switches SHIPPING_MODE to 'delhivery_pending'.
+ * until the merchant explicitly switches SHIPPING_MODE to 'confirm_then_send'.
  */
 export async function getEffectiveShippingMode(): Promise<EffectiveShippingMode> {
   try {
     const setting = await prisma.siteSetting.findUnique({
       where: { key: 'shipping_mode' },
     });
-    if (setting?.value === 'delhivery_pending' || process.env.SHIPPING_MODE === 'delhivery_pending') {
+    const val = setting?.value || process.env.SHIPPING_MODE;
+    if (val === 'confirm_then_send') {
+      return 'confirm_then_send';
+    }
+    if (val === 'delhivery_pending') {
       return 'delhivery_pending';
     }
     return 'auto_manifest';
   } catch (err: any) {
     logger.warn('shipping.mode.read_failed', { error: err?.message });
     return 'auto_manifest';
+  }
+}
+
+/**
+ * Checks if prepaid orders should be automatically confirmed without manual staff approval.
+ */
+export async function isAutoConfirmPrepaidEnabled(): Promise<boolean> {
+  try {
+    const setting = await prisma.siteSetting.findUnique({
+      where: { key: 'auto_confirm_prepaid' },
+    });
+    if (setting?.value === 'true' || process.env.AUTO_CONFIRM_PREPAID === 'true') {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
   }
 }
 
@@ -39,10 +60,11 @@ export interface SendToPendingResult {
 }
 
 /**
- * Sends a confirmed order to Delhivery One.
- * - In 'delhivery_pending' mode: Stages the order in Delhivery One Pending queue (unmanifested, ₹0 charged).
- * - In 'auto_manifest' mode: Immediately manifests and generates AWB.
- * Idempotent: Skips if order already has an active AWB or has already been successfully staged.
+ * Sends a newly placed or verified order through the fulfillment pipeline.
+ * - In 'confirm_then_send' mode: Orders wait in 'Awaiting confirmation' state.
+ *   If auto_confirm_prepaid is enabled and the order is prepaid, it automatically manifests.
+ * - In 'auto_manifest' mode: Immediately manifests and generates Delhivery AWB.
+ * Idempotent: Skips if order already has an active AWB or has already been manifested.
  */
 export async function sendOrderToDelhiveryPending(
   orderId: string
@@ -84,22 +106,20 @@ export async function sendOrderToDelhiveryPending(
     };
   }
 
-  // Idempotency: Already successfully staged and awaiting warehouse verification
+  // Idempotency: Already awaiting confirmation in confirm_then_send mode
   const ord = order as any;
   if (
-    ord.delhiverySyncStatus === 'SYNCED' &&
-    ord.delhiveryStatus === 'PENDING' &&
-    ord.shippingMode === 'delhivery_pending'
+    ord.delhiveryStatus === 'AWAITING_CONFIRMATION' &&
+    ord.shippingMode === 'confirm_then_send'
   ) {
     return {
       success: true,
       status: 'PENDING',
-      message: `Order #${order.orderNumber} is already staged in Delhivery One Pending queue`,
+      message: `Order #${order.orderNumber} is already awaiting confirmation`,
     };
   }
 
-  // Atomic concurrency guard: prevent duplicate concurrent calls from staging or manifesting twice
-  // (e.g. razorpay verify and webhook running simultaneously)
+  // Atomic concurrency guard: prevent duplicate concurrent calls from manifesting twice
   const claim = await prisma.order.updateMany({
     where: {
       id: order.id,
@@ -153,6 +173,7 @@ export async function sendOrderToDelhiveryPending(
     const effectiveCodBalance = Number(
       (order as any).codBalanceAmount ?? (order.total - orderAdv)
     );
+    const isPrepaid = !isCod || effectiveCodBalance <= 0;
 
     const shipmentPayload: DelhiveryShipmentOrder = {
       orderNumber: order.orderNumber,
@@ -170,129 +191,94 @@ export async function sendOrderToDelhiveryPending(
       items: order.items.map((it: any) => ({
         name: it.productName,
         productName: it.productName,
-        sku: it.product?.sku === 'HC-COMBO-OIL-SHMP' ? 'HC-HO-S' : (it.product?.sku || it.productId || 'HC-PROD'),
+        labelName: it.product?.labelName || null,
+        sku: it.product?.sku || it.productId || 'HC-PROD',
         quantity: it.quantity,
         price: it.price,
+        product: it.product,
       })),
     };
 
-    // Branch based on configured shipping mode
-    if (shippingMode === 'auto_manifest') {
-      // Direct Manifestation
-      const manifestRes = await createDelhiveryShipment(shipmentPayload);
-      if (manifestRes.success && manifestRes.waybill) {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: {
-            trackingNumber: manifestRes.waybill,
-            trackingUrl: manifestRes.trackingUrl,
-            carrier: 'Delhivery',
-            delhiveryStatus: 'MANIFESTED',
-            delhiverySyncStatus: 'SYNCED',
-            delhiverySyncError: null,
-            shippingMode: 'auto_manifest',
-            lastDelhiverySyncAt: new Date(),
-          } as any,
-        });
+    // Branch 1: CONFIRM_THEN_SEND mode
+    if (shippingMode === 'confirm_then_send') {
+      const autoConfirmPrepaid = await isAutoConfirmPrepaidEnabled();
 
-        await prisma.shipmentEvent.create({
-          data: {
+      // Check if auto-confirm prepaid is enabled for prepaid orders
+      if (isPrepaid && autoConfirmPrepaid) {
+        const manifestRes = await createDelhiveryShipment(shipmentPayload);
+        if (manifestRes.success && manifestRes.waybill) {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              trackingNumber: manifestRes.waybill,
+              trackingUrl: manifestRes.trackingUrl,
+              carrier: 'Delhivery',
+              delhiveryStatus: 'MANIFESTED',
+              orderStatus: 'READY_TO_SHIP',
+              delhiverySyncStatus: 'SYNCED',
+              delhiverySyncError: null,
+              shippingMode: 'confirm_then_send',
+              lastDelhiverySyncAt: new Date(),
+            } as any,
+          });
+
+          await prisma.shipmentEvent.create({
+            data: {
+              orderId: order.id,
+              status: 'READY_TO_SHIP',
+              location: 'Delhivery Logistics Hub',
+              description: `Prepaid order auto-confirmed and manifested with Delhivery. AWB: ${manifestRes.waybill}`,
+            },
+          });
+
+          // Check if auto pickup is enabled
+          try {
+            const pickupSetting = await prisma.siteSetting.findUnique({ where: { key: 'pickup_mode' } });
+            if (pickupSetting?.value === 'auto' || process.env.PICKUP_MODE === 'auto') {
+              scheduleDailyDelhiveryPickup().catch(() => {});
+            }
+          } catch {}
+
+          logger.info('shipping.delhivery.prepaid_auto_confirmed', {
             orderId: order.id,
-            status: 'READY_TO_SHIP',
-            location: 'Delhivery Logistics Hub',
-            description: `Shipment auto-manifested with Delhivery. AWB: ${manifestRes.waybill}`,
-          },
-        });
+            orderNumber: order.orderNumber,
+            waybill: manifestRes.waybill,
+          });
 
-        logger.info('shipping.delhivery.auto_manifested', {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          waybill: manifestRes.waybill,
-        });
+          return {
+            success: true,
+            status: 'MANIFESTED',
+            waybill: manifestRes.waybill,
+            message: manifestRes.message,
+          };
+        } else {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              delhiverySyncStatus: 'FAILED',
+              delhiverySyncError: manifestRes.message || 'Auto-manifest failed for prepaid order',
+              shippingMode: 'confirm_then_send',
+              delhiverySyncAttempts: { increment: 1 },
+              lastDelhiverySyncAt: new Date(),
+            } as any,
+          });
 
-        return {
-          success: true,
-          status: 'MANIFESTED',
-          waybill: manifestRes.waybill,
-          message: manifestRes.message,
-        };
-      } else {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: {
-            delhiverySyncStatus: 'FAILED',
-            delhiverySyncError: manifestRes.message || 'Auto-manifest failed',
-            shippingMode: 'auto_manifest',
-            delhiverySyncAttempts: { increment: 1 },
-            lastDelhiverySyncAt: new Date(),
-          } as any,
-        });
-
-        logger.warn('shipping.delhivery.auto_manifest_failed', {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          error: manifestRes.message,
-        });
-
-        return {
-          success: false,
-          status: 'FAILED',
-          error: manifestRes.message || 'Auto-manifest failed',
-        };
-      }
-    }
-
-    // Recommended: Delhivery Pending Queue Mode (Unmanifested, ₹0 charged)
-    const pendingRes = await createDelhiveryPendingOrder(shipmentPayload);
-
-    if (pendingRes.success) {
-      if (pendingRes.waybill) {
-        // Delhivery assigned an AWB (account in Direct Manifestation mode)
-        await prisma.order.update({
-          where: { id: order.id },
-          data: {
-            trackingNumber: pendingRes.waybill,
-            trackingUrl: pendingRes.trackingUrl || `https://www.delhivery.com/track/package/${pendingRes.waybill}`,
-            carrier: 'Delhivery',
-            delhiveryStatus: 'MANIFESTED',
-            delhiverySyncStatus: 'SYNCED',
-            delhiverySyncError: null,
-            shippingMode: 'delhivery_pending',
-            lastDelhiverySyncAt: new Date(),
-          } as any,
-        });
-
-        await prisma.shipmentEvent.create({
-          data: {
-            orderId: order.id,
-            status: 'READY_TO_SHIP',
-            location: 'Delhivery Logistics Hub',
-            description: `Shipment manifested with Delhivery. AWB: ${pendingRes.waybill}`,
-          },
-        });
-
-        logger.info('shipping.delhivery_pending.manifested_with_awb', {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          waybill: pendingRes.waybill,
-        });
-
-        return {
-          success: true,
-          status: 'MANIFESTED',
-          waybill: pendingRes.waybill,
-          message: pendingRes.message || `Order manifested with AWB ${pendingRes.waybill}`,
-        };
+          return {
+            success: false,
+            status: 'FAILED',
+            error: manifestRes.message || 'Auto-manifest failed for prepaid order',
+          };
+        }
       }
 
-      // Normal Pending Mode: Order staged in Store Pending queue (₹0 charged)
+      // Default in confirm_then_send: Wait for admin confirmation!
+      // Do NOT send to Delhivery!
       await prisma.order.update({
         where: { id: order.id },
         data: {
-          delhiveryStatus: 'PENDING',
-          delhiverySyncStatus: 'SYNCED',
-          delhiverySyncError: null,
-          shippingMode: 'delhivery_pending',
+          delhiveryStatus: 'AWAITING_CONFIRMATION',
+          delhiverySyncStatus: 'PENDING_CONFIRMATION',
+          shippingMode: 'confirm_then_send',
           lastDelhiverySyncAt: new Date(),
         } as any,
       });
@@ -300,13 +286,13 @@ export async function sendOrderToDelhiveryPending(
       await prisma.shipmentEvent.create({
         data: {
           orderId: order.id,
-          status: 'PENDING',
-          location: 'Delhivery One (Pending Queue)',
-          description: 'Order staged in Delhivery One Pending queue (unmanifested, ₹0 charged). Awaiting warehouse verification and manifestation.',
+          status: 'AWAITING_CONFIRMATION',
+          location: 'Herbic Cure Warehouse',
+          description: 'Order placed. Awaiting admin confirmation before sending to Delhivery.',
         },
       });
 
-      logger.info('shipping.delhivery_pending.staged', {
+      logger.info('shipping.delhivery.awaiting_confirmation', {
         orderId: order.id,
         orderNumber: order.orderNumber,
       });
@@ -314,34 +300,81 @@ export async function sendOrderToDelhiveryPending(
       return {
         success: true,
         status: 'PENDING',
-        message: 'Order staged in Delhivery One Pending queue. Awaiting staff verification (₹0 charged).',
+        message: 'Order received and awaiting admin confirmation before sending to Delhivery.',
       };
     }
 
-    // Pending creation failed
-    const errorMsg = pendingRes.message || 'Failed to stage order in Delhivery Pending queue';
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        delhiverySyncStatus: 'FAILED',
-        delhiverySyncError: errorMsg,
-        shippingMode: 'delhivery_pending',
-        delhiverySyncAttempts: { increment: 1 },
-        lastDelhiverySyncAt: new Date(),
-      } as any,
-    });
+    // Branch 2: AUTO_MANIFEST mode (Direct Manifestation)
+    const manifestRes = await createDelhiveryShipment(shipmentPayload);
+    if (manifestRes.success && manifestRes.waybill) {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          trackingNumber: manifestRes.waybill,
+          trackingUrl: manifestRes.trackingUrl,
+          carrier: 'Delhivery',
+          delhiveryStatus: 'MANIFESTED',
+          orderStatus: 'READY_TO_SHIP',
+          delhiverySyncStatus: 'SYNCED',
+          delhiverySyncError: null,
+          shippingMode: 'auto_manifest',
+          lastDelhiverySyncAt: new Date(),
+        } as any,
+      });
 
-    logger.warn('shipping.delhivery_pending.failed', {
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      error: errorMsg,
-    });
+      await prisma.shipmentEvent.create({
+        data: {
+          orderId: order.id,
+          status: 'READY_TO_SHIP',
+          location: 'Delhivery Logistics Hub',
+          description: `Shipment auto-manifested with Delhivery. AWB: ${manifestRes.waybill}`,
+        },
+      });
 
-    return {
-      success: false,
-      status: 'FAILED',
-      error: errorMsg,
-    };
+      // Check if auto pickup is enabled
+      try {
+        const pickupSetting = await prisma.siteSetting.findUnique({ where: { key: 'pickup_mode' } });
+        if (pickupSetting?.value === 'auto' || process.env.PICKUP_MODE === 'auto') {
+          scheduleDailyDelhiveryPickup().catch(() => {});
+        }
+      } catch {}
+
+      logger.info('shipping.delhivery.auto_manifested', {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        waybill: manifestRes.waybill,
+      });
+
+      return {
+        success: true,
+        status: 'MANIFESTED',
+        waybill: manifestRes.waybill,
+        message: manifestRes.message,
+      };
+    } else {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          delhiverySyncStatus: 'FAILED',
+          delhiverySyncError: manifestRes.message || 'Auto-manifest failed',
+          shippingMode: 'auto_manifest',
+          delhiverySyncAttempts: { increment: 1 },
+          lastDelhiverySyncAt: new Date(),
+        } as any,
+      });
+
+      logger.warn('shipping.delhivery.auto_manifest_failed', {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        error: manifestRes.message,
+      });
+
+      return {
+        success: false,
+        status: 'FAILED',
+        error: manifestRes.message || 'Auto-manifest failed',
+      };
+    }
   } catch (err: any) {
     logger.error('shipping.delhivery_pending.exception', {
       orderId: order.id,
@@ -420,18 +453,17 @@ export async function syncOrderFromDelhiveryRefId(orderId: string): Promise<{
     };
   }
 
-  // Not manifested yet, but remains in pending queue
+  // Not manifested yet
   await prisma.order.update({
     where: { id: order.id },
     data: {
       lastDelhiverySyncAt: new Date(),
-      delhiveryStatus: 'PENDING',
     } as any,
   });
 
   return {
     success: true,
     isPending: true,
-    message: 'Order is staged in Delhivery One Pending queue. Staff verification in progress.',
+    message: 'Order is awaiting manifestation.',
   };
 }

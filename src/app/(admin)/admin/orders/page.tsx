@@ -142,6 +142,7 @@ function parseShippingAddress(raw: string | null | undefined): ParsedAddress {
 
 export type UnifiedOrderStatus =
   | 'Placed'
+  | 'Awaiting Confirmation'
   | 'Sent to Delhivery (Pending)'
   | 'Ready to Ship'
   | 'Ready for Pickup'
@@ -160,6 +161,12 @@ export function getOrderStatusInfo(o: OrderItem): {
     return {
       label: 'Shipping sync failed',
       colorClass: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-800',
+    };
+  }
+  if (o.delhiveryStatus === 'AWAITING_CONFIRMATION') {
+    return {
+      label: 'Awaiting Confirmation',
+      colorClass: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800',
     };
   }
   if (o.orderStatus === 'CANCELLED') {
@@ -277,6 +284,53 @@ export default function AdminOrdersPage() {
   const pendingAwbCount = useMemo(() => {
     return orders.filter((o) => !o.trackingNumber && o.orderStatus !== 'CANCELLED').length;
   }, [orders]);
+
+  const awaitingConfirmationCount = useMemo(() => {
+    return orders.filter(
+      (o) =>
+        o.orderStatus !== 'CANCELLED' &&
+        (!o.trackingNumber || o.delhiveryStatus === 'AWAITING_CONFIRMATION' || o.delhiverySyncStatus === 'FAILED')
+    ).length;
+  }, [orders]);
+
+  const readyForPickupCount = useMemo(() => {
+    return orders.filter(
+      (o) =>
+        o.trackingNumber &&
+        o.orderStatus !== 'CANCELLED' &&
+        o.pickupStatus !== 'SCHEDULED' &&
+        o.pickupStatus !== 'PICKED'
+    ).length;
+  }, [orders]);
+
+  const [requestingBatchPickup, setRequestingBatchPickup] = useState(false);
+
+  const handleRequestBatchPickup = async () => {
+    setRequestingBatchPickup(true);
+    try {
+      const res = await fetch('/api/admin/orders/request-pickup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to request pickup from Delhivery');
+
+      if (data.count === 0) {
+        toast.info(data.message || 'No confirmed packages waiting for pickup.');
+      } else {
+        toast.success(
+          data.message ||
+            `Pickup scheduled with Delhivery for ${data.count} package(s)! Request ID: ${data.pickupId}`
+        );
+        mutate();
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error scheduling pickup with Delhivery');
+    } finally {
+      setRequestingBatchPickup(false);
+    }
+  };
 
   const handleExportDelhiveryCsv = async () => {
     setExportingCsv(true);
@@ -815,6 +869,34 @@ export default function AdminOrdersPage() {
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
+          <Link
+            href="/admin/orders/confirm"
+            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#A84358] hover:bg-[#8f3649] text-white flex items-center gap-1.5 shadow-2xs transition-all"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>Orders to Confirm</span>
+            {awaitingConfirmationCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white text-[#A84358] font-black">
+                {awaitingConfirmationCount}
+              </span>
+            )}
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleRequestBatchPickup}
+            disabled={requestingBatchPickup}
+            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-purple-700 hover:bg-purple-800 text-white flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+            title="Request daily courier pickup with Delhivery for all confirmed & manifested packages"
+          >
+            <Truck className={cn('w-3.5 h-3.5', requestingBatchPickup && 'animate-spin')} />
+            <span>
+              {requestingBatchPickup
+                ? 'Requesting Pickup...'
+                : `Request Pickup for Today (${readyForPickupCount})`}
+            </span>
+          </button>
+
           <a
             href="https://one.delhivery.com/"
             target="_blank"
@@ -887,10 +969,10 @@ export default function AdminOrdersPage() {
           o.customerEmail.toLowerCase().includes(q) ||
           (o.trackingNumber ? o.trackingNumber.toLowerCase().includes(q) : false)
         }
-        statusTabs={['ALL', 'PENDING_ORDERS', 'READY_TO_SHIP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED']}
+        statusTabs={['ALL', 'TO_CONFIRM', 'READY_TO_SHIP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED']}
         statusTabLabels={{
           ALL: 'All Orders',
-          PENDING_ORDERS: 'Pending Verification',
+          TO_CONFIRM: 'Orders to Confirm',
           READY_TO_SHIP: 'Ready to Ship',
           IN_TRANSIT: 'In Transit',
           DELIVERED: 'Delivered',
@@ -900,13 +982,17 @@ export default function AdminOrdersPage() {
         onStatusChange={setActiveStatus}
         statusFilter={(o, st) => {
           const info = getOrderStatusInfo(o);
-          if (st === 'PENDING_ORDERS' || st === 'PENDING_AWB') {
+          if (st === 'TO_CONFIRM' || st === 'PENDING_ORDERS' || st === 'PENDING_AWB') {
             return (
               o.orderStatus !== 'CANCELLED' &&
               o.orderStatus !== 'READY_TO_SHIP' &&
               o.orderStatus !== 'SHIPPED' &&
               o.orderStatus !== 'DELIVERED' &&
-              (info.label === 'Placed' || info.label === 'Sent to Delhivery (Pending)' || !o.trackingNumber)
+              (info.label === 'Placed' ||
+                info.label === 'Awaiting Confirmation' ||
+                info.label === 'Sent to Delhivery (Pending)' ||
+                info.label === 'Shipping sync failed' ||
+                !o.trackingNumber)
             );
           }
           if (st === 'READY_TO_SHIP') {

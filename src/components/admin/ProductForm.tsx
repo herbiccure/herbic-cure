@@ -38,6 +38,7 @@ export default function ProductForm({ isEdit = false, initialData }: ProductForm
 
   // Form State
   const [name, setName] = useState(initialData?.name || '');
+  const [labelName, setLabelName] = useState(initialData?.labelName || '');
   const [slug, setSlug] = useState(initialData?.slug || '');
   const [sku, setSku] = useState(initialData?.sku || '');
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || '');
@@ -216,6 +217,7 @@ export default function ProductForm({ isEdit = false, initialData }: ProductForm
         lowStockThreshold: Number(lowStockThreshold) || 10,
         shortDescription: shortDescription.trim() || null,
         fullDescription: fullDescription.trim() || null,
+        labelName: labelName.trim() || null,
         howToUse: howToUse.trim() || null,
         seoTitle: seoTitle.trim() || null,
         seoDescription: seoDescription.trim() || null,
@@ -566,6 +568,28 @@ export default function ProductForm({ isEdit = false, initialData }: ProductForm
                     : 'bg-slate-800 border-slate-700 text-white'
                 )}
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Short Label Name (Delhivery)
+              </label>
+              <input
+                type="text"
+                value={labelName}
+                onChange={(e) => setLabelName(e.target.value)}
+                placeholder="e.g. 21 Herbs Hair Oil (1pk)"
+                maxLength={60}
+                className={cn(
+                  'w-full px-4 py-2.5 rounded-xl text-xs border transition-all focus:outline-hidden',
+                  isLight
+                    ? 'bg-slate-50 border-slate-200 text-slate-900'
+                    : 'bg-slate-800 border-slate-700 text-white'
+                )}
+              />
+              <p className="text-[10px] text-slate-500 mt-1">
+                Short plain name printed on shipping label (avoids brand prefixes)
+              </p>
             </div>
 
             <div>

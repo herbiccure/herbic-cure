@@ -48,9 +48,15 @@ export interface DelhiveryShipmentOrder {
   items: Array<{
     productName?: string;
     name?: string;
+    labelName?: string | null;
     sku?: string;
     quantity: number;
     price: number;
+    product?: {
+      labelName?: string | null;
+      name?: string;
+      sku?: string | null;
+    } | null;
   }>;
   totalQuantity?: number;
   waybill?: string;
@@ -218,63 +224,120 @@ export async function checkPincodeServiceability(
  * Manifest and register a shipment with Delhivery (Generates Waybill / AWB)
  */
 /**
- * Format product name for courier shipping labels and invoices:
- * - Maintains exact product name as displayed across the storefront workflow
- * - Trims excess whitespace safely without mutating brand name or variant details
+ * Sanitize text fields for Delhivery API.
+ * Delhivery rejects characters: & # % ; \
+ * Replace & with 'and', # with 'No.', % with 'pct', strip ; and \
  */
-export function getShortLabelName(rawName: string, maxLength: number = 128): string {
-  let name = (rawName || '').trim();
-  name = name.replace(/\s{2,}/g, ' ').trim();
-  if (name.length > maxLength) {
-    name = name.slice(0, maxLength - 2).trim() + '..';
+export function sanitizeDelhiveryText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/&/g, ' and ')
+    .replace(/#/g, ' No. ')
+    .replace(/%/g, ' pct ')
+    .replace(/[;\\]/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+/**
+ * Format product name for courier shipping labels:
+ * - Uses short label name (labelName) if configured in admin catalog.
+ * - Otherwise strips long brand prefixes like 'Herbic Cure - ' or 'Herbic Cure '.
+ * - Sanitizes Delhivery forbidden characters (& # % ; \).
+ */
+export function getShortLabelName(
+  item: string | { name?: string; productName?: string; labelName?: string | null; product?: { labelName?: string | null; name?: string } | null },
+  maxLength: number = 40
+): string {
+  if (typeof item === 'string') {
+    let name = item.replace(/^Herbic\s*Cure\s*[-–—:]*\s*/i, '').trim();
+    name = sanitizeDelhiveryText(name);
+    if (name.length > maxLength) {
+      name = name.slice(0, maxLength - 2).trim() + '..';
+    }
+    return name || 'Herbal Product';
   }
-  return name || 'Herbic Cure Formulation';
+
+  // Object passed
+  const custom = (item.labelName || item.product?.labelName || '').trim();
+  if (custom) {
+    const cleanCustom = sanitizeDelhiveryText(custom);
+    if (cleanCustom.length > maxLength) {
+      return cleanCustom.slice(0, maxLength - 2).trim() + '..';
+    }
+    return cleanCustom;
+  }
+
+  let raw = (item.productName || item.name || item.product?.name || '').trim();
+  raw = raw.replace(/^Herbic\s*Cure\s*[-–—:]*\s*/i, '').trim();
+  raw = sanitizeDelhiveryText(raw);
+  if (raw.length > maxLength) {
+    raw = raw.slice(0, maxLength - 2).trim() + '..';
+  }
+  return raw || 'Herbal Product';
 }
 
 /**
  * Builds safe label description for Delhivery shipping labels:
- * - Configured for Delhivery's 128-character label specification.
- * - Preserves complete product names across all items.
- * - For orders with multiple items exceeding 128 characters, falls back cleanly:
- *   e.g. "Herbic Cure - 21 Herbs Fusion Hair Oil (Pack of 1) + 2 more items (Total: 3 pcs)"
+ * Format: items with quantities, then the delivery charge:
+ * e.g. "Hair Oil x1, Shampoo x1, Delivery Rs 89"
+ * If the text is too long (budget 128 chars), shorten product names first and ALWAYS keep the delivery part.
  */
 export function buildDelhiveryLabelDescription(
-  items: Array<{ name?: string; productName?: string; quantity: number }>,
+  items: Array<{ name?: string; productName?: string; labelName?: string | null; quantity: number; product?: { labelName?: string | null; name?: string } | null }>,
+  shippingFee: number = 0,
   maxBudget: number = 128
 ): string {
+  const fee = Math.round(Number(shippingFee || 0));
+  const deliveryPart = `Delivery Rs ${fee}`;
+  const deliverySuffix = `, ${deliveryPart}`;
+
   if (!items || items.length === 0) {
-    return 'Herbic Cure Ayurvedic Formulation';
+    return sanitizeDelhiveryText(`Herbal Products${deliverySuffix}`);
   }
 
-  const totalPhysicalPieces = items.reduce((sum, it) => sum + (it.quantity || 1), 0);
-
-  const formattedItems = items.map((it) => {
-    const fullName = getShortLabelName(it.productName || it.name || '', maxBudget);
-    return (it.quantity || 1) > 1 ? `${fullName} (x${it.quantity})` : fullName;
+  // Pass 1: Try with standard short names (budget 35 chars each)
+  let itemStrings = items.map((it) => {
+    const sName = getShortLabelName(it, 35);
+    const qty = it.quantity || 1;
+    return `${sName} x${qty}`;
   });
 
-  const fullJoined = formattedItems.join(', ');
-
-  // Safe label length budget configured in Delhivery Shipping Label Config (128 characters)
-  if (fullJoined.length <= maxBudget) {
-    return fullJoined;
+  let fullCandidate = `${itemStrings.join(', ')}${deliverySuffix}`;
+  if (fullCandidate.length <= maxBudget) {
+    return sanitizeDelhiveryText(fullCandidate);
   }
 
-  // Safe fallback when combined multiple items exceed 128 characters (e.g. 4, 5+ items):
-  // Show primary items + remaining item count + total physical piece count
-  const primaryItems = formattedItems.slice(0, 2).join(', ');
-  const remainingCount = items.length - 2;
-  const fallback = `${primaryItems} + ${remainingCount} more items (Total: ${totalPhysicalPieces} pcs)`;
+  // Pass 2: Shorten item names proportionally to strictly preserve deliverySuffix
+  const availableCharsForItems = maxBudget - deliverySuffix.length;
+  const separatorsLen = (items.length - 1) * 2;
+  const qtySuffixesLen = items.reduce((sum, it) => sum + ` x${it.quantity || 1}`.length, 0);
+  const netCharsForNames = availableCharsForItems - separatorsLen - qtySuffixesLen;
+  const perItemNameLimit = Math.max(6, Math.floor(netCharsForNames / items.length));
+
+  itemStrings = items.map((it) => {
+    const sName = getShortLabelName(it, perItemNameLimit);
+    const qty = it.quantity || 1;
+    return `${sName} x${qty}`;
+  });
+
+  fullCandidate = `${itemStrings.join(', ')}${deliverySuffix}`;
+  if (fullCandidate.length <= maxBudget) {
+    return sanitizeDelhiveryText(fullCandidate);
+  }
+
+  // Pass 3: Fallback for large combos: 1st item + remaining count + deliverySuffix
+  const firstItemName = getShortLabelName(items[0], 20);
+  const remainingCount = items.length - 1;
+  const fallback = `${firstItemName} x${items[0].quantity || 1} + ${remainingCount} items${deliverySuffix}`;
   if (fallback.length <= maxBudget) {
-    return fallback;
+    return sanitizeDelhiveryText(fallback);
   }
 
-  // If 2 full product names + suffix exceed budget, use 1st product name + remaining count
-  const singleFallback = `${formattedItems[0]} + ${items.length - 1} more items (Total: ${totalPhysicalPieces} pcs)`;
-  if (singleFallback.length <= maxBudget) {
-    return singleFallback;
-  }
-  return singleFallback.slice(0, maxBudget - 2).trim() + '..';
+  // Hard clamp ensuring delivery suffix is NEVER chopped
+  const maxPrefix = Math.max(10, maxBudget - deliverySuffix.length - 2);
+  const clamped = `${fallback.slice(0, maxPrefix).trim()}..${deliverySuffix}`;
+  return sanitizeDelhiveryText(clamped);
 }
 
 export function formatDelhiveryItemName(rawName: string): string {
@@ -622,6 +685,153 @@ export async function requestDelhiveryPickup(
   };
 }
 
+export interface DailyPickupScheduleResult {
+  success: boolean;
+  count: number;
+  pickupId?: string;
+  status: 'SCHEDULED' | 'SKIPPED' | 'FAILED';
+  pickupDate?: string;
+  pickupTime?: string;
+  message: string;
+  error?: string;
+}
+
+/**
+ * Creates one pickup request per day for all waiting manifested packages with Delhivery.
+ * Used for both Admin manual "Request pickup for today's confirmed orders" button and Auto mode.
+ * Limits retries to max 3 attempts to prevent infinite loops.
+ */
+export async function scheduleDailyDelhiveryPickup(options: {
+  pickupDate?: string;
+  pickupTime?: string;
+  pickupLocation?: string;
+  orderIds?: string[];
+  force?: boolean;
+} = {}): Promise<DailyPickupScheduleResult> {
+  const { prisma } = await import('@/lib/prisma');
+
+  const whereClause: any = {
+    trackingNumber: { not: null },
+    orderStatus: { in: ['READY_TO_SHIP', 'CONFIRMED', 'PROCESSING'] },
+    pickupStatus: { in: ['NONE', 'FAILED'] },
+    pickupAttempts: { lt: 3 }, // Limit retries to prevent infinite loops
+  };
+
+  if (options.orderIds && options.orderIds.length > 0) {
+    whereClause.id = { in: options.orderIds };
+  }
+
+  const waitingOrders = await prisma.order.findMany({
+    where: whereClause,
+    select: { id: true, orderNumber: true, pickupAttempts: true },
+  });
+
+  if (waitingOrders.length === 0) {
+    return {
+      success: true,
+      count: 0,
+      status: 'SKIPPED',
+      message: 'No confirmed orders waiting for pickup.',
+    };
+  }
+
+  // Determine pickup time from admin setting or next available slot (never in the past)
+  const slot = getNextAvailablePickupSlot();
+  let configuredTime: string | null = null;
+  try {
+    const timeSetting = await prisma.siteSetting.findUnique({
+      where: { key: 'delhivery_pickup_time' },
+    });
+    if (timeSetting?.value && /^\d{2}:\d{2}(:\d{2})?$/.test(timeSetting.value)) {
+      configuredTime = timeSetting.value.length === 5 ? `${timeSetting.value}:00` : timeSetting.value;
+    }
+  } catch {}
+
+  const pickupDate = options.pickupDate || slot.pickupDate;
+  const pickupTime = options.pickupTime || configuredTime || slot.pickupTime;
+  const pickupLocation = options.pickupLocation || getPickupLocation();
+
+  const pickupRes = await requestDelhiveryPickup({
+    pickupDate,
+    pickupTime,
+    pickupLocation,
+    expectedPackageCount: waitingOrders.length,
+  });
+
+  const orderIds = waitingOrders.map((o) => o.id);
+
+  if (pickupRes.success && pickupRes.pickupId) {
+    const parsedDate = new Date(pickupRes.pickupDate);
+    await prisma.order.updateMany({
+      where: { id: { in: orderIds } },
+      data: {
+        pickupStatus: 'SCHEDULED',
+        pickupRequestId: pickupRes.pickupId,
+        pickupDate: parsedDate,
+        pickupTime: pickupRes.pickupTime,
+        pickupError: null,
+        lastPickupAttemptAt: new Date(),
+      },
+    });
+
+    for (const ord of waitingOrders) {
+      await prisma.shipmentEvent.create({
+        data: {
+          orderId: ord.id,
+          status: 'SCHEDULED',
+          location: pickupLocation,
+          description: `Delhivery pickup scheduled for ${pickupRes.pickupDate} at ${pickupRes.pickupTime}. Request ID: ${pickupRes.pickupId}`,
+        },
+      });
+    }
+
+    logger.info('shipping.pickup.scheduled_batch', {
+      count: waitingOrders.length,
+      pickupId: pickupRes.pickupId,
+      pickupDate: pickupRes.pickupDate,
+      pickupTime: pickupRes.pickupTime,
+    });
+
+    return {
+      success: true,
+      count: waitingOrders.length,
+      status: 'SCHEDULED',
+      pickupId: pickupRes.pickupId,
+      pickupDate: pickupRes.pickupDate,
+      pickupTime: pickupRes.pickupTime,
+      message: `Pickup scheduled with Delhivery for ${waitingOrders.length} package(s) on ${pickupRes.pickupDate} at ${pickupRes.pickupTime}. Request ID: ${pickupRes.pickupId}`,
+    };
+  } else {
+    const failureReason = pickupRes.message || 'Delhivery pickup request rejected';
+    for (const ord of waitingOrders) {
+      await prisma.order.update({
+        where: { id: ord.id },
+        data: {
+          pickupStatus: 'FAILED',
+          pickupError: failureReason,
+          pickupAttempts: { increment: 1 },
+          lastPickupAttemptAt: new Date(),
+        },
+      });
+    }
+
+    logger.warn('shipping.pickup.batch_failed', {
+      count: waitingOrders.length,
+      error: failureReason,
+    });
+
+    return {
+      success: false,
+      count: waitingOrders.length,
+      status: 'FAILED',
+      message: failureReason,
+      error: failureReason,
+      pickupDate,
+      pickupTime,
+    };
+  }
+}
+
 export async function createDelhiveryShipment(
   order: DelhiveryShipmentOrder
 ): Promise<DelhiveryManifestResult> {
@@ -704,8 +914,8 @@ export async function createDelhiveryShipment(
     }
   }
 
-  // Build clean, safe label description with fallback for long orders
-  const productsDesc = buildDelhiveryLabelDescription(order.items || []);
+  // Build clean, safe label description with fallback for long orders (includes Delivery Rs <fee>)
+  const productsDesc = buildDelhiveryLabelDescription(order.items || [], Number(order.shippingFee || 0));
 
   // Requirement: Dimension of box should by default 18×10×8 cm (Length x Width x Height)
   const boxLength = String(order.length || 18);
@@ -714,21 +924,20 @@ export async function createDelhiveryShipment(
 
   // If live Delhivery API Key is available
   const apiKey = getApiKey();
-  const delhiveryItems = buildDelhiveryShipmentItems(order.items || [], Number(order.shippingFee || 0));
 
   if (apiKey) {
     try {
       const shipmentData = {
         shipments: [
           {
-            name: order.customerName,
-            add: destAddress,
+            name: sanitizeDelhiveryText(order.customerName),
+            add: sanitizeDelhiveryText(destAddress),
             pin: destPin,
-            city: destCity || 'Destination',
-            state: destState || 'State',
+            city: sanitizeDelhiveryText(destCity || 'Destination'),
+            state: sanitizeDelhiveryText(destState || 'State'),
             country: 'India',
             phone: cleanPhone,
-            order: order.orderNumber,
+            order: sanitizeDelhiveryText(order.orderNumber),
             payment_mode: effectivePaymentMode,
             return_pin: '',
             return_city: '',
@@ -747,20 +956,15 @@ export async function createDelhiveryShipment(
             shipment_height: boxHeight,
             shipment_length: boxLength,
             weight: String(order.weight || 500),
-            pickup_location: getPickupLocation(),
-            items: delhiveryItems,
-            products: delhiveryItems,
-            order_items: delhiveryItems,
-            product_details: delhiveryItems,
-            order_lines: delhiveryItems,
+            pickup_location: sanitizeDelhiveryText(getPickupLocation()),
           },
         ],
         // Complete registered warehouse pickup location matching Delhivery One
         pickup_location: {
-          name: getPickupLocation(),
-          add: getPickupAddress(),
-          city: getPickupCity(),
-          state: getPickupState(),
+          name: sanitizeDelhiveryText(getPickupLocation()),
+          add: sanitizeDelhiveryText(getPickupAddress()),
+          city: sanitizeDelhiveryText(getPickupCity()),
+          state: sanitizeDelhiveryText(getPickupState()),
           pin_code: getPickupPin(),
           phone: getPickupPhone(),
         },
@@ -951,20 +1155,19 @@ export async function createDelhiveryPendingOrder(
     }
   }
 
-  const productsDesc = buildDelhiveryLabelDescription(order.items || []);
-  const delhiveryItems = buildDelhiveryShipmentItems(order.items || [], Number(order.shippingFee || 0));
+  const productsDesc = buildDelhiveryLabelDescription(order.items || [], Number(order.shippingFee || 0));
 
   const pendingShipmentData = {
     shipments: [
       {
-        name: order.customerName,
-        add: destAddress,
+        name: sanitizeDelhiveryText(order.customerName),
+        add: sanitizeDelhiveryText(destAddress),
         pin: destPin,
-        city: destCity || 'Destination',
-        state: destState || 'State',
+        city: sanitizeDelhiveryText(destCity || 'Destination'),
+        state: sanitizeDelhiveryText(destState || 'State'),
         country: 'India',
         phone: cleanPhone,
-        order: order.orderNumber,
+        order: sanitizeDelhiveryText(order.orderNumber),
         payment_mode: effectivePaymentMode,
         return_pin: '',
         return_city: '',
@@ -983,19 +1186,14 @@ export async function createDelhiveryPendingOrder(
         shipment_height: String(order.height || 8),
         shipment_length: String(order.length || 18),
         weight: String(order.weight || 500),
-        pickup_location: getPickupLocation(),
-        items: delhiveryItems,
-        products: delhiveryItems,
-        order_items: delhiveryItems,
-        product_details: delhiveryItems,
-        order_lines: delhiveryItems,
+        pickup_location: sanitizeDelhiveryText(getPickupLocation()),
       },
     ],
     pickup_location: {
-      name: getPickupLocation(),
-      add: getPickupAddress(),
-      city: getPickupCity(),
-      state: getPickupState(),
+      name: sanitizeDelhiveryText(getPickupLocation()),
+      add: sanitizeDelhiveryText(getPickupAddress()),
+      city: sanitizeDelhiveryText(getPickupCity()),
+      state: sanitizeDelhiveryText(getPickupState()),
       pin_code: getPickupPin(),
       phone: getPickupPhone(),
     },

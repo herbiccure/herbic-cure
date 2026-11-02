@@ -73,6 +73,7 @@ export async function PUT(
     if (body.howToUse !== undefined) updateData.howToUse = body.howToUse;
     if (body.seoTitle !== undefined) updateData.seoTitle = body.seoTitle;
     if (body.seoDescription !== undefined) updateData.seoDescription = body.seoDescription;
+    if (body.labelName !== undefined) updateData.labelName = body.labelName ? String(body.labelName).trim() : null;
 
     const updated = await prisma.product.update({
       where: { id },

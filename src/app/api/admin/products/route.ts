@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       howToUse,
       seoTitle,
       seoDescription,
+      labelName,
       images = [],
     } = body;
 
@@ -81,6 +82,7 @@ export async function POST(request: NextRequest) {
         howToUse,
         seoTitle,
         seoDescription,
+        labelName: labelName ? String(labelName).trim() : null,
         images: {
           create: images.map((img: string, idx: number) => ({
             url: normalizeImageUrl(img),
