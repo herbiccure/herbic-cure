@@ -850,7 +850,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className={cn('text-2xl font-bold font-serif', isLight ? 'text-slate-900' : 'text-white')}>
@@ -868,15 +868,22 @@ export default function AdminOrdersPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 overflow-x-auto pb-1 sm:pb-0">
           <Link
             href="/admin/orders/confirm"
-            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#A84358] hover:bg-[#8f3649] text-white flex items-center gap-1.5 shadow-2xs transition-all"
+            className={cn(
+              'h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-2xs whitespace-nowrap',
+              awaitingConfirmationCount > 0
+                ? 'bg-[#A84358] hover:bg-[#8C374A] text-white'
+                : isLight
+                ? 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:border-slate-700'
+            )}
           >
-            <CheckCircle2 className="w-3.5 h-3.5" />
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
             <span>Orders to Confirm</span>
             {awaitingConfirmationCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white text-[#A84358] font-black">
+              <span className="min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-black inline-flex items-center justify-center bg-white text-[#A84358] leading-none">
                 {awaitingConfirmationCount}
               </span>
             )}
@@ -886,15 +893,44 @@ export default function AdminOrdersPage() {
             type="button"
             onClick={handleRequestBatchPickup}
             disabled={requestingBatchPickup}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-purple-700 hover:bg-purple-800 text-white flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+            className={cn(
+              'h-9 px-3.5 rounded-xl text-xs font-semibold border inline-flex items-center gap-1.5 transition-all shadow-2xs whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
+              isLight
+                ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900'
+                : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:border-slate-700 hover:text-white'
+            )}
             title="Request daily courier pickup with Delhivery for all confirmed & manifested packages"
           >
-            <Truck className={cn('w-3.5 h-3.5', requestingBatchPickup && 'animate-spin')} />
-            <span>
-              {requestingBatchPickup
-                ? 'Requesting Pickup...'
-                : `Request Pickup for Today (${readyForPickupCount})`}
-            </span>
+            <Truck className={cn('w-3.5 h-3.5 shrink-0 text-slate-500 dark:text-slate-400', requestingBatchPickup && 'animate-spin')} />
+            <span>{requestingBatchPickup ? 'Requesting...' : 'Request Pickup'}</span>
+            {readyForPickupCount > 0 && (
+              <span
+                className={cn(
+                  'min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-bold inline-flex items-center justify-center leading-none',
+                  isLight
+                    ? 'bg-slate-100 text-slate-700 border border-slate-200/80'
+                    : 'bg-slate-800 text-slate-300 border border-slate-700'
+                )}
+              >
+                {readyForPickupCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportDelhiveryCsv}
+            disabled={exportingCsv}
+            className={cn(
+              'h-9 px-3.5 rounded-xl text-xs font-semibold border inline-flex items-center gap-1.5 transition-all shadow-2xs whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
+              isLight
+                ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900'
+                : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:border-slate-700 hover:text-white'
+            )}
+            title="Export unmanifested orders in official Delhivery One Forward Orders bulk upload CSV format"
+          >
+            <Download className={cn('w-3.5 h-3.5 shrink-0 text-slate-500 dark:text-slate-400', exportingCsv && 'animate-bounce')} />
+            <span>{exportingCsv ? 'Exporting...' : 'Export CSV'}</span>
           </button>
 
           <a
@@ -902,26 +938,16 @@ export default function AdminOrdersPage() {
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
-              'px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all shadow-2xs',
+              'h-9 px-3.5 rounded-xl text-xs font-semibold border inline-flex items-center gap-1.5 transition-all shadow-2xs whitespace-nowrap',
               isLight
-                ? 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
-                : 'bg-slate-900 border-slate-700 text-slate-200 hover:bg-slate-800'
+                ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900'
+                : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:border-slate-700 hover:text-white'
             )}
+            title="Open Delhivery One logistics portal in a new tab"
           >
-            <span>Delhivery One Portal</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Delhivery One</span>
+            <ExternalLink className="w-3.5 h-3.5 shrink-0 text-slate-400" />
           </a>
-
-          <button
-            type="button"
-            onClick={handleExportDelhiveryCsv}
-            disabled={exportingCsv}
-            className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
-            title="Export unmanifested orders in official Delhivery One Forward Orders bulk upload CSV format"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>{exportingCsv ? 'Exporting...' : 'Export Delhivery One CSV'}</span>
-          </button>
         </div>
       </div>
 
