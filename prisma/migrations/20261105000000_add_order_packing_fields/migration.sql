@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "packedAt" TIMESTAMP(3),
+ADD COLUMN IF NOT EXISTS "packedBy" TEXT;
+

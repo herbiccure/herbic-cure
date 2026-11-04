@@ -142,7 +142,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       updateData.pickupStatus = 'PICKED';
       needsUpdate = true;
     } else if (mapped.orderStatus === 'SHIPPED') {
-      const allowed = ['PENDING', 'CONFIRMED', 'PROCESSING', 'PACKED'];
+      const allowed = ['PENDING', 'CONFIRMED', 'PROCESSING', 'PACKED', 'READY_TO_SHIP'];
       if (allowed.includes(order.orderStatus)) {
         updateData.orderStatus = 'SHIPPED';
         updateData.pickupStatus = 'PICKED';

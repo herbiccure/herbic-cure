@@ -68,6 +68,10 @@ export default async function PackingSlipPage({ params }: PageProps) {
         orderId={order.id}
         orderNumber={order.orderNumber}
         hasTracking={Boolean(order.trackingNumber)}
+        isPacked={Boolean(order.packedAt || order.pickupStatus === 'PACKED' || order.pickupStatus === 'SCHEDULED' || order.pickupStatus === 'PICKED')}
+        pickupStatus={order.pickupStatus}
+        packedAt={order.packedAt ? order.packedAt.toISOString() : null}
+        packedBy={order.packedBy}
       />
 
       {/* Printable Packing Slip Sheet */}

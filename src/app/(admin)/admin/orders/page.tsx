@@ -58,6 +58,8 @@ interface OrderItem {
   pickupError?: string | null;
   pickupAttempts?: number;
   lastPickupAttemptAt?: string | null;
+  packedAt?: string | null;
+  packedBy?: string | null;
   shippingMode?: string | null;
   delhiveryStatus?: string | null;
   delhiverySyncStatus?: string | null;
@@ -146,6 +148,7 @@ export type UnifiedOrderStatus =
   | 'Awaiting Confirmation'
   | 'Sent to Delhivery (Pending)'
   | 'Ready to Ship'
+  | 'Packed'
   | 'Ready for Pickup'
   | 'In Transit'
   | 'Out for Delivery'
@@ -204,6 +207,12 @@ export function getOrderStatusInfo(o: OrderItem): {
     return {
       label: 'Ready for Pickup',
       colorClass: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/80 dark:text-purple-300 dark:border-purple-800',
+    };
+  }
+  if (o.pickupStatus === 'PACKED') {
+    return {
+      label: 'Packed',
+      colorClass: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800',
     };
   }
   if (o.orderStatus === 'READY_TO_SHIP' || o.delhiveryStatus === 'READY_TO_SHIP' || o.trackingNumber) {
@@ -600,6 +609,60 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const [markingPacked, setMarkingPacked] = useState(false);
+  const handleMarkPackedOrder = async (orderId: string) => {
+    setMarkingPacked(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/mark-packed`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to mark order as packed');
+      toast.success(data.message || 'Order packed and ready for courier pickup!');
+      mutate();
+      if (data.order && selectedOrder?.id === orderId) {
+        setSelectedOrder(data.order);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error marking order as packed');
+    } finally {
+      setMarkingPacked(false);
+    }
+  };
+
+  const [requestingSinglePickup, setRequestingSinglePickup] = useState(false);
+  const handleRequestSingleOrderPickup = async (orderId: string) => {
+    setRequestingSinglePickup(true);
+    try {
+      const res = await fetch('/api/admin/orders/request-pickup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderIds: [orderId], force: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to schedule pickup');
+      toast.success(data.message || `Pickup scheduled with Delhivery! PUR: ${data.pickupId}`);
+      mutate();
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder((prev) =>
+          prev
+            ? {
+                ...prev,
+                pickupStatus: 'SCHEDULED',
+                pickupRequestId: data.pickupId || prev.pickupRequestId,
+                pickupDate: data.pickupDate || prev.pickupDate,
+                pickupTime: data.pickupTime || prev.pickupTime,
+              }
+            : null
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error scheduling pickup');
+    } finally {
+      setRequestingSinglePickup(false);
+    }
+  };
+
   const handleUpdateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOrder) return;
@@ -811,8 +874,16 @@ export default function AdminOrdersPage() {
               'inline-block px-2 py-0.5 rounded text-[10px] font-semibold border',
               o.pickupStatus === 'SCHEDULED'
                 ? isLight
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  : 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
+                  ? 'bg-purple-50 text-purple-800 border-purple-200'
+                  : 'bg-purple-950/80 text-purple-300 border-purple-800'
+                : o.pickupStatus === 'PACKED'
+                  ? isLight
+                    ? 'bg-amber-50 text-amber-800 border-amber-200'
+                    : 'bg-amber-950/80 text-amber-300 border-amber-800'
+                : o.pickupStatus === 'PICKED'
+                  ? isLight
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
                 : o.pickupStatus === 'FAILED'
                   ? isLight
                     ? 'bg-rose-50 text-rose-800 border-rose-200'
@@ -824,10 +895,14 @@ export default function AdminOrdersPage() {
             title={o.pickupError || undefined}
           >
             {o.pickupStatus === 'SCHEDULED'
-              ? 'Pickup: Scheduled'
-              : o.pickupStatus === 'FAILED'
-                ? 'Pickup: Failed'
-                : 'Pickup: None'}
+              ? (o.pickupRequestId ? `Pickup: Scheduled (#${o.pickupRequestId})` : 'Pickup: Scheduled')
+              : o.pickupStatus === 'PACKED'
+                ? 'Packed: Ready for Pickup'
+                : o.pickupStatus === 'PICKED'
+                  ? 'Picked Up'
+                  : o.pickupStatus === 'FAILED'
+                    ? 'Pickup: Failed'
+                    : 'Pickup: None'}
           </span>
         </div>
       ),
@@ -838,6 +913,28 @@ export default function AdminOrdersPage() {
       className: 'text-right px-4 sm:px-6',
       cell: (o) => (
         <div className="flex items-center justify-end gap-1.5">
+          {o.trackingNumber && o.orderStatus !== 'CANCELLED' && !o.packedAt && o.pickupStatus === 'NONE' && (
+            <button
+              type="button"
+              onClick={() => handleMarkPackedOrder(o.id)}
+              disabled={markingPacked}
+              className="p-1.5 border border-amber-200 dark:border-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-300 rounded-xl text-xs font-semibold inline-flex items-center transition-all shadow-2xs cursor-pointer"
+              title="Mark as Packed (Affirm box is ready)"
+            >
+              <PackageCheck className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {(o.pickupStatus === 'PACKED' || o.pickupStatus === 'FAILED') && (
+            <button
+              type="button"
+              onClick={() => handleRequestSingleOrderPickup(o.id)}
+              disabled={requestingSinglePickup}
+              className="p-1.5 border border-purple-200 dark:border-purple-700 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/50 text-purple-800 dark:text-purple-300 rounded-xl text-xs font-semibold inline-flex items-center transition-all shadow-2xs cursor-pointer"
+              title="Request Delhivery Pickup for this order"
+            >
+              <Truck className={cn('w-3.5 h-3.5', requestingSinglePickup && 'animate-spin')} />
+            </button>
+          )}
           <Link
             href={`/admin/orders/${o.id}/packing-slip`}
             target="_blank"
@@ -1797,6 +1894,69 @@ export default function AdminOrdersPage() {
             <p className="text-[11px] leading-relaxed opacity-90">
               Label printing, parcel packaging, and rider pickups (&quot;Add to Pickup&quot;) are managed directly in your <strong>Delhivery One</strong> portal. Real-time carrier scans (Pickup, In Transit, Out for Delivery, Delivered) automatically sync here and update customer tracking.
             </p>
+          </div>
+
+          {/* Warehouse Packaging & Pickup Dispatch Controls */}
+          <div className={cn(
+            'p-3.5 rounded-xl border flex flex-wrap items-center justify-between gap-3',
+            isLight ? 'bg-white border-indigo-100 shadow-2xs' : 'bg-slate-900 border-slate-800'
+          )}>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-slate-900 dark:text-white">Pickup Dispatch:</span>
+              {selectedOrder.pickupStatus === 'SCHEDULED' ? (
+                <span className="px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 font-bold border border-purple-300 dark:border-purple-800 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
+                  <span>Scheduled {selectedOrder.pickupRequestId ? `(PUR #${selectedOrder.pickupRequestId})` : ''}</span>
+                </span>
+              ) : selectedOrder.pickupStatus === 'PACKED' ? (
+                <span className="px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold border border-amber-300 dark:border-amber-800 flex items-center gap-1">
+                  <PackageCheck className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Packed &amp; Ready for Courier</span>
+                </span>
+              ) : selectedOrder.pickupStatus === 'PICKED' ? (
+                <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Picked Up by Courier</span>
+                </span>
+              ) : selectedOrder.pickupStatus === 'FAILED' ? (
+                <span className="px-2.5 py-1 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 font-bold border border-rose-300 dark:border-rose-800 flex items-center gap-1" title={selectedOrder.pickupError || undefined}>
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Pickup Failed: {selectedOrder.pickupError || 'Rejected'}</span>
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium border border-slate-200 dark:border-slate-700">
+                  Awaiting Warehouse Packing
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {!selectedOrder.packedAt && selectedOrder.pickupStatus !== 'PACKED' && selectedOrder.pickupStatus !== 'SCHEDULED' && selectedOrder.pickupStatus !== 'PICKED' && (
+                <button
+                  type="button"
+                  disabled={markingPacked}
+                  onClick={() => handleMarkPackedOrder(selectedOrder.id)}
+                  className="px-3.5 py-2 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                  title="Affirm parcel is packed and label attached"
+                >
+                  <PackageCheck className="w-3.5 h-3.5 text-amber-600" />
+                  <span>{markingPacked ? 'Marking...' : 'Mark as Packed'}</span>
+                </button>
+              )}
+
+              {selectedOrder.pickupStatus !== 'SCHEDULED' && selectedOrder.pickupStatus !== 'PICKED' && (
+                <button
+                  type="button"
+                  disabled={requestingSinglePickup}
+                  onClick={() => handleRequestSingleOrderPickup(selectedOrder.id)}
+                  className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                  title="Schedule courier pickup dispatch with Delhivery"
+                >
+                  <Truck className={cn('w-3.5 h-3.5', requestingSinglePickup && 'animate-spin')} />
+                  <span>{requestingSinglePickup ? 'Scheduling...' : 'Request Courier Pickup'}</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">

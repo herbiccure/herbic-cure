@@ -387,13 +387,15 @@ model Order {
   delhiverySyncError      String?
   lastDelhiverySyncAt     DateTime?
   delhiveryStatus         String?         // PENDING, READY_TO_SHIP, IN_TRANSIT, OUT_FOR_DELIVERY, DELIVERED, CANCELLED, RTO
-  pickupStatus        String          @default("NONE") // NONE, REQUESTED, SCHEDULED, FAILED, PICKED
+  pickupStatus        String          @default("NONE") // NONE, PACKED, REQUESTED, SCHEDULED, FAILED, PICKED
   pickupRequestId     String?
   pickupDate          DateTime?
   pickupTime          String?
   pickupError         String?
   pickupAttempts      Int             @default(0)
   lastPickupAttemptAt DateTime?
+  packedAt            DateTime?
+  packedBy            String?
   version          Int             @default(1)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @default(now()) @updatedAt

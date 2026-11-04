@@ -29,7 +29,7 @@ export interface DelhiveryShipmentOrder {
   orderNumber: string;
   customerName: string;
   customerPhone: string;
-  customerEmail: string;
+  customerEmail?: string;
   customerAddress?: string;
   city?: string;
   state?: string;
@@ -512,6 +512,7 @@ export interface DelhiveryPickupResult {
   success: boolean;
   pickupId?: string;
   status: 'SCHEDULED' | 'FAILED';
+  isExistingSlot?: boolean;
   message: string;
   pickupDate: string;
   pickupTime: string;
@@ -588,7 +589,7 @@ export async function requestDelhiveryPickup(
           data?.error ||
           data?.remarks ||
           `Delhivery API returned HTTP ${res.status}: ${res.statusText}`;
-        logger.warn('shipping.pickup.http_error', { status: res.status, error: errorMsg });
+        logger.warn('shipping.pickup.http_error', { status: res.status, error: errorMsg, pickupLocation });
         return {
           success: false,
           status: 'FAILED',
@@ -599,28 +600,89 @@ export async function requestDelhiveryPickup(
         };
       }
 
-      const pickupId = String(
+      // Check for Error 669 or existing scheduled pickup for this slot
+      const isAlreadyExisting = Boolean(
+        data?.pr_exist ||
+        data?.error?.code === 669 ||
+        (typeof data?.error?.message === 'string' && /already exist/i.test(data.error.message)) ||
+        (typeof data?.data?.message === 'string' && /already exist/i.test(data.data.message))
+      );
+
+      let pickupId = String(
         data?.pr_id ||
         data?.pickup_id ||
         data?.data?.pr_id ||
         data?.data?.pickup_id ||
         data?.id ||
         ''
-      );
+      ).trim();
 
-      const isSuccess =
-        data?.status === 'Success' ||
-        data?.status === true ||
-        data?.success === true ||
-        (Boolean(pickupId) && data?.status !== 'Fail');
+      // If pickupId wasn't returned in a direct field, extract from error/data message
+      if (!pickupId) {
+        const fullMsg = `${data?.error?.message || ''} ${data?.data?.message || ''} ${data?.message || ''}`;
+        const match = fullMsg.match(/(?:Pickup Request|PR)[\s#:]*([0-9A-Z_-]+)/i);
+        if (match && match[1]) {
+          pickupId = match[1];
+        }
+      }
 
-      if (isSuccess) {
+      if (isAlreadyExisting) {
+        const existingMsg =
+          data?.data?.message ||
+          data?.error?.message ||
+          `A pickup request (#${pickupId}) is already active for this warehouse slot. Packages associated with today's scheduled pickup.`;
+
+        logger.info('shipping.pickup.associated_existing_slot', {
+          pickupId,
+          pickupDate,
+          pickupTime: formattedTime,
+          pickupLocation,
+          expectedPackageCount,
+        });
+
         return {
           success: true,
           pickupId: pickupId || `PR-${Date.now()}`,
           status: 'SCHEDULED',
+          isExistingSlot: true,
+          message: existingMsg,
+          pickupDate,
+          pickupTime: formattedTime,
+          rawResponse: data,
+        };
+      }
+
+      const hasExplicitError = Boolean(
+        data?.error ||
+        data?.success === false ||
+        data?.status === 'Fail' ||
+        data?.status === false
+      );
+
+      const isSuccess =
+        !hasExplicitError &&
+        (data?.status === 'Success' ||
+          data?.status === true ||
+          data?.success === true ||
+          Boolean(pickupId));
+
+      if (isSuccess && (pickupId || data?.status === 'Success')) {
+        logger.info('shipping.pickup.created_new', {
+          pickupId: pickupId || 'NEW',
+          pickupDate,
+          pickupTime: formattedTime,
+          pickupLocation,
+          expectedPackageCount,
+        });
+
+        return {
+          success: true,
+          pickupId: pickupId || `PR-${Date.now()}`,
+          status: 'SCHEDULED',
+          isExistingSlot: false,
           message:
             data?.message ||
+            data?.data?.message ||
             `Pickup scheduled successfully with Delhivery for ${pickupDate} at ${formattedTime}`,
           pickupDate,
           pickupTime: formattedTime,
@@ -628,14 +690,24 @@ export async function requestDelhiveryPickup(
         };
       } else {
         const errMsg =
+          data?.error?.message ||
+          data?.data?.message ||
           data?.message ||
           data?.error ||
           data?.remarks ||
           'Delhivery pickup request rejected';
+        const formattedErr = typeof errMsg === 'object' ? JSON.stringify(errMsg) : String(errMsg);
+
+        logger.warn('shipping.pickup.rejected', {
+          pickupLocation,
+          error: formattedErr,
+          raw: data,
+        });
+
         return {
           success: false,
           status: 'FAILED',
-          message: errMsg,
+          message: formattedErr,
           pickupDate,
           pickupTime: formattedTime,
           rawResponse: data,
@@ -658,6 +730,7 @@ export async function requestDelhiveryPickup(
     success: true,
     pickupId: `SIM-PR-${Date.now()}`,
     status: 'SCHEDULED',
+    isExistingSlot: false,
     message: `[Simulated] Pickup registered for ${pickupLocation} on ${pickupDate} at ${formattedTime}`,
     pickupDate,
     pickupTime: formattedTime,
@@ -673,12 +746,14 @@ export interface DailyPickupScheduleResult {
   pickupTime?: string;
   message: string;
   error?: string;
+  isExistingSlot?: boolean;
 }
 
 /**
  * Creates one pickup request per day for all waiting manifested packages with Delhivery.
- * Used for both Admin manual "Request pickup for today's confirmed orders" button and Auto mode.
- * Limits retries to max 3 attempts to prevent infinite loops.
+ * Used for both Admin manual "Request pickup" button and Auto mode.
+ * Enforces warehouse-ready gating: orders must be packed before pickup dispatch.
+ * Limits retries to max 5 attempts to prevent infinite loops.
  */
 export async function scheduleDailyDelhiveryPickup(options: {
   pickupDate?: string;
@@ -686,31 +761,96 @@ export async function scheduleDailyDelhiveryPickup(options: {
   pickupLocation?: string;
   orderIds?: string[];
   force?: boolean;
+  requirePacked?: boolean;
 } = {}): Promise<DailyPickupScheduleResult> {
   const { prisma } = await import('@/lib/prisma');
 
+  // Check cancelled orders if specific order IDs are provided (Scenario G)
+  if (options.orderIds && options.orderIds.length > 0) {
+    const cancelledCount = await prisma.order.count({
+      where: {
+        id: { in: options.orderIds },
+        orderStatus: 'CANCELLED',
+      },
+    });
+
+    if (cancelledCount === options.orderIds.length) {
+      return {
+        success: false,
+        count: 0,
+        status: 'SKIPPED',
+        message: 'Cannot schedule pickup: Order is cancelled.',
+        error: 'Order is cancelled',
+      };
+    }
+
+    // Check if all selected orders are already scheduled (Scenario E idempotency)
+    if (!options.force) {
+      const alreadyScheduled = await prisma.order.findMany({
+        where: {
+          id: { in: options.orderIds },
+          pickupStatus: { in: ['SCHEDULED', 'PICKED'] },
+        },
+        select: { id: true, pickupRequestId: true },
+      });
+
+      if (alreadyScheduled.length === options.orderIds.length) {
+        const prId = alreadyScheduled[0]?.pickupRequestId || 'active';
+        return {
+          success: true,
+          count: 0,
+          status: 'SKIPPED',
+          pickupId: prId,
+          message: `Order is already scheduled for pickup (Request ID: ${prId}).`,
+        };
+      }
+    }
+  }
+
+  // Determine warehouse packing requirement:
+  // In automatic mode, require packed condition. In manual mode or forced, allow ready orders.
+  const requirePacked = options.requirePacked ?? (!options.force && (!options.orderIds || options.orderIds.length === 0));
+
   const whereClause: any = {
     trackingNumber: { not: null },
-    orderStatus: { in: ['READY_TO_SHIP', 'CONFIRMED', 'PROCESSING'] },
-    pickupStatus: { in: ['NONE', 'FAILED'] },
-    pickupAttempts: { lt: 3 }, // Limit retries to prevent infinite loops
+    orderStatus: { in: ['READY_TO_SHIP', 'CONFIRMED', 'PROCESSING'], not: 'CANCELLED' },
+    pickupStatus: requirePacked
+      ? { in: ['PACKED', 'FAILED'] }
+      : { in: ['PACKED', 'NONE', 'FAILED'] },
+    pickupAttempts: { lt: 5 },
   };
 
   if (options.orderIds && options.orderIds.length > 0) {
     whereClause.id = { in: options.orderIds };
+    if (options.force) {
+      delete whereClause.pickupStatus;
+      whereClause.pickupStatus = { not: 'PICKED' };
+    }
   }
 
   const waitingOrders = await prisma.order.findMany({
     where: whereClause,
-    select: { id: true, orderNumber: true, pickupAttempts: true },
+    select: { id: true, orderNumber: true, pickupAttempts: true, pickupStatus: true },
   });
 
   if (waitingOrders.length === 0) {
+    const unpackedCount = await prisma.order.count({
+      where: {
+        trackingNumber: { not: null },
+        orderStatus: { in: ['READY_TO_SHIP', 'CONFIRMED', 'PROCESSING'], not: 'CANCELLED' },
+        pickupStatus: 'NONE',
+      },
+    });
+
+    const msg = unpackedCount > 0
+      ? `${unpackedCount} order(s) manifested but awaiting warehouse packing. Mark orders as packed before requesting pickup.`
+      : 'No orders waiting for pickup.';
+
     return {
       success: true,
       count: 0,
       status: 'SKIPPED',
-      message: 'No confirmed orders waiting for pickup.',
+      message: msg,
     };
   }
 
@@ -759,7 +899,7 @@ export async function scheduleDailyDelhiveryPickup(options: {
           orderId: ord.id,
           status: 'SCHEDULED',
           location: pickupLocation,
-          description: `Delhivery pickup scheduled for ${pickupRes.pickupDate} at ${pickupRes.pickupTime}. Request ID: ${pickupRes.pickupId}`,
+          description: pickupRes.message || `Delhivery pickup scheduled for ${pickupRes.pickupDate} at ${pickupRes.pickupTime}. Request ID: ${pickupRes.pickupId}`,
         },
       });
     }
@@ -769,6 +909,7 @@ export async function scheduleDailyDelhiveryPickup(options: {
       pickupId: pickupRes.pickupId,
       pickupDate: pickupRes.pickupDate,
       pickupTime: pickupRes.pickupTime,
+      isExistingSlot: pickupRes.isExistingSlot,
     });
 
     return {
@@ -778,7 +919,8 @@ export async function scheduleDailyDelhiveryPickup(options: {
       pickupId: pickupRes.pickupId,
       pickupDate: pickupRes.pickupDate,
       pickupTime: pickupRes.pickupTime,
-      message: `Pickup scheduled with Delhivery for ${waitingOrders.length} package(s) on ${pickupRes.pickupDate} at ${pickupRes.pickupTime}. Request ID: ${pickupRes.pickupId}`,
+      isExistingSlot: pickupRes.isExistingSlot,
+      message: pickupRes.message || `Pickup scheduled with Delhivery for ${waitingOrders.length} package(s) on ${pickupRes.pickupDate} at ${pickupRes.pickupTime}. Request ID: ${pickupRes.pickupId}`,
     };
   } else {
     const failureReason = pickupRes.message || 'Delhivery pickup request rejected';
@@ -1393,6 +1535,7 @@ export function isDelhiveryCancelled(status?: string | null, scans?: DelhiverySc
 export type MappedOrderStatus =
   | 'CONFIRMED'
   | 'PROCESSING'
+  | 'READY_TO_SHIP'
   | 'SHIPPED'
   | 'OUT_FOR_DELIVERY'
   | 'DELIVERED'
@@ -1513,12 +1656,11 @@ export function mapDelhiveryStatusToOrderStatus(
   ) {
     return {
       orderStatus: 'CONFIRMED',
-      pickupStatus: 'NONE',
       delhiveryStatus: 'MANIFESTED',
       isCancelled: false,
       isDelivered: false,
       isManifested: true,
-      description: 'Shipment manifested on Delhivery. Ready for pickup.',
+      description: 'Shipment manifested on Delhivery. Ready for courier pickup.',
     };
   }
 

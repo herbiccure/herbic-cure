@@ -34,7 +34,7 @@ export type DelhiveryStatus =
   | 'CANCELLED'
   | 'RTO';
 
-export type PickupStatus = 'NONE' | 'REQUESTED' | 'SCHEDULED' | 'FAILED' | 'PICKED';
+export type PickupStatus = 'NONE' | 'PACKED' | 'REQUESTED' | 'SCHEDULED' | 'FAILED' | 'PICKED';
 
 export interface OrderItem {
   id: string;
@@ -98,6 +98,8 @@ export interface Order {
   pickupError?: string | null;
   pickupAttempts?: number;
   lastPickupAttemptAt?: string | Date | null;
+  packedAt?: string | Date | null;
+  packedBy?: string | null;
   version?: number;
   createdAt: string | Date;
   updatedAt: string | Date;
