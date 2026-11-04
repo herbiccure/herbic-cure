@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const codAdvanceSettingsSchema = z.object({
-  shipping_mode: z.enum(['delhivery_pending', 'auto_manifest']).optional(),
+  shipping_mode: z.enum(['confirm_then_send', 'delhivery_pending', 'auto_manifest']).optional(),
   cod_advance_enabled: z.enum(['true', 'false']).optional(),
   cod_advance_type: z.enum(['FIXED', 'PERCENTAGE']).optional(),
   cod_advance_value: z

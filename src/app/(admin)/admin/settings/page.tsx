@@ -47,7 +47,7 @@ export default function AdminSettingsPage() {
   const [codAdvanceMessage, setCodAdvanceMessage] = useState(
     'Pay a small advance online to confirm your COD order. The rest is paid on delivery.'
   );
-  const [shippingMode, setShippingMode] = useState<'delhivery_pending' | 'auto_manifest'>('auto_manifest');
+  const [shippingMode, setShippingMode] = useState<'confirm_then_send' | 'delhivery_pending' | 'auto_manifest'>('confirm_then_send');
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -125,7 +125,7 @@ export default function AdminSettingsPage() {
           if (s.cod_advance_value !== undefined) setCodAdvanceValue(s.cod_advance_value);
           if (s.cod_advance_max_cap !== undefined) setCodAdvanceMaxCap(s.cod_advance_max_cap);
           if (s.cod_advance_message) setCodAdvanceMessage(s.cod_advance_message);
-          if (s.shipping_mode) setShippingMode(s.shipping_mode as 'delhivery_pending' | 'auto_manifest');
+          if (s.shipping_mode) setShippingMode(s.shipping_mode as 'confirm_then_send' | 'delhivery_pending' | 'auto_manifest');
         }
       })
       .catch(() => {});
@@ -886,7 +886,41 @@ export default function AdminSettingsPage() {
                   </div>
 
                   {/* Value & Optional Cap Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Confirm Then Send Option (Recommended) */}
+                <label
+                  className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
+                    shippingMode === 'confirm_then_send'
+                      ? isLight
+                        ? 'bg-rose-50/70 border-rose-300 ring-1 ring-rose-300 text-stone-900'
+                        : 'bg-rose-950/30 border-rose-700 ring-1 ring-rose-700 text-white'
+                      : isLight
+                      ? 'bg-white border-stone-200 hover:border-stone-300 text-stone-700'
+                      : 'bg-slate-800/60 border-slate-700 hover:border-slate-600 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <input
+                      type="radio"
+                      name="shippingMode"
+                      value="confirm_then_send"
+                      checked={shippingMode === 'confirm_then_send'}
+                      onChange={() => setShippingMode('confirm_then_send')}
+                      className="accent-rose-600 mt-0.5"
+                    />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-xs">Confirm &amp; Send</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          Recommended
+                        </span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed opacity-85">
+                        Orders wait in <strong>Orders to Confirm</strong>. Staff verify address &amp; phone before sending. AWB is generated only after staff clicks confirm.
+                      </p>
+                    </div>
+                  </div>
+                </label>
                     <div>
                       <label className={`block font-semibold mb-1 text-[11px] ${isLight ? 'text-stone-700' : 'text-slate-300'}`}>
                         {codAdvanceType === 'FIXED' ? 'Advance Amount (₹)' : 'Advance Percentage (%)'}

@@ -238,7 +238,7 @@ export default function AdminOrdersPage() {
     fetcher
   );
   const storeShippingMode =
-    (settingsData?.settings?.shipping_mode as 'delhivery_pending' | 'auto_manifest') ||
+    (settingsData?.settings?.shipping_mode as 'confirm_then_send' | 'delhivery_pending' | 'auto_manifest') ||
     'auto_manifest';
 
   const [activeStatus, setActiveStatus] = useState('ALL');
@@ -872,18 +872,24 @@ export default function AdminOrdersPage() {
           <Link
             href="/admin/orders/confirm"
             className={cn(
-              'h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-2xs whitespace-nowrap',
-              awaitingConfirmationCount > 0
-                ? 'bg-[#A84358] hover:bg-[#8C374A] text-white'
-                : isLight
-                ? 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
-                : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:border-slate-700'
+              'h-9 px-3.5 rounded-xl text-xs font-semibold border inline-flex items-center gap-1.5 transition-all shadow-2xs whitespace-nowrap',
+              isLight
+                ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900'
+                : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:border-slate-700 hover:text-white'
             )}
+            title="View placed orders awaiting verification before sending to Delhivery"
           >
-            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-slate-500 dark:text-slate-400" />
             <span>Orders to Confirm</span>
             {awaitingConfirmationCount > 0 && (
-              <span className="min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-black inline-flex items-center justify-center bg-white text-[#A84358] leading-none">
+              <span
+                className={cn(
+                  'min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-bold inline-flex items-center justify-center leading-none',
+                  isLight
+                    ? 'bg-slate-100 text-slate-700 border border-slate-200/80'
+                    : 'bg-slate-800 text-slate-300 border border-slate-700'
+                )}
+              >
                 {awaitingConfirmationCount}
               </span>
             )}
@@ -951,7 +957,7 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {pendingAwbCount > 0 && (
+      {storeShippingMode === 'delhivery_pending' && pendingAwbCount > 0 && (
         <div
           className={cn(
             'p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs',
