@@ -180,36 +180,6 @@ export async function GET(request: NextRequest) {
         ];
         rows.push(row.join(','));
       }
-
-      // If order incurs delivery charges, add separate row matching Delhivery label format
-      const deliveryCharge = Number(order.shippingFee || 0);
-      if (deliveryCharge > 0) {
-        const delRow = [
-          escapeCsvField(order.orderNumber),
-          escapeCsvField(isCod ? 'COD' : 'Prepaid'),
-          escapeCsvField(codAmountVal),
-          escapeCsvField(orderDateStr),
-          escapeCsvField('Express'),
-          escapeCsvField(order.customerName),
-          escapeCsvField(destAddress),
-          escapeCsvField(destAddress2),
-          escapeCsvField(city),
-          escapeCsvField(state),
-          escapeCsvField(pincode),
-          escapeCsvField(cleanPhone),
-          escapeCsvField(order.customerEmail || ''),
-          escapeCsvField(0),
-          escapeCsvField(0),
-          escapeCsvField(0),
-          escapeCsvField(0),
-          escapeCsvField('Del-Charges'),
-          escapeCsvField('Delivery charges'),
-          escapeCsvField(1),
-          escapeCsvField(deliveryCharge.toFixed(2)),
-          escapeCsvField(pickupLoc),
-        ];
-        rows.push(delRow.join(','));
-      }
     }
 
     // Record audit event for exported orders
@@ -222,7 +192,7 @@ export async function GET(request: NextRequest) {
           location: 'Delhivery One Bulk Upload',
           description: `Order exported in official Delhivery One Forward Orders bulk upload CSV template by ${authUserEmail}`,
         },
-      }).catch(() => {});
+      }).catch(() => { });
     }
 
     logger.info('shipping.delhivery.bulk_csv_exported', {

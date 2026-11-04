@@ -21,6 +21,7 @@ import {
   Sparkles,
   PackageCheck,
   MapPin,
+  Printer,
 } from 'lucide-react';
 import { fetcher } from '@/lib/fetcher';
 import { AdminDataTable, Column } from '@/components/admin/AdminDataTable';
@@ -135,7 +136,7 @@ function parseShippingAddress(raw: string | null | undefined): ParsedAddress {
         };
       }
     }
-  } catch {}
+  } catch { }
 
   return { lines: [raw], address: raw, cityStatePin: '', formattedText: raw };
 }
@@ -321,7 +322,7 @@ export default function AdminOrdersPage() {
       } else {
         toast.success(
           data.message ||
-            `Pickup scheduled with Delhivery for ${data.count} package(s)! Request ID: ${data.pickupId}`
+          `Pickup scheduled with Delhivery for ${data.count} package(s)! Request ID: ${data.pickupId}`
         );
         mutate();
       }
@@ -631,18 +632,18 @@ export default function AdminOrdersPage() {
       if (data.delhivery?.message) {
         toast.info(`Delhivery Express: ${data.delhivery.message}`);
       }
-      
+
       // Update local cache & selected order
       mutate(
         {
           orders: orders.map((o) =>
             o.id === selectedOrder.id
               ? {
-                  ...o,
-                  orderStatus: newStatus,
-                  trackingNumber: newTracking,
-                  carrier: newCarrier,
-                }
+                ...o,
+                orderStatus: newStatus,
+                trackingNumber: newTracking,
+                carrier: newCarrier,
+              }
               : o
           ),
         },
@@ -652,11 +653,11 @@ export default function AdminOrdersPage() {
       setSelectedOrder((prev) =>
         prev
           ? {
-              ...prev,
-              orderStatus: newStatus,
-              trackingNumber: newTracking,
-              carrier: newCarrier,
-            }
+            ...prev,
+            orderStatus: newStatus,
+            trackingNumber: newTracking,
+            carrier: newCarrier,
+          }
           : null
       );
     } catch (err: any) {
@@ -813,20 +814,20 @@ export default function AdminOrdersPage() {
                   ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                   : 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
                 : o.pickupStatus === 'FAILED'
-                ? isLight
-                  ? 'bg-rose-50 text-rose-800 border-rose-200'
-                  : 'bg-rose-950/80 text-rose-300 border-rose-800'
-                : isLight
-                ? 'bg-slate-100 text-slate-600 border-slate-200'
-                : 'bg-slate-800 text-slate-400 border-slate-700'
+                  ? isLight
+                    ? 'bg-rose-50 text-rose-800 border-rose-200'
+                    : 'bg-rose-950/80 text-rose-300 border-rose-800'
+                  : isLight
+                    ? 'bg-slate-100 text-slate-600 border-slate-200'
+                    : 'bg-slate-800 text-slate-400 border-slate-700'
             )}
             title={o.pickupError || undefined}
           >
             {o.pickupStatus === 'SCHEDULED'
               ? 'Pickup: Scheduled'
               : o.pickupStatus === 'FAILED'
-              ? 'Pickup: Failed'
-              : 'Pickup: None'}
+                ? 'Pickup: Failed'
+                : 'Pickup: None'}
           </span>
         </div>
       ),
@@ -836,14 +837,24 @@ export default function AdminOrdersPage() {
       headerClassName: 'text-right px-4 sm:px-6',
       className: 'text-right px-4 sm:px-6',
       cell: (o) => (
-        <button
-          type="button"
-          onClick={() => openModal(o)}
-          className="px-3.5 py-1.5 bg-[#A84358] hover:bg-[#45363B] text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-2xs hover:shadow-sm cursor-pointer"
-        >
-          <Edit className="w-3.5 h-3.5" />
-          <span>Manage</span>
-        </button>
+        <div className="flex items-center justify-end gap-1.5">
+          <Link
+            href={`/admin/orders/${o.id}/packing-slip`}
+            target="_blank"
+            className="p-1.5 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold inline-flex items-center transition-all shadow-2xs"
+            title="Open & Print Packing Slip"
+          >
+            <Printer className="w-3.5 h-3.5" />
+          </Link>
+          <button
+            type="button"
+            onClick={() => openModal(o)}
+            className="px-3 py-1.5 bg-[#A84358] hover:bg-[#45363B] text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-2xs hover:shadow-sm cursor-pointer"
+          >
+            <Edit className="w-3.5 h-3.5" />
+            <span>Manage</span>
+          </button>
+        </div>
       ),
     },
   ];
@@ -1067,879 +1078,871 @@ export default function AdminOrdersPage() {
                   {selectedOrder.orderNumber}
                 </h3>
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedOrder(null)}
-                className={cn(
-                  'p-2 rounded-full transition-colors cursor-pointer',
-                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900' : 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white'
-                )}
-                title="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+                    < div className = "flex items-center gap-2" >
+                    <Link
+                      href={`/admin/orders/${selectedOrder.id}/packing-slip`}
+                      target="_blank"
+                      className={cn(
+                        'px-3 py-1.5 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-2xs',
+                        isLight ? 'border-slate-300 bg-white hover:bg-slate-50 text-slate-700' : 'border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200'
+                      )}
+                      title="Open Printable Warehouse Packing Slip"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Packing Slip</span>
+                    </Link>
+
+                {
+                    selectedOrder.trackingNumber && (
+                      <a
+                        href={`/api/admin/orders/${selectedOrder.id}/delhivery-label`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-2xs"
+                        title="Print Delhivery Thermal Shipping Label"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Delhivery Label</span>
+                      </a>
+                    )
+                  }
+
+            <button
+              type="button"
+              onClick={() => setSelectedOrder(null)}
+              className={cn(
+                'p-2 rounded-full transition-colors cursor-pointer',
+                isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900' : 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white'
+              )}
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
 
             {/* Action Bar: Accept or Reject Order */}
-            {selectedOrder.orderStatus !== 'CANCELLED' && (
-              <div
-                className={cn(
-                  'p-4 sm:p-5 rounded-2xl border transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3.5',
-                  selectedOrder.orderStatus === 'READY_TO_SHIP' || selectedOrder.delhiveryStatus === 'READY_TO_SHIP'
-                    ? isLight ? 'bg-emerald-50/80 border-emerald-300' : 'bg-emerald-950/30 border-emerald-800'
-                    : isLight ? 'bg-indigo-50/70 border-indigo-200' : 'bg-indigo-950/20 border-indigo-900/50'
-                )}
-              >
-                <div className="flex items-start sm:items-center gap-3">
-                  <div
-                    className={cn(
-                      'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs',
-                      selectedOrder.orderStatus === 'READY_TO_SHIP' || selectedOrder.delhiveryStatus === 'READY_TO_SHIP'
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-[#A84358] text-white'
-                    )}
-                  >
-                    <PackageCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className={cn('font-bold text-sm flex items-center gap-2', isLight ? 'text-slate-900' : 'text-white')}>
-                      {selectedOrder.orderStatus === 'READY_TO_SHIP' || selectedOrder.delhiveryStatus === 'READY_TO_SHIP' ? (
-                        <span className="text-emerald-700 dark:text-emerald-300">Ready to Ship Queue</span>
-                      ) : (
-                        <span>Order Verification &amp; Approval</span>
-                      )}
-                    </h4>
-                    <p className={cn('text-xs mt-0.5 leading-relaxed', isLight ? 'text-slate-600' : 'text-slate-300')}>
-                      {selectedOrder.orderStatus === 'READY_TO_SHIP' || selectedOrder.delhiveryStatus === 'READY_TO_SHIP' ? (
-                        'This order has been verified & accepted. It is now staged on the "Ready to Ship" tab.'
-                      ) : (
-                        'Verify customer address below. Click "Accept Order" to approve and move to Ready to Ship.'
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                  {selectedOrder.orderStatus !== 'READY_TO_SHIP' && selectedOrder.delhiveryStatus !== 'READY_TO_SHIP' && (
-                    <button
-                      type="button"
-                      onClick={handleAcceptOrder}
-                      disabled={acceptingOrder}
-                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer disabled:opacity-50"
-                    >
-                      <CheckCircle2 className={cn('w-4 h-4', acceptingOrder && 'animate-spin')} />
-                      <span>{acceptingOrder ? 'Accepting...' : 'Accept Order (Ready to Ship)'}</span>
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => setShowRejectModal(true)}
-                    disabled={rejectingOrder}
-                    className="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    <X className="w-4 h-4" />
-                    <span>Reject Order</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Customer & Address Details Card */}
+      {selectedOrder.orderStatus !== 'CANCELLED' && (
+        <div
+          className={cn(
+            'p-4 sm:p-5 rounded-2xl border transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3.5',
+            selectedOrder.orderStatus === 'READY_TO_SHIP' || selectedOrder.delhiveryStatus === 'READY_TO_SHIP'
+              ? isLight ? 'bg-emerald-50/80 border-emerald-300' : 'bg-emerald-950/30 border-emerald-800'
+              : isLight ? 'bg-indigo-50/70 border-indigo-200' : 'bg-indigo-950/20 border-indigo-900/50'
+          )}
+        >
+          <div className="flex items-start sm:items-center gap-3">
             <div
               className={cn(
-                'p-5 rounded-2xl border transition-colors space-y-4',
-                isLight ? 'bg-slate-50/90 border-slate-200 text-slate-700' : 'bg-slate-800/50 border-slate-700/60 text-slate-300'
+                'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs',
+                selectedOrder.orderStatus === 'READY_TO_SHIP' || selectedOrder.delhiveryStatus === 'READY_TO_SHIP'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-[#A84358] text-white'
               )}
             >
-              <div className="flex items-center justify-between gap-2 border-b pb-3">
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-[#A84358]" />
-                  <span className={cn('font-bold text-xs uppercase tracking-wider', isLight ? 'text-slate-800' : 'text-slate-200')}>
-                    Customer &amp; Shipping Details
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingAddress(!isEditingAddress)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Edit className="w-3.5 h-3.5 text-[#A84358]" />
-                  <span>{isEditingAddress ? 'Cancel Edit' : 'Edit Address & Customer'}</span>
-                </button>
-              </div>
-
-              {!isEditingAddress ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div>
-                    <span className={cn('block font-bold text-[11px] uppercase tracking-wider mb-1', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                      Customer:
-                    </span>
-                    <p className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
-                      {selectedOrder.customerName}
-                    </p>
-                    <p className={cn('mt-0.5', isLight ? 'text-slate-600' : 'text-slate-300')}>
-                      {selectedOrder.customerEmail}
-                    </p>
-                    <p className={cn('font-mono mt-0.5 font-semibold text-rose-700 dark:text-rose-400')}>
-                      {selectedOrder.customerPhone}
-                    </p>
-                  </div>
-
-                  <div>
-                    <span className={cn('block font-bold text-[11px] uppercase tracking-wider mb-1', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                      Delivery Address:
-                    </span>
-                    {parsedAddress && parsedAddress.lines.length > 0 ? (
-                      <div className={cn('space-y-0.5 leading-relaxed text-xs', isLight ? 'text-slate-800' : 'text-slate-200')}>
-                        {parsedAddress.lines.map((line, idx) => (
-                          <p key={idx} className="font-medium">{line}</p>
-                        ))}
-                        {parsedAddress.cityStatePin && (
-                          <p className="font-semibold">{parsedAddress.cityStatePin}</p>
-                        )}
-                        {parsedAddress.phone && parsedAddress.phone !== selectedOrder.customerPhone && (
-                          <p className={cn('text-[11px] font-mono mt-1', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                            Alt Phone: {parsedAddress.phone}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className={cn('whitespace-pre-line leading-relaxed', isLight ? 'text-slate-800' : 'text-slate-200')}>
-                        {selectedOrder.shippingAddress}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                /* Editable Customer & Address Form */
-                <form onSubmit={handleSaveAddress} className="space-y-3.5">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold mb-1">Customer Name</label>
-                      <input
-                        type="text"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        required
-                        className={cn(
-                          'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
-                          isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
-                        )}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold mb-1">Customer Phone (10 digits)</label>
-                      <input
-                        type="tel"
-                        value={editPhone}
-                        onChange={(e) => setEditPhone(e.target.value)}
-                        required
-                        className={cn(
-                          'w-full rounded-xl p-2.5 text-xs font-mono border outline-hidden transition-colors',
-                          isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
-                        )}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold mb-1">Customer Email</label>
-                      <input
-                        type="email"
-                        value={editEmail}
-                        onChange={(e) => setEditEmail(e.target.value)}
-                        required
-                        className={cn(
-                          'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
-                          isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold mb-1">Street Address / House / Flat / Area</label>
-                    <input
-                      type="text"
-                      value={editStreet}
-                      onChange={(e) => setEditStreet(e.target.value)}
-                      required
-                      placeholder="House/Flat No, Apartment, Street, Landmark"
-                      className={cn(
-                        'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
-                        isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold mb-1">City</label>
-                      <input
-                        type="text"
-                        value={editCity}
-                        onChange={(e) => setEditCity(e.target.value)}
-                        required
-                        className={cn(
-                          'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
-                          isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
-                        )}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold mb-1">State</label>
-                      <input
-                        type="text"
-                        value={editState}
-                        onChange={(e) => setEditState(e.target.value)}
-                        required
-                        className={cn(
-                          'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
-                          isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
-                        )}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold mb-1">Pincode (6 digits)</label>
-                      <input
-                        type="text"
-                        value={editPincode}
-                        onChange={(e) => setEditPincode(e.target.value)}
-                        required
-                        maxLength={6}
-                        className={cn(
-                          'w-full rounded-xl p-2.5 text-xs font-mono border outline-hidden transition-colors',
-                          isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  {selectedOrder.paymentMethod === 'COD' ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold mb-1">COD Balance to Collect (₹)</label>
-                        <input
-                          type="number"
-                          value={editCodBalance}
-                          onChange={(e) => setEditCodBalance(e.target.value === '' ? '' : Number(e.target.value))}
-                          placeholder="e.g. 599"
-                          className={cn(
-                            'w-full rounded-xl p-2.5 text-xs font-mono border outline-hidden transition-colors',
-                            isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
-                          )}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold mb-1">Internal / Customer Notes</label>
-                        <input
-                          type="text"
-                          value={editNotes}
-                          onChange={(e) => setEditNotes(e.target.value)}
-                          placeholder="e.g. Verified by phone, deliver after 2 PM"
-                          className={cn(
-                            'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
-                            isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
-                          )}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <label className="block text-[11px] font-bold mb-1">Internal / Customer Notes</label>
-                      <input
-                        type="text"
-                        value={editNotes}
-                        onChange={(e) => setEditNotes(e.target.value)}
-                        placeholder="e.g. Prepaid order verified, dispatch urgently"
-                        className={cn(
-                          'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
-                          isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
-                        )}
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingAddress(false)}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={savingAddress}
-                      className="px-4 py-2 bg-[#A84358] hover:bg-[#8C374A] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md disabled:opacity-50 transition-all cursor-pointer"
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                      <span>{savingAddress ? 'Saving...' : 'Save Address & Details'}</span>
-                    </button>
-                  </div>
-                </form>
-              )}
+              <PackageCheck className="w-5 h-5" />
             </div>
+            <div>
+              <h4 className={cn('font-bold text-sm flex items-center gap-2', isLight ? 'text-slate-900' : 'text-white')}>
+                {selectedOrder.orderStatus === 'READY_TO_SHIP' || selectedOrder.delhiveryStatus === 'READY_TO_SHIP' ? (
+                  <span className="text-emerald-700 dark:text-emerald-300">Ready to Ship Queue</span>
+                ) : (
+                  <span>Order Verification &amp; Approval</span>
+                )}
+              </h4>
+              <p className={cn('text-xs mt-0.5 leading-relaxed', isLight ? 'text-slate-600' : 'text-slate-300')}>
+                {selectedOrder.orderStatus === 'READY_TO_SHIP' || selectedOrder.delhiveryStatus === 'READY_TO_SHIP' ? (
+                  'This order has been verified & accepted. It is now staged on the "Ready to Ship" tab.'
+                ) : (
+                  'Verify customer address below. Click "Accept Order" to approve and move to Ready to Ship.'
+                )}
+              </p>
+            </div>
+          </div>
 
-            {/* Quick Rejection Confirmation Modal */}
-            {showRejectModal && (
-              <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-                <div
-                  className={cn(
-                    'rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border transition-colors',
-                    isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
-                  )}
-                >
-                  <div className="flex items-center justify-between border-b pb-3">
-                    <h4 className="font-bold text-base text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
-                      <AlertTriangle className="w-5 h-5" />
-                      <span>Reject Order #{selectedOrder.orderNumber}</span>
-                    </h4>
-                    <button
-                      type="button"
-                      onClick={() => setShowRejectModal(false)}
-                      className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    Rejecting this order will mark it as <strong>CANCELLED</strong>, void any active carrier shipment/AWB, and restock reserved inventory items back into available stock.
-                  </p>
-                  <div>
-                    <label className="block text-[11px] font-bold mb-1">Rejection Reason</label>
-                    <textarea
-                      value={rejectReason}
-                      onChange={(e) => setRejectReason(e.target.value)}
-                      rows={3}
-                      placeholder="e.g. Unreachable phone number, customer requested cancellation, fake address"
-                      className={cn(
-                        'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
-                        isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
-                      )}
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowRejectModal(false)}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRejectOrder}
-                      disabled={rejectingOrder}
-                      className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md disabled:opacity-50"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                      <span>{rejectingOrder ? 'Rejecting...' : 'Confirm Reject & Cancel'}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {selectedOrder.orderStatus !== 'READY_TO_SHIP' && selectedOrder.delhiveryStatus !== 'READY_TO_SHIP' && (
+              <button
+                type="button"
+                onClick={handleAcceptOrder}
+                disabled={acceptingOrder}
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer disabled:opacity-50"
+              >
+                <CheckCircle2 className={cn('w-4 h-4', acceptingOrder && 'animate-spin')} />
+                <span>{acceptingOrder ? 'Accepting...' : 'Accept Order (Ready to Ship)'}</span>
+              </button>
             )}
 
-            {/* Items Box */}
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className={cn('text-xs font-bold uppercase tracking-wider', isLight ? 'text-slate-600' : 'text-slate-400')}>
-                  Items ({selectedOrder.items.length})
-                </span>
-                <span className={cn('text-xs font-semibold', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                  Unit Price &amp; Quantity
-                </span>
-              </div>
+            <button
+              type="button"
+              onClick={() => setShowRejectModal(true)}
+              disabled={rejectingOrder}
+              className="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <X className="w-4 h-4" />
+              <span>Reject Order</span>
+            </button>
+          </div>
+        </div>
+      )}
 
-              <div
-                className={cn(
-                  'divide-y rounded-2xl overflow-hidden border transition-colors',
-                  isLight ? 'bg-slate-50 border-slate-200 divide-slate-200' : 'bg-slate-950 border-slate-800 divide-slate-800/80'
-                )}
-              >
-                {selectedOrder.items.map((item) => (
-                  <div key={item.id} className="p-3.5 flex items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-3 min-w-0">
-                      {item.productImage && (
-                        <div
-                          className={cn(
-                            'relative w-10 h-10 rounded-lg overflow-hidden shrink-0 border',
-                            isLight ? 'border-slate-200 bg-white' : 'border-slate-800 bg-slate-900'
-                          )}
-                        >
-                          <Image src={item.productImage} alt={item.productName} fill sizes="40px" className="object-cover" />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <h4
-                          className={cn('font-bold text-xs sm:text-[13px] truncate block', isLight ? 'text-slate-900' : 'text-white')}
-                          title={item.productName}
-                        >
-                          {item.productName}
-                        </h4>
-                        <p className={cn('text-[11px] mt-0.5', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                          Qty: {item.quantity} × ₹{item.price.toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="font-extrabold text-rose-600 dark:text-rose-400 text-sm shrink-0 font-mono">
-                      ₹{item.total.toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
+      {/* Customer & Address Details Card */}
+      <div
+        className={cn(
+          'p-5 rounded-2xl border transition-colors space-y-4',
+          isLight ? 'bg-slate-50/90 border-slate-200 text-slate-700' : 'bg-slate-800/50 border-slate-700/60 text-slate-300'
+        )}
+      >
+        <div className="flex items-center justify-between gap-2 border-b pb-3">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-[#A84358]" />
+            <span className={cn('font-bold text-xs uppercase tracking-wider', isLight ? 'text-slate-800' : 'text-slate-200')}>
+              Customer &amp; Shipping Details
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsEditingAddress(!isEditingAddress)}
+            className="px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+          >
+            <Edit className="w-3.5 h-3.5 text-[#A84358]" />
+            <span>{isEditingAddress ? 'Cancel Edit' : 'Edit Address & Customer'}</span>
+          </button>
+        </div>
 
-              <div className={cn('space-y-1.5 pt-2 px-1 border-t text-xs', isLight ? 'border-slate-200 text-slate-900' : 'border-slate-800 text-white')}>
-                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
-                  <span>Subtotal:</span>
-                  <span className="font-mono">₹{selectedOrder.subtotal?.toLocaleString() ?? selectedOrder.total.toLocaleString()}</span>
+        {!isEditingAddress ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div>
+              <span className={cn('block font-bold text-[11px] uppercase tracking-wider mb-1', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                Customer:
+              </span>
+              <p className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
+                {selectedOrder.customerName}
+              </p>
+              <p className={cn('mt-0.5', isLight ? 'text-slate-600' : 'text-slate-300')}>
+                {selectedOrder.customerEmail}
+              </p>
+              <p className={cn('font-mono mt-0.5 font-semibold text-rose-700 dark:text-rose-400')}>
+                {selectedOrder.customerPhone}
+              </p>
+            </div>
+
+            <div>
+              <span className={cn('block font-bold text-[11px] uppercase tracking-wider mb-1', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                Delivery Address:
+              </span>
+              {parsedAddress && parsedAddress.lines.length > 0 ? (
+                <div className={cn('space-y-0.5 leading-relaxed text-xs', isLight ? 'text-slate-800' : 'text-slate-200')}>
+                  {parsedAddress.lines.map((line, idx) => (
+                    <p key={idx} className="font-medium">{line}</p>
+                  ))}
+                  {parsedAddress.cityStatePin && (
+                    <p className="font-semibold">{parsedAddress.cityStatePin}</p>
+                  )}
+                  {parsedAddress.phone && parsedAddress.phone !== selectedOrder.customerPhone && (
+                    <p className={cn('text-[11px] font-mono mt-1', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                      Alt Phone: {parsedAddress.phone}
+                    </p>
+                  )}
                 </div>
-                {selectedOrder.discount && selectedOrder.discount > 0 ? (
-                  <div className="flex justify-between items-center text-rose-600 dark:text-rose-400 font-semibold">
-                    <span>Discount:</span>
-                    <span className="font-mono">-₹{selectedOrder.discount.toLocaleString()}</span>
-                  </div>
-                ) : null}
-                <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
-                  <span>Delivery Charges:</span>
-                  <span className="font-mono">
-                    {selectedOrder.shippingFee === 0 || !selectedOrder.shippingFee ? (
-                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">FREE</span>
-                    ) : (
-                      `₹${selectedOrder.shippingFee.toLocaleString()}`
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center font-bold text-sm pt-1 border-t border-dashed border-slate-200 dark:border-slate-800">
-                  <span>Total Amount:</span>
-                  <span className="text-rose-600 dark:text-rose-400 text-base font-extrabold font-mono">
-                    ₹{selectedOrder.total.toLocaleString()}
-                  </span>
-                </div>
-                {selectedOrder.advanceAmount && selectedOrder.advanceAmount > 0 ? (
-                  <div className="pt-2 border-t border-dashed border-slate-200 dark:border-slate-800 space-y-1 text-xs">
-                    <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
-                      <span>COD Advance Paid Online:</span>
-                      <span className="font-mono">₹{selectedOrder.advanceAmount.toLocaleString()}</span>
-                    </div>
-                    {selectedOrder.advancePaymentId && (
-                      <div className="flex justify-between text-[11px] text-slate-500">
-                        <span>Gateway Payment ID:</span>
-                        <span className="font-mono">{selectedOrder.advancePaymentId}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-amber-700 dark:text-amber-400 font-bold">
-                      <span>COD Balance to Collect:</span>
-                      <span className="font-mono">
-                        ₹{(selectedOrder.codBalanceAmount ?? (selectedOrder.total - selectedOrder.advanceAmount)).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                ) : null}
+              ) : (
+                <p className={cn('whitespace-pre-line leading-relaxed', isLight ? 'text-slate-800' : 'text-slate-200')}>
+                  {selectedOrder.shippingAddress}
+                </p>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Editable Customer & Address Form */
+          <form onSubmit={handleSaveAddress} className="space-y-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold mb-1">Customer Name</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  required
+                  className={cn(
+                    'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                    isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                  )}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold mb-1">Customer Phone (10 digits)</label>
+                <input
+                  type="tel"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  required
+                  className={cn(
+                    'w-full rounded-xl p-2.5 text-xs font-mono border outline-hidden transition-colors',
+                    isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                  )}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold mb-1">Customer Email</label>
+                <input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  required
+                  className={cn(
+                    'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                    isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                  )}
+                />
               </div>
             </div>
 
-            {/* Delhivery Order Verification & Logistics Queue */}
-            {!selectedOrder.trackingNumber && selectedOrder.orderStatus !== 'CANCELLED' ? (
-              <div
+            <div>
+              <label className="block text-[11px] font-bold mb-1">Street Address / House / Flat / Area</label>
+              <input
+                type="text"
+                value={editStreet}
+                onChange={(e) => setEditStreet(e.target.value)}
+                required
+                placeholder="House/Flat No, Apartment, Street, Landmark"
                 className={cn(
-                  'p-5 rounded-2xl border space-y-4 text-xs transition-colors',
-                  isLight ? 'bg-amber-50/70 border-amber-200' : 'bg-amber-950/20 border-amber-900/50'
+                  'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                  isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
                 )}
-              >
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                    <div>
-                      <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
-                        {(selectedOrder.shippingMode || storeShippingMode) === 'auto_manifest'
-                          ? 'Order Verification (Direct Manifestation Mode)'
-                          : 'Awaiting verification in Delhivery'}
-                      </h4>
-                      <p className={cn('text-[11px]', isLight ? 'text-slate-500' : 'text-slate-400')}>
-                        Delhivery Status: <strong className="font-semibold text-amber-700 dark:text-amber-400">{selectedOrder.delhiveryStatus || 'PENDING'}</strong> • Charges: <strong className="text-emerald-600 dark:text-emerald-400">₹0 Deducted</strong> (unmanifested)
-                      </p>
-                      {selectedOrder.lastDelhiverySyncAt && (
-                        <p className={cn('text-[10px] text-slate-500 font-mono mt-0.5')}>
-                          Last Synced with Delhivery: {new Date(selectedOrder.lastDelhiverySyncAt).toLocaleString('en-IN')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <span
-                    className={cn(
-                      'px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider',
-                      selectedOrder.delhiverySyncStatus === 'FAILED'
-                        ? isLight ? 'bg-rose-100 text-rose-900 border-rose-300' : 'bg-rose-950 text-rose-300 border-rose-800'
-                        : isLight ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-950 text-amber-300 border-amber-800'
-                    )}
-                  >
-                    {selectedOrder.delhiverySyncStatus === 'FAILED' ? 'Shipping Sync Failed' : 'Awaiting verification in Delhivery'}
-                  </span>
-                </div>
+              />
+            </div>
 
-                {/* Staging Failure Alert Box */}
-                {selectedOrder.delhiverySyncStatus === 'FAILED' && (
-                  <div
-                    className={cn(
-                      'p-3.5 rounded-xl border text-xs flex items-start justify-between gap-3',
-                      isLight ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-rose-950/40 border-rose-800 text-rose-200'
-                    )}
-                  >
-                    <div className="space-y-0.5">
-                      <p className="font-bold flex items-center gap-1.5">
-                        <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                        <span>Shipping Sync Failed</span>
-                      </p>
-                      <p className="text-[11px] opacity-90 leading-relaxed font-mono">
-                        {selectedOrder.delhiverySyncError || 'Network or authorization error communicating with Delhivery API.'}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={syncingDelhivery}
-                      onClick={handleSyncDelhivery}
-                      className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs inline-flex items-center gap-1 shrink-0 transition-colors shadow-2xs cursor-pointer"
-                    >
-                      <RefreshCw className={cn('w-3 h-3', syncingDelhivery && 'animate-spin')} />
-                      <span>{syncingDelhivery ? 'Retrying...' : 'Retry Push'}</span>
-                    </button>
-                  </div>
-                )}
-
-                <div className={cn('p-3 rounded-xl border text-[11px] leading-relaxed', isLight ? 'bg-white border-amber-200/80 text-slate-700' : 'bg-slate-900/80 border-amber-900/40 text-slate-300')}>
-                  {(selectedOrder.shippingMode || storeShippingMode) === 'auto_manifest' ? (
-                    <span>Verify customer phone and delivery address before accepting. Delhivery wallet balance will <strong>ONLY</strong> be deducted after you click <strong>&quot;Accept &amp; Generate AWB&quot;</strong>. If this is a fake order, reject it with zero charges.</span>
-                  ) : (
-                    <span>
-                      Our admin panel is in <strong>read-only tracking mode</strong>. This order is staged in your <strong>Delhivery One</strong> dashboard under <strong>Main Menu &gt; Orders &gt; Forward Orders &gt; Pending</strong>.
-                      Warehouse staff should verify the customer phone and address, and click <strong>&quot;Get AWB number&quot;</strong> directly in Delhivery One. Once manifested, the AWB and tracking details sync back automatically.
-                    </span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold mb-1">City</label>
+                <input
+                  type="text"
+                  value={editCity}
+                  onChange={(e) => setEditCity(e.target.value)}
+                  required
+                  className={cn(
+                    'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                    isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
                   )}
-                </div>
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold mb-1">State</label>
+                <input
+                  type="text"
+                  value={editState}
+                  onChange={(e) => setEditState(e.target.value)}
+                  required
+                  className={cn(
+                    'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                    isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                  )}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold mb-1">Pincode (6 digits)</label>
+                <input
+                  type="text"
+                  value={editPincode}
+                  onChange={(e) => setEditPincode(e.target.value)}
+                  required
+                  maxLength={6}
+                  className={cn(
+                    'w-full rounded-xl p-2.5 text-xs font-mono border outline-hidden transition-colors',
+                    isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                  )}
+                />
+              </div>
+            </div>
 
-                {/* Direct Customer Contact Buttons */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <a
-                    href={`tel:${selectedOrder.customerPhone}`}
-                    className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-xs inline-flex items-center gap-1.5 transition-colors text-slate-800 dark:text-slate-200 shadow-2xs"
-                  >
-                    <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Call Customer ({selectedOrder.customerPhone})</span>
-                  </a>
-                  <a
-                    href={`https://wa.me/91${selectedOrder.customerPhone.replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(
-                      `Hello ${selectedOrder.customerName}, this is Herbic Cure confirming your order #${selectedOrder.orderNumber} for ₹${selectedOrder.total}. Is your address confirmed for delivery?`
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-300 dark:border-emerald-700 font-bold text-xs inline-flex items-center gap-1.5 transition-colors text-emerald-800 dark:text-emerald-300 shadow-2xs"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>WhatsApp Verification</span>
-                  </a>
-                </div>
-
-                {/* Action Controls */}
-                <div className="flex items-center justify-between gap-3 pt-2 border-t border-amber-200/80 dark:border-amber-800/40 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNewStatus('CANCELLED');
-                      setEventDesc('Order rejected during verification (fake / unverified order)');
-                      toast.info('Status set to CANCELLED. Click "Save Changes" below to finalize rejection with zero Delhivery charges.');
-                    }}
-                    className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    <span>Mark as Fake / Reject (₹0 Charged)</span>
-                  </button>
-
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <a
-                      href="https://one.delhivery.com/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs"
-                    >
-                      <span>Open Delhivery One (Pending Queue)</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-
-                    <button
-                      type="button"
-                      disabled={syncingDelhivery}
-                      onClick={handleSyncDelhivery}
-                      className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
-                      title="Poll Delhivery One to check if warehouse staff manifested this order"
-                    >
-                      <RefreshCw className={cn('w-4 h-4', syncingDelhivery && 'animate-spin')} />
-                      <span>{syncingDelhivery ? 'Checking...' : 'Check Delhivery Status / Discover AWB'}</span>
-                    </button>
-
-                    {(selectedOrder.shippingMode || storeShippingMode) === 'auto_manifest' && (
-                      <button
-                        type="button"
-                        disabled={manifestingDelhivery}
-                        onClick={() => handleManifestDelhivery(false)}
-                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
-                        title="Verify order and generate single Delhivery AWB"
-                      >
-                        <CheckCircle2 className={cn('w-4 h-4', manifestingDelhivery && 'animate-spin')} />
-                        <span>
-                          {manifestingDelhivery
-                            ? 'Manifesting with Delhivery...'
-                            : 'Accept Order & Generate Delhivery AWB'}
-                        </span>
-                      </button>
+            {selectedOrder.paymentMethod === 'COD' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold mb-1">COD Balance to Collect (₹)</label>
+                  <input
+                    type="number"
+                    value={editCodBalance}
+                    onChange={(e) => setEditCodBalance(e.target.value === '' ? '' : Number(e.target.value))}
+                    placeholder="e.g. 599"
+                    className={cn(
+                      'w-full rounded-xl p-2.5 text-xs font-mono border outline-hidden transition-colors',
+                      isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
                     )}
-                  </div>
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold mb-1">Internal / Customer Notes</label>
+                  <input
+                    type="text"
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                    placeholder="e.g. Verified by phone, deliver after 2 PM"
+                    className={cn(
+                      'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                      isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                    )}
+                  />
                 </div>
               </div>
             ) : (
-              /* Delhivery Manifested & Logistics Card */
-              <div
-                className={cn(
-                  'p-5 rounded-2xl border space-y-3.5 text-xs transition-colors',
-                  isLight ? 'bg-indigo-50/60 border-indigo-200' : 'bg-indigo-950/20 border-indigo-900/50'
-                )}
-              >
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-indigo-600/10 dark:bg-indigo-400/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                      <Truck className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
-                        Delhivery Express Shipment
-                      </h4>
-                      {selectedOrder.trackingNumber && (
-                        <p className={cn('text-[11px] font-mono mt-0.5', isLight ? 'text-slate-600' : 'text-slate-300')}>
-                          AWB: <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{selectedOrder.trackingNumber}</strong>
-                        </p>
-                      )}
-                      {selectedOrder.lastDelhiverySyncAt && (
-                        <p className={cn('text-[10px] text-slate-500 font-mono mt-0.5')}>
-                          Last Synced: {new Date(selectedOrder.lastDelhiverySyncAt).toLocaleString('en-IN')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        'px-2.5 py-1 rounded-full text-[11px] font-bold border',
-                        selectedOrder.orderStatus === 'DELIVERED'
-                          ? isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                          : selectedOrder.orderStatus === 'SHIPPED' || selectedOrder.orderStatus === 'OUT_FOR_DELIVERY'
-                          ? isLight ? 'bg-blue-100 text-blue-800 border-blue-300' : 'bg-blue-950 text-blue-300 border-blue-800'
-                          : selectedOrder.pickupStatus === 'SCHEDULED'
-                          ? isLight ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-amber-950 text-amber-300 border-amber-800'
-                          : isLight ? 'bg-indigo-100 text-indigo-800 border-indigo-300' : 'bg-indigo-950 text-indigo-300 border-indigo-800'
-                      )}
-                    >
-                      Status: {selectedOrder.orderStatus} {selectedOrder.pickupStatus === 'SCHEDULED' ? '• Pickup Scheduled' : ''}
-                    </span>
-                  </div>
-                </div>
-
-                <div
+              <div>
+                <label className="block text-[11px] font-bold mb-1">Internal / Customer Notes</label>
+                <input
+                  type="text"
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="e.g. Prepaid order verified, dispatch urgently"
                   className={cn(
-                    'p-3.5 rounded-xl border text-xs space-y-1.5',
-                    isLight ? 'bg-white/80 border-indigo-100 text-slate-700' : 'bg-slate-900/80 border-slate-800 text-slate-300'
+                    'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                    isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
                   )}
-                >
-                  <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                    <span>Courier operations handled in Delhivery One</span>
-                  </p>
-                  <p className="text-[11px] leading-relaxed opacity-90">
-                    Label printing, parcel packaging, and rider pickups (&quot;Add to Pickup&quot;) are managed directly in your <strong>Delhivery One</strong> portal. Real-time carrier scans (Pickup, In Transit, Out for Delivery, Delivered) automatically sync here and update customer tracking.
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    {selectedOrder.trackingUrl && (
-                      <a
-                        href={selectedOrder.trackingUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs"
-                      >
-                        <span>Public Tracking Link</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    )}
-                    <a
-                      href="https://one.delhivery.com/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs"
-                    >
-                      <span>Open Delhivery One Portal</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {selectedOrder.trackingNumber && selectedOrder.orderStatus !== 'DELIVERED' && selectedOrder.orderStatus !== 'CANCELLED' && (
-                      <button
-                        type="button"
-                        onClick={handleCancelDelhiveryShipment}
-                        disabled={cancellingShipment}
-                        className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-bold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                        title="Cancel the Delhivery shipment, void the AWB, and refund freight charges back to wallet"
-                      >
-                        <X className={cn('w-3.5 h-3.5', cancellingShipment && 'animate-spin')} />
-                        <span>{cancellingShipment ? 'Cancelling...' : 'Cancel Delhivery Shipment (Void AWB & Refund)'}</span>
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={handleSyncDelhivery}
-                      disabled={syncingDelhivery}
-                      className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
-                      title="Pull live status from Delhivery network and synchronize order state"
-                    >
-                      <RefreshCw className={cn('w-3.5 h-3.5', syncingDelhivery && 'animate-spin')} />
-                      <span>{syncingDelhivery ? 'Syncing...' : 'Sync Live Status'}</span>
-                    </button>
-                  </div>
-                </div>
+                />
               </div>
             )}
 
-            {/* Manual Order Override Form */}
-            <form
-              onSubmit={handleUpdateOrder}
-              className={cn(
-                'p-5 rounded-2xl border space-y-4 text-xs transition-colors',
-                isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-800/80 border-slate-700'
-              )}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Edit className="w-4 h-4 text-slate-500" />
-                  <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
-                    Internal Notes &amp; Status Override
-                  </h4>
-                </div>
-              </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsEditingAddress(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={savingAddress}
+                className="px-4 py-2 bg-[#A84358] hover:bg-[#8C374A] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md disabled:opacity-50 transition-all cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{savingAddress ? 'Saving...' : 'Save Address & Details'}</span>
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
 
-              {(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' && (
-                <div
-                  className={cn(
-                    'p-3 rounded-xl border text-xs flex items-center gap-2',
-                    isLight ? 'bg-amber-50/80 border-amber-200 text-amber-900' : 'bg-amber-950/40 border-amber-800 text-amber-200'
-                  )}
-                >
-                  <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span className="text-[11px] leading-relaxed">
-                    Logistics mode is <strong>Delhivery Pending</strong>. AWBs, manifests, and package details are generated in Delhivery One and sync automatically. Our admin panel operates in read-only logistics mode.
-                  </span>
-                </div>
-              )}
+      {/* Quick Rejection Confirmation Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div
+            className={cn(
+              'rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border transition-colors',
+              isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+            )}
+          >
+            <div className="flex items-center justify-between border-b pb-3">
+              <h4 className="font-bold text-base text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
+                <AlertTriangle className="w-5 h-5" />
+                <span>Reject Order #{selectedOrder.orderNumber}</span>
+              </h4>
+              <button
+                type="button"
+                onClick={() => setShowRejectModal(false)}
+                className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Rejecting this order will mark it as <strong>CANCELLED</strong>, void any active carrier shipment/AWB, and restock reserved inventory items back into available stock.
+            </p>
+            <div>
+              <label className="block text-[11px] font-bold mb-1">Rejection Reason</label>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={3}
+                placeholder="e.g. Unreachable phone number, customer requested cancellation, fake address"
+                className={cn(
+                  'w-full rounded-xl p-2.5 text-xs border outline-hidden transition-colors',
+                  isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600' : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                )}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowRejectModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRejectOrder}
+                disabled={rejectingOrder}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md disabled:opacity-50"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>{rejectingOrder ? 'Rejecting...' : 'Confirm Reject & Cancel'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className={cn('block font-semibold mb-1 text-[11px]', isLight ? 'text-slate-700' : 'text-slate-300')}>
-                    Order Status
-                  </label>
-                  <select
-                    value={newStatus}
-                    onChange={(e) => setNewStatus(e.target.value)}
+      {/* Items Box */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between">
+          <span className={cn('text-xs font-bold uppercase tracking-wider', isLight ? 'text-slate-600' : 'text-slate-400')}>
+            Items ({selectedOrder.items.length})
+          </span>
+          <span className={cn('text-xs font-semibold', isLight ? 'text-slate-500' : 'text-slate-400')}>
+            Unit Price &amp; Quantity
+          </span>
+        </div>
+
+        <div
+          className={cn(
+            'divide-y rounded-2xl overflow-hidden border transition-colors',
+            isLight ? 'bg-slate-50 border-slate-200 divide-slate-200' : 'bg-slate-950 border-slate-800 divide-slate-800/80'
+          )}
+        >
+          {selectedOrder.items.map((item) => (
+            <div key={item.id} className="p-3.5 flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-3 min-w-0">
+                {item.productImage && (
+                  <div
                     className={cn(
-                      'w-full rounded-xl p-2.5 text-xs font-semibold border transition-colors outline-hidden',
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600 focus:ring-1 focus:ring-rose-600'
-                        : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                      'relative w-10 h-10 rounded-lg overflow-hidden shrink-0 border',
+                      isLight ? 'border-slate-200 bg-white' : 'border-slate-800 bg-slate-900'
                     )}
                   >
-                    <option value="CONFIRMED">CONFIRMED</option>
-                    <option value="PROCESSING">PROCESSING</option>
-                    <option value="READY_TO_SHIP">READY TO SHIP</option>
-                    <option value="PACKED">PACKED</option>
-                    <option value="SHIPPED">SHIPPED</option>
-                    <option value="OUT_FOR_DELIVERY">OUT FOR DELIVERY</option>
-                    <option value="DELIVERED">DELIVERED</option>
-                    <option value="CANCELLED">CANCELLED</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className={cn('block font-semibold mb-1 text-[11px]', isLight ? 'text-slate-700' : 'text-slate-300')}>
-                    Carrier Name {(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' ? '(Managed in Delhivery)' : ''}
-                  </label>
-                  <input
-                    type="text"
-                    value={newCarrier}
-                    onChange={(e) => setNewCarrier(e.target.value)}
-                    disabled={(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending'}
-                    placeholder="e.g. Shiprocket Express"
-                    className={cn(
-                      'w-full rounded-xl p-2.5 text-xs border transition-colors outline-hidden',
-                      (selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' && 'opacity-60 cursor-not-allowed',
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-rose-600'
-                        : 'bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-rose-500'
-                    )}
-                  />
-                </div>
-
-                <div>
-                  <label className={cn('block font-semibold mb-1 text-[11px]', isLight ? 'text-slate-700' : 'text-slate-300')}>
-                    AWB Tracking Number {(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' ? '(Managed in Delhivery)' : ''}
-                  </label>
-                  <input
-                    type="text"
-                    value={newTracking}
-                    onChange={(e) => setNewTracking(e.target.value)}
-                    disabled={(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending'}
-                    placeholder="e.g. SR-HYD-998241"
-                    className={cn(
-                      'w-full rounded-xl p-2.5 text-xs font-mono border transition-colors outline-hidden',
-                      (selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' && 'opacity-60 cursor-not-allowed',
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-rose-600'
-                        : 'bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-rose-500'
-                    )}
-                  />
+                    <Image src={item.productImage} alt={item.productName} fill sizes="40px" className="object-cover" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <h4
+                    className={cn('font-bold text-xs sm:text-[13px] truncate block', isLight ? 'text-slate-900' : 'text-white')}
+                    title={item.productName}
+                  >
+                    {item.productName}
+                  </h4>
+                  <p className={cn('text-[11px] mt-0.5', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                    Qty: {item.quantity} × ₹{item.price.toLocaleString()}
+                  </p>
                 </div>
               </div>
+              <span className="font-extrabold text-rose-600 dark:text-rose-400 text-sm shrink-0 font-mono">
+                ₹{item.total.toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
 
-              {newStatus === 'CANCELLED' && (
-                <div
-                  className={cn(
-                    'p-3.5 rounded-2xl border text-xs flex items-start gap-2.5 animate-fadeIn',
-                    isLight
-                      ? 'bg-rose-50 border-rose-200 text-rose-900'
-                      : 'bg-rose-950/40 border-rose-800 text-rose-200'
-                  )}
-                >
-                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                  <div className="space-y-0.5">
-                    <p className="font-bold">Delhivery Express Cancellation Trigger</p>
-                    <p className="text-[11px] opacity-90 leading-relaxed">
-                      Updating to CANCELLED will automatically call the Delhivery API (/api/p/edit) to stop shipment dispatch
-                      {selectedOrder?.trackingNumber ? ` for AWB #${selectedOrder.trackingNumber}` : ''} and restore item quantities back into active inventory.
-                    </p>
-                  </div>
+        <div className={cn('space-y-1.5 pt-2 px-1 border-t text-xs', isLight ? 'border-slate-200 text-slate-900' : 'border-slate-800 text-white')}>
+          <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+            <span>Subtotal:</span>
+            <span className="font-mono">₹{selectedOrder.subtotal?.toLocaleString() ?? selectedOrder.total.toLocaleString()}</span>
+          </div>
+          {selectedOrder.discount && selectedOrder.discount > 0 ? (
+            <div className="flex justify-between items-center text-rose-600 dark:text-rose-400 font-semibold">
+              <span>Discount:</span>
+              <span className="font-mono">-₹{selectedOrder.discount.toLocaleString()}</span>
+            </div>
+          ) : null}
+          <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+            <span>Delivery Charges:</span>
+            <span className="font-mono">
+              {selectedOrder.shippingFee === 0 || !selectedOrder.shippingFee ? (
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">FREE</span>
+              ) : (
+                `₹${selectedOrder.shippingFee.toLocaleString()}`
+              )}
+            </span>
+          </div>
+          <div className="flex justify-between items-center font-bold text-sm pt-1 border-t border-dashed border-slate-200 dark:border-slate-800">
+            <span>Total Amount:</span>
+            <span className="text-rose-600 dark:text-rose-400 text-base font-extrabold font-mono">
+              ₹{selectedOrder.total.toLocaleString()}
+            </span>
+          </div>
+          {selectedOrder.advanceAmount && selectedOrder.advanceAmount > 0 ? (
+            <div className="pt-2 border-t border-dashed border-slate-200 dark:border-slate-800 space-y-1 text-xs">
+              <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
+                <span>COD Advance Paid Online:</span>
+                <span className="font-mono">₹{selectedOrder.advanceAmount.toLocaleString()}</span>
+              </div>
+              {selectedOrder.advancePaymentId && (
+                <div className="flex justify-between text-[11px] text-slate-500">
+                  <span>Gateway Payment ID:</span>
+                  <span className="font-mono">{selectedOrder.advancePaymentId}</span>
                 </div>
               )}
+              <div className="flex justify-between text-amber-700 dark:text-amber-400 font-bold">
+                <span>COD Balance to Collect:</span>
+                <span className="font-mono">
+                  ₹{(selectedOrder.codBalanceAmount ?? (selectedOrder.total - selectedOrder.advanceAmount)).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Delhivery Order Verification & Logistics Queue */}
+      {!selectedOrder.trackingNumber && selectedOrder.orderStatus !== 'CANCELLED' ? (
+        <div
+          className={cn(
+            'p-5 rounded-2xl border space-y-4 text-xs transition-colors',
+            isLight ? 'bg-amber-50/70 border-amber-200' : 'bg-amber-950/20 border-amber-900/50'
+          )}
+        >
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <div>
+                <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
+                  {(selectedOrder.shippingMode || storeShippingMode) === 'auto_manifest'
+                    ? 'Order Verification (Direct Manifestation Mode)'
+                    : 'Awaiting verification in Delhivery'}
+                </h4>
+                <p className={cn('text-[11px]', isLight ? 'text-slate-500' : 'text-slate-400')}>
+                  Delhivery Status: <strong className="font-semibold text-amber-700 dark:text-amber-400">{selectedOrder.delhiveryStatus || 'PENDING'}</strong> • Charges: <strong className="text-emerald-600 dark:text-emerald-400">₹0 Deducted</strong> (unmanifested)
+                </p>
+                {selectedOrder.lastDelhiverySyncAt && (
+                  <p className={cn('text-[10px] text-slate-500 font-mono mt-0.5')}>
+                    Last Synced with Delhivery: {new Date(selectedOrder.lastDelhiverySyncAt).toLocaleString('en-IN')}
+                  </p>
+                )}
+              </div>
+            </div>
+            <span
+              className={cn(
+                'px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider',
+                selectedOrder.delhiverySyncStatus === 'FAILED'
+                  ? isLight ? 'bg-rose-100 text-rose-900 border-rose-300' : 'bg-rose-950 text-rose-300 border-rose-800'
+                  : isLight ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-950 text-amber-300 border-amber-800'
+              )}
+            >
+              {selectedOrder.delhiverySyncStatus === 'FAILED' ? 'Shipping Sync Failed' : 'Awaiting verification in Delhivery'}
+            </span>
+          </div>
+
+          {/* Staging Failure Alert Box */}
+          {selectedOrder.delhiverySyncStatus === 'FAILED' && (
+            <div
+              className={cn(
+                'p-3.5 rounded-xl border text-xs flex items-start justify-between gap-3',
+                isLight ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-rose-950/40 border-rose-800 text-rose-200'
+              )}
+            >
+              <div className="space-y-0.5">
+                <p className="font-bold flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                  <span>Shipping Sync Failed</span>
+                </p>
+                <p className="text-[11px] opacity-90 leading-relaxed font-mono">
+                  {selectedOrder.delhiverySyncError || 'Network or authorization error communicating with Delhivery API.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={syncingDelhivery}
+                onClick={handleSyncDelhivery}
+                className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs inline-flex items-center gap-1 shrink-0 transition-colors shadow-2xs cursor-pointer"
+              >
+                <RefreshCw className={cn('w-3 h-3', syncingDelhivery && 'animate-spin')} />
+                <span>{syncingDelhivery ? 'Retrying...' : 'Retry Push'}</span>
+              </button>
+            </div>
+          )}
+
+          <div className={cn('p-3 rounded-xl border text-[11px] leading-relaxed', isLight ? 'bg-white border-amber-200/80 text-slate-700' : 'bg-slate-900/80 border-amber-900/40 text-slate-300')}>
+            {(selectedOrder.shippingMode || storeShippingMode) === 'auto_manifest' ? (
+              <span>Verify customer phone and delivery address before accepting. Delhivery wallet balance will <strong>ONLY</strong> be deducted after you click <strong>&quot;Accept &amp; Generate AWB&quot;</strong>. If this is a fake order, reject it with zero charges.</span>
+            ) : (
+              <span>
+                Our admin panel is in <strong>read-only tracking mode</strong>. This order is staged in your <strong>Delhivery One</strong> dashboard under <strong>Main Menu &gt; Orders &gt; Forward Orders &gt; Pending</strong>.
+                Warehouse staff should verify the customer phone and address, and click <strong>&quot;Get AWB number&quot;</strong> directly in Delhivery One. Once manifested, the AWB and tracking details sync back automatically.
+              </span>
+            )}
+          </div>
+
+          {/* Direct Customer Contact Buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <a
+              href={`tel:${selectedOrder.customerPhone}`}
+              className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-xs inline-flex items-center gap-1.5 transition-colors text-slate-800 dark:text-slate-200 shadow-2xs"
+            >
+              <Phone className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Call Customer ({selectedOrder.customerPhone})</span>
+            </a>
+            <a
+              href={`https://wa.me/91${selectedOrder.customerPhone.replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(
+                `Hello ${selectedOrder.customerName}, this is Herbic Cure confirming your order #${selectedOrder.orderNumber} for ₹${selectedOrder.total}. Is your address confirmed for delivery?`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-300 dark:border-emerald-700 font-bold text-xs inline-flex items-center gap-1.5 transition-colors text-emerald-800 dark:text-emerald-300 shadow-2xs"
+            >
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+              <span>WhatsApp Verification</span>
+            </a>
+          </div>
+
+          {/* Action Controls */}
+          <div className="flex items-center justify-between gap-3 pt-2 border-t border-amber-200/80 dark:border-amber-800/40 flex-wrap">
+            <button
+              type="button"
+              onClick={() => {
+                setNewStatus('CANCELLED');
+                setEventDesc('Order rejected during verification (fake / unverified order)');
+                toast.info('Status set to CANCELLED. Click "Save Changes" below to finalize rejection with zero Delhivery charges.');
+              }}
+              className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Mark as Fake / Reject (₹0 Charged)</span>
+            </button>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <a
+                href="https://one.delhivery.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs"
+              >
+                <span>Open Delhivery One (Pending Queue)</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+
+              <button
+                type="button"
+                disabled={syncingDelhivery}
+                onClick={handleSyncDelhivery}
+                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                title="Poll Delhivery One to check if warehouse staff manifested this order"
+              >
+                <RefreshCw className={cn('w-4 h-4', syncingDelhivery && 'animate-spin')} />
+                <span>{syncingDelhivery ? 'Checking...' : 'Check Delhivery Status / Discover AWB'}</span>
+              </button>
+
+              {(selectedOrder.shippingMode || storeShippingMode) === 'auto_manifest' && (
+                <button
+                  type="button"
+                  disabled={manifestingDelhivery}
+                  onClick={() => handleManifestDelhivery(false)}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                  title="Verify order and generate single Delhivery AWB"
+                >
+                  <CheckCircle2 className={cn('w-4 h-4', manifestingDelhivery && 'animate-spin')} />
+                  <span>
+                    {manifestingDelhivery
+                      ? 'Manifesting with Delhivery...'
+                      : 'Accept Order & Generate Delhivery AWB'}
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Delhivery Manifested & Logistics Card */
+        <div
+          className={cn(
+            'p-5 rounded-2xl border space-y-3.5 text-xs transition-colors',
+            isLight ? 'bg-indigo-50/60 border-indigo-200' : 'bg-indigo-950/20 border-indigo-900/50'
+          )}
+        >
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-indigo-600/10 dark:bg-indigo-400/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <Truck className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
+                  Delhivery Express Shipment
+                </h4>
+                {selectedOrder.trackingNumber && (
+                  <p className={cn('text-[11px] font-mono mt-0.5', isLight ? 'text-slate-600' : 'text-slate-300')}>
+                    AWB: <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{selectedOrder.trackingNumber}</strong>
+                  </p>
+                )}
+                {selectedOrder.lastDelhiverySyncAt && (
+                  <p className={cn('text-[10px] text-slate-500 font-mono mt-0.5')}>
+                    Last Synced: {new Date(selectedOrder.lastDelhiverySyncAt).toLocaleString('en-IN')}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  'px-2.5 py-1 rounded-full text-[11px] font-bold border',
+                  selectedOrder.orderStatus === 'DELIVERED'
+                    ? isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                    : selectedOrder.orderStatus === 'SHIPPED' || selectedOrder.orderStatus === 'OUT_FOR_DELIVERY'
+                      ? isLight ? 'bg-blue-100 text-blue-800 border-blue-300' : 'bg-blue-950 text-blue-300 border-blue-800'
+                      : selectedOrder.pickupStatus === 'SCHEDULED'
+                        ? isLight ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-amber-950 text-amber-300 border-amber-800'
+                        : isLight ? 'bg-indigo-100 text-indigo-800 border-indigo-300' : 'bg-indigo-950 text-indigo-300 border-indigo-800'
+                )}
+              >
+                Status: {selectedOrder.orderStatus} {selectedOrder.pickupStatus === 'SCHEDULED' ? '• Pickup Scheduled' : ''}
+              </span>
+            </div>
+          </div>
+
+          <div
+            className={cn(
+              'p-3.5 rounded-xl border text-xs space-y-1.5',
+              isLight ? 'bg-white/80 border-indigo-100 text-slate-700' : 'bg-slate-900/80 border-slate-800 text-slate-300'
+            )}
+          >
+            <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <span>Courier operations handled in Delhivery One</span>
+            </p>
+            <p className="text-[11px] leading-relaxed opacity-90">
+              Label printing, parcel packaging, and rider pickups (&quot;Add to Pickup&quot;) are managed directly in your <strong>Delhivery One</strong> portal. Real-time carrier scans (Pickup, In Transit, Out for Delivery, Delivered) automatically sync here and update customer tracking.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Link
+                  href={`/admin/orders/${selectedOrder.id}/packing-slip`}
+                  target="_blank"
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print Packing Slip</span>
+                </Link>
+
+                {selectedOrder.trackingNumber && (
+                  <a
+                    href={`/api/admin/orders/${selectedOrder.id}/delhivery-label`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Print Delhivery Label</span>
+                  </a>
+                )}
+
+                {selectedOrder.trackingUrl && (
+                  <a
+                    href={selectedOrder.trackingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs"
+                  >
+                    <span>Public Tracking Link</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                <a
+                  href="https://one.delhivery.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs"
+                >
+                  <span>Open Delhivery One Portal</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {selectedOrder.trackingNumber && selectedOrder.orderStatus !== 'DELIVERED' && selectedOrder.orderStatus !== 'CANCELLED' && (
+                  <button
+                    type="button"
+                    onClick={handleCancelDelhiveryShipment}
+                    disabled={cancellingShipment}
+                    className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-bold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    title="Cancel the Delhivery shipment, void the AWB, and refund freight charges back to wallet"
+                  >
+                    <X className={cn('w-3.5 h-3.5', cancellingShipment && 'animate-spin')} />
+                    <span>{cancellingShipment ? 'Cancelling...' : 'Cancel Delhivery Shipment (Void AWB & Refund)'}</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleSyncDelhivery}
+                  disabled={syncingDelhivery}
+                  className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                  title="Pull live status from Delhivery network and synchronize order state"
+                >
+                  <RefreshCw className={cn('w-3.5 h-3.5', syncingDelhivery && 'animate-spin')} />
+                  <span>{syncingDelhivery ? 'Syncing...' : 'Sync Live Status'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+            )}
+
+          {/* Manual Order Override Form */}
+          <form
+            onSubmit={handleUpdateOrder}
+            className={cn(
+              'p-5 rounded-2xl border space-y-4 text-xs transition-colors',
+              isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-800/80 border-slate-700'
+            )}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Edit className="w-4 h-4 text-slate-500" />
+                <h4 className={cn('font-bold text-sm', isLight ? 'text-slate-900' : 'text-white')}>
+                  Internal Notes &amp; Status Override
+                </h4>
+              </div>
+            </div>
+
+            {(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' && (
+              <div
+                className={cn(
+                  'p-3 rounded-xl border text-xs flex items-center gap-2',
+                  isLight ? 'bg-amber-50/80 border-amber-200 text-amber-900' : 'bg-amber-950/40 border-amber-800 text-amber-200'
+                )}
+              >
+                <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="text-[11px] leading-relaxed">
+                  Logistics mode is <strong>Delhivery Pending</strong>. AWBs, manifests, and package details are generated in Delhivery One and sync automatically. Our admin panel operates in read-only logistics mode.
+                </span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className={cn('block font-semibold mb-1 text-[11px]', isLight ? 'text-slate-700' : 'text-slate-300')}>
+                  Order Status
+                </label>
+                <select
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                  className={cn(
+                    'w-full rounded-xl p-2.5 text-xs font-semibold border transition-colors outline-hidden',
+                    isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-rose-600 focus:ring-1 focus:ring-rose-600'
+                      : 'bg-slate-900 border-slate-700 text-white focus:border-rose-500'
+                  )}
+                >
+                  <option value="CONFIRMED">CONFIRMED</option>
+                  <option value="PROCESSING">PROCESSING</option>
+                  <option value="READY_TO_SHIP">READY TO SHIP</option>
+                  <option value="PACKED">PACKED</option>
+                  <option value="SHIPPED">SHIPPED</option>
+                  <option value="OUT_FOR_DELIVERY">OUT FOR DELIVERY</option>
+                  <option value="DELIVERED">DELIVERED</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                </select>
+              </div>
 
               <div>
                 <label className={cn('block font-semibold mb-1 text-[11px]', isLight ? 'text-slate-700' : 'text-slate-300')}>
-                  New Event Milestone Note
+                  Carrier Name {(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' ? '(Managed in Delhivery)' : ''}
                 </label>
                 <input
                   type="text"
-                  value={eventDesc}
-                  onChange={(e) => setEventDesc(e.target.value)}
-                  placeholder="e.g. Package dispatched from Hyderabad central hub."
+                  value={newCarrier}
+                  onChange={(e) => setNewCarrier(e.target.value)}
+                  disabled={(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending'}
+                  placeholder="e.g. Shiprocket Express"
                   className={cn(
                     'w-full rounded-xl p-2.5 text-xs border transition-colors outline-hidden',
+                    (selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' && 'opacity-60 cursor-not-allowed',
                     isLight
                       ? 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-rose-600'
                       : 'bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-rose-500'
@@ -1947,32 +1950,92 @@ export default function AdminOrdersPage() {
                 />
               </div>
 
-              <div className="flex justify-end gap-2.5 pt-2">
-                <Link
-                  href={`/track-order?orderId=${encodeURIComponent(selectedOrder.orderNumber)}`}
-                  target="_blank"
+              <div>
+                <label className={cn('block font-semibold mb-1 text-[11px]', isLight ? 'text-slate-700' : 'text-slate-300')}>
+                  AWB Tracking Number {(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' ? '(Managed in Delhivery)' : ''}
+                </label>
+                <input
+                  type="text"
+                  value={newTracking}
+                  onChange={(e) => setNewTracking(e.target.value)}
+                  disabled={(selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending'}
+                  placeholder="e.g. SR-HYD-998241"
                   className={cn(
-                    'px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors',
-                    isLight ? 'bg-slate-200 hover:bg-slate-300 text-slate-800' : 'bg-slate-700 hover:bg-slate-600 text-white'
+                    'w-full rounded-xl p-2.5 text-xs font-mono border transition-colors outline-hidden',
+                    (selectedOrder.shippingMode || storeShippingMode) === 'delhivery_pending' && 'opacity-60 cursor-not-allowed',
+                    isLight
+                      ? 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-rose-600'
+                      : 'bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-rose-500'
                   )}
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Public Tracking View</span>
-                </Link>
-
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2.5 bg-[#A84358] hover:bg-[#45363B] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md disabled:opacity-50 transition-all cursor-pointer"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>{saving ? 'Updating...' : 'Save Updates'}</span>
-                </button>
+                />
               </div>
-            </form>
-          </div>
+            </div>
+
+            {newStatus === 'CANCELLED' && (
+              <div
+                className={cn(
+                  'p-3.5 rounded-2xl border text-xs flex items-start gap-2.5 animate-fadeIn',
+                  isLight
+                    ? 'bg-rose-50 border-rose-200 text-rose-900'
+                    : 'bg-rose-950/40 border-rose-800 text-rose-200'
+                )}
+              >
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="font-bold">Delhivery Express Cancellation Trigger</p>
+                  <p className="text-[11px] opacity-90 leading-relaxed">
+                    Updating to CANCELLED will automatically call the Delhivery API (/api/p/edit) to stop shipment dispatch
+                    {selectedOrder?.trackingNumber ? ` for AWB #${selectedOrder.trackingNumber}` : ''} and restore item quantities back into active inventory.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className={cn('block font-semibold mb-1 text-[11px]', isLight ? 'text-slate-700' : 'text-slate-300')}>
+                New Event Milestone Note
+              </label>
+              <input
+                type="text"
+                value={eventDesc}
+                onChange={(e) => setEventDesc(e.target.value)}
+                placeholder="e.g. Package dispatched from Hyderabad central hub."
+                className={cn(
+                  'w-full rounded-xl p-2.5 text-xs border transition-colors outline-hidden',
+                  isLight
+                    ? 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-rose-600'
+                    : 'bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-rose-500'
+                )}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-2">
+              <Link
+                href={`/track-order?orderId=${encodeURIComponent(selectedOrder.orderNumber)}`}
+                target="_blank"
+                className={cn(
+                  'px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors',
+                  isLight ? 'bg-slate-200 hover:bg-slate-300 text-slate-800' : 'bg-slate-700 hover:bg-slate-600 text-white'
+                )}
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Public Tracking View</span>
+              </Link>
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-5 py-2.5 bg-[#A84358] hover:bg-[#45363B] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md disabled:opacity-50 transition-all cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{saving ? 'Updating...' : 'Save Updates'}</span>
+              </button>
+            </div>
+          </form>
         </div>
-      )}
-    </div>
+        </div>
+  )
+}
+    </div >
   );
 }

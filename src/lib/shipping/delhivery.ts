@@ -279,65 +279,72 @@ export function getShortLabelName(
 
 /**
  * Builds safe label description for Delhivery shipping labels:
- * Format: items with quantities, then the delivery charge:
- * e.g. "Hair Oil x1, Shampoo x1, Delivery Rs 89"
- * If the text is too long (budget 128 chars), shorten product names first and ALWAYS keep the delivery part.
+ * Clean plain text description containing physical items and their quantities.
+ * Delivery charges must NEVER be appended to products_desc!
+ * Format:
+ * - Single item qty 1: "21 Herbs Fusion Hair Oil" (or short labelName)
+ * - Single item qty > 1: "21 Herbs Fusion Hair Oil x2"
+ * - Multiple items: "Hair Oil x2, Shampoo x3, Conditioner x1"
+ * If the text exceeds the budget (default 128 chars), shorten product names cleanly.
  */
 export function buildDelhiveryLabelDescription(
   items: Array<{ name?: string; productName?: string; labelName?: string | null; quantity: number; product?: { labelName?: string | null; name?: string } | null }>,
-  shippingFee: number = 0,
+  _shippingFee: number = 0,
   maxBudget: number = 128
 ): string {
-  const fee = Math.round(Number(shippingFee || 0));
-  const deliveryPart = `Delivery Rs ${fee}`;
-  const deliverySuffix = `, ${deliveryPart}`;
-
+  void _shippingFee;
   if (!items || items.length === 0) {
-    return sanitizeDelhiveryText(`Herbal Products${deliverySuffix}`);
+    return sanitizeDelhiveryText('Herbal Products');
   }
 
-  // Pass 1: Try with standard short names (budget 35 chars each)
+  // Single item handling
+  if (items.length === 1) {
+    const it = items[0];
+    const qty = Number(it.quantity || 1);
+    const sName = getShortLabelName(it, maxBudget - 6);
+    const desc = qty > 1 ? `${sName} x${qty}` : sName;
+    return sanitizeDelhiveryText(desc);
+  }
+
+  // Multiple items handling:
+  // Pass 1: Standard short names (budget 35 chars each)
   let itemStrings = items.map((it) => {
     const sName = getShortLabelName(it, 35);
-    const qty = it.quantity || 1;
+    const qty = Number(it.quantity || 1);
     return `${sName} x${qty}`;
   });
 
-  let fullCandidate = `${itemStrings.join(', ')}${deliverySuffix}`;
+  let fullCandidate = itemStrings.join(', ');
   if (fullCandidate.length <= maxBudget) {
     return sanitizeDelhiveryText(fullCandidate);
   }
 
-  // Pass 2: Shorten item names proportionally to strictly preserve deliverySuffix
-  const availableCharsForItems = maxBudget - deliverySuffix.length;
+  // Pass 2: Shorten item names proportionally to strictly fit maxBudget
   const separatorsLen = (items.length - 1) * 2;
-  const qtySuffixesLen = items.reduce((sum, it) => sum + ` x${it.quantity || 1}`.length, 0);
-  const netCharsForNames = availableCharsForItems - separatorsLen - qtySuffixesLen;
+  const qtySuffixesLen = items.reduce((sum, it) => sum + ` x${Number(it.quantity || 1)}`.length, 0);
+  const netCharsForNames = maxBudget - separatorsLen - qtySuffixesLen;
   const perItemNameLimit = Math.max(6, Math.floor(netCharsForNames / items.length));
 
   itemStrings = items.map((it) => {
     const sName = getShortLabelName(it, perItemNameLimit);
-    const qty = it.quantity || 1;
+    const qty = Number(it.quantity || 1);
     return `${sName} x${qty}`;
   });
 
-  fullCandidate = `${itemStrings.join(', ')}${deliverySuffix}`;
+  fullCandidate = itemStrings.join(', ');
   if (fullCandidate.length <= maxBudget) {
     return sanitizeDelhiveryText(fullCandidate);
   }
 
-  // Pass 3: Fallback for large combos: 1st item + remaining count + deliverySuffix
-  const firstItemName = getShortLabelName(items[0], 20);
+  // Pass 3: Fallback for large combos: 1st item + remaining count
+  const firstItemName = getShortLabelName(items[0], 25);
   const remainingCount = items.length - 1;
-  const fallback = `${firstItemName} x${items[0].quantity || 1} + ${remainingCount} items${deliverySuffix}`;
+  const fallback = `${firstItemName} x${Number(items[0].quantity || 1)} + ${remainingCount} items`;
   if (fallback.length <= maxBudget) {
     return sanitizeDelhiveryText(fallback);
   }
 
-  // Hard clamp ensuring delivery suffix is NEVER chopped
-  const maxPrefix = Math.max(10, maxBudget - deliverySuffix.length - 2);
-  const clamped = `${fallback.slice(0, maxPrefix).trim()}..${deliverySuffix}`;
-  return sanitizeDelhiveryText(clamped);
+  return sanitizeDelhiveryText(fallback.slice(0, maxBudget - 2).trim() + '..');
 }
 
 export function formatDelhiveryItemName(rawName: string): string {
@@ -368,10 +375,9 @@ export interface DelhiveryManifestLineItem {
 }
 
 /**
- * Builds itemized product lines for Delhivery One shipping labels, packing slips, and API manifests.
+ * Builds itemized product lines for Delhivery shipping labels, packing slips, and API manifests.
  * Maintains full website product name throughout the entire workflow.
- * If delivery charges are present (shippingFee > 0), appends 'Delivery charges' (SKU: Del-Charges)
- * as a separate line item exactly matching Delhivery One's standard packing slip format.
+ * Excludes delivery charges from physical item list (delivery charge is not a product).
  */
 export function buildDelhiveryShipmentItems(
   items: Array<{
@@ -382,8 +388,9 @@ export function buildDelhiveryShipmentItems(
     price: number;
     product?: { sku?: string | null; name?: string } | null;
   }>,
-  shippingFee: number = 0
+  _shippingFee: number = 0
 ): DelhiveryManifestLineItem[] {
+  void _shippingFee;
   const result: DelhiveryManifestLineItem[] = [];
 
   for (const it of items || []) {
@@ -442,34 +449,6 @@ export function buildDelhiveryShipmentItems(
       tax: '0.00',
       hsn: '33059011',
       hsn_code: '33059011',
-    });
-  }
-
-  // Delivery Charges sent separately as an itemized line row
-  // exactly matching Delhivery One shipping label schema
-  const deliveryCharge = Number(shippingFee || 0);
-  if (deliveryCharge > 0) {
-    result.push({
-      name: 'Delivery charges',
-      product_name: 'Delivery charges',
-      item_name: 'Delivery charges',
-      descr: 'Delivery charges',
-      description: 'Delivery charges',
-      sku: 'Del-Charges',
-      sku_code: 'Del-Charges',
-      item_sku: 'Del-Charges',
-      price: deliveryCharge.toFixed(2),
-      selling_price: deliveryCharge.toFixed(2),
-      p_price: deliveryCharge.toFixed(2),
-      unit_price: deliveryCharge.toFixed(2),
-      quantity: 1,
-      qty: 1,
-      units: 1,
-      total: deliveryCharge.toFixed(2),
-      item_total: deliveryCharge.toFixed(2),
-      tax: '0.00',
-      hsn: '996813',
-      hsn_code: '996813',
     });
   }
 
@@ -745,7 +724,7 @@ export async function scheduleDailyDelhiveryPickup(options: {
     if (timeSetting?.value && /^\d{2}:\d{2}(:\d{2})?$/.test(timeSetting.value)) {
       configuredTime = timeSetting.value.length === 5 ? `${timeSetting.value}:00` : timeSetting.value;
     }
-  } catch {}
+  } catch { }
 
   const pickupDate = options.pickupDate || slot.pickupDate;
   const pickupTime = options.pickupTime || configuredTime || slot.pickupTime;
@@ -836,7 +815,7 @@ export async function createDelhiveryShipment(
   order: DelhiveryShipmentOrder
 ): Promise<DelhiveryManifestResult> {
   const isCod = order.paymentMethod === 'COD';
-  
+
   // Requirement: Fix quantity so it counts physical items only!
   // Delivery charges must NEVER be counted as an item in shipment quantity.
   const physicalQuantity = (order.items || []).reduce(
@@ -892,7 +871,7 @@ export async function createDelhiveryShipment(
       message: 'Customer phone number must be a valid 10-digit number',
     };
   }
-  
+
   // Full declared invoice value: subtotal - discount + (isCod ? shippingFee : 0)
   const orderTotal = Math.round(order.total || order.totalAmount || 0);
 
@@ -946,6 +925,7 @@ export async function createDelhiveryShipment(
             return_state: '',
             return_country: '',
             products_desc: productsDesc,
+            sku: sanitizeDelhiveryText(order.items?.[0]?.sku || (order.items?.[0] as any)?.product?.sku || ''),
             hsn_code: '33059011',
             cod_amount: codAmount,
             order_date: new Date().toISOString(),
@@ -1176,6 +1156,7 @@ export async function createDelhiveryPendingOrder(
         return_state: '',
         return_country: '',
         products_desc: productsDesc,
+        sku: sanitizeDelhiveryText(order.items?.[0]?.sku || (order.items?.[0] as any)?.product?.sku || ''),
         hsn_code: '33059011',
         cod_amount: codAmount,
         order_date: new Date().toISOString(),
