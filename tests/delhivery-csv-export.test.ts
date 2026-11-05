@@ -184,6 +184,67 @@ describe('Delhivery One Forward Orders 41-Column Bulk CSV Export', () => {
     expect(ord2Item2[14]).toBe('1');
   });
 
+  it('handles edge cases safely: multi-line addresses, stripped fees, and JSON phone numbers', async () => {
+    const edgeCaseOrders = [
+      {
+        id: 'ord-edge-1',
+        orderNumber: 'HC-EDGE-001',
+        customerName: 'Kiran\nKumar',
+        customerPhone: null,
+        customerEmail: 'kiran@example.com',
+        shippingAddress: JSON.stringify({
+          name: 'Kiran Kumar',
+          phone: '+91 8688888114',
+          address: 'House 1-2-3\nFirst Floor\nNear Temple',
+          addressLine2: 'Main Road\nOpp Park',
+          city: 'Bapatla\n',
+          state: 'Andhra Pradesh',
+          pincode: '522101',
+        }),
+        paymentMethod: 'COD',
+        total: 438,
+        advanceAmount: 0,
+        codBalanceAmount: 438,
+        createdAt: new Date('2026-11-05T12:00:00Z'),
+        items: [
+          {
+            productId: 'prod_oil',
+            productName: '21 Herbs Hair Oil, delivery rs 89 x1',
+            quantity: 1,
+            price: 349,
+            product: { sku: 'HC-OIL-Q1' },
+          },
+        ],
+      },
+    ];
+
+    vi.mocked(prisma.order.findMany).mockResolvedValue(edgeCaseOrders as any);
+
+    const req = new NextRequest('http://localhost:3000/api/admin/orders/export-delhivery-csv');
+    const res = await exportCsvHandler(req);
+
+    expect(res.status).toBe(200);
+    const csvText = await res.text();
+    const lines = csvText.trim().split('\r\n');
+
+    expect(lines.length).toBe(2); // Header + 1 clean row (no line breaks in values!)
+
+    const cols = parseCsvLine(lines[1]);
+    expect(cols.length).toBe(41);
+    expect(cols[0]).toBe('HC-EDGE-001');
+    expect(cols[1]).toBe('HERBIC CURE B2C');
+    expect(cols[5]).toBe('Kiran Kumar'); // Stripped \n
+    expect(cols[6]).toBe('8688888114'); // Extracted from address JSON
+    expect(cols[7]).toBe('House 1-2-3 First Floor Near Temple'); // Stripped \n
+    expect(cols[8]).toBe('Main Road Opp Park'); // Stripped \n
+    expect(cols[9]).toBe('Bapatla'); // Stripped \n
+    expect(cols[11]).toBe('522101');
+    expect(cols[13]).toBe('21 Herbs Hair Oil'); // Stripped delivery rs fee & x1
+    expect(cols[33]).toBe(''); // Seller Name empty
+    expect(cols[34]).toBe(''); // Seller GST Number empty
+    expect(cols[40]).toBe('No'); // Select NDD
+  });
+
   it('validates public/delhivery-test-orders-sample.csv structure has strictly 41 columns and empty GSTIN column', async () => {
     const fs = await import('fs');
     const path = await import('path');

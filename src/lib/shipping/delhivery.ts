@@ -98,7 +98,7 @@ const DELHIVERY_CONFIG: DelhiveryConfig = {
   apiKey: process.env.DELHIVERY_API_KEY || process.env.DELHIVERY_API_TOKEN || '',
   clientName: process.env.DELHIVERY_CLIENT_NAME || 'HERBIC CURE',
   env: (process.env.DELHIVERY_ENV === 'production' ? 'production' : 'staging'),
-  pickupLocation: process.env.DELHIVERY_PICKUP_LOCATION || 'Herbic Cure',
+  pickupLocation: process.env.DELHIVERY_PICKUP_LOCATION || 'HERBIC CURE B2C',
 };
 
 export function getApiKey(): string {
@@ -114,7 +114,7 @@ export function getPickupLocation(): string {
   return (
     process.env.DELHIVERY_PICKUP_LOCATION ||
     DELHIVERY_CONFIG.pickupLocation ||
-    'Herbic Cure'
+    'HERBIC CURE B2C'
   );
 }
 

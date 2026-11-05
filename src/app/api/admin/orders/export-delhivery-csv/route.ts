@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic';
 
 function escapeCsvField(val: string | number | null | undefined): string {
   if (val === null || val === undefined) return '';
-  const str = String(val).replace(/"/g, '""');
-  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+  const str = String(val).replace(/[\r\n]+/g, ' ').trim().replace(/"/g, '""');
+  if (str.includes(',') || str.includes('"')) {
     return `"${str}"`;
   }
   return str;
@@ -117,21 +117,27 @@ export async function GET(request: NextRequest) {
       exportedOrderIds.push(order.id);
 
       // Parse Address details safely
-      let destAddress = order.shippingAddress;
+      let destAddress = 'Customer Address';
       let destAddress2 = '';
       let city = 'Destination';
       let state = 'State';
       let pincode = '';
+      let customerPhone = (order.customerPhone || '').replace(/\D/g, '');
 
       try {
-        const trimmed = (order.shippingAddress || '').trim();
-        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-          const parsed = JSON.parse(trimmed);
-          destAddress = parsed.address || parsed.addressLine1 || order.shippingAddress;
-          destAddress2 = parsed.addressLine2 || '';
-          city = parsed.city || city;
-          state = parsed.state || state;
-          pincode = (parsed.pinCode || parsed.pincode || '').replace(/\D/g, '');
+        const rawAddr = (order.shippingAddress || '').trim();
+        if (rawAddr.startsWith('{') && rawAddr.endsWith('}')) {
+          const parsed = JSON.parse(rawAddr);
+          destAddress = (parsed.address || parsed.addressLine1 || rawAddr).replace(/[\r\n]+/g, ' ').trim();
+          destAddress2 = (parsed.addressLine2 || '').replace(/[\r\n]+/g, ' ').trim();
+          city = (parsed.city || city).replace(/[\r\n]+/g, ' ').trim();
+          state = (parsed.state || state).replace(/[\r\n]+/g, ' ').trim();
+          pincode = (parsed.pinCode || parsed.pincode || parsed.postalCode || '').replace(/\D/g, '');
+          if (!customerPhone && (parsed.phone || parsed.mobile)) {
+            customerPhone = String(parsed.phone || parsed.mobile).replace(/\D/g, '');
+          }
+        } else if (rawAddr) {
+          destAddress = rawAddr.replace(/[\r\n]+/g, ' ').trim();
         }
       } catch {
         // Fallback
@@ -148,10 +154,23 @@ export async function GET(request: NextRequest) {
         (order as any).codBalanceAmount ?? (order.total - orderAdv)
       );
       const codAmountVal = isCod ? Math.max(0, Math.round(effectiveCodBalance)) : 0;
-      const cleanPhone = (order.customerPhone || '').replace(/\D/g, '').slice(-10);
+      const cleanPhone = customerPhone.length >= 10 ? customerPhone.slice(-10) : customerPhone;
+      const cleanCustomerName = (order.customerName || 'Customer').replace(/[\r\n]+/g, ' ').trim();
+
+      const itemsToExport = order.items && order.items.length > 0 ? order.items : [
+        {
+          id: 'item-default',
+          orderId: order.id,
+          productId: 'HC-PROD',
+          productName: 'Herbic Cure Ayurvedic Product',
+          quantity: 1,
+          price: order.total,
+          product: null,
+        } as any,
+      ];
 
       // Multi-SKU: Repeat same Order ID across consecutive rows for each product
-      for (const it of order.items) {
+      for (const it of itemsToExport) {
         let skuCode = it.product?.sku || it.productId || 'HC-PROD';
         if (skuCode === 'HC-COMBO-OIL-SHMP') skuCode = 'HC-HO-S';
         if (skuCode === 'HC-COMB-01') skuCode = 'HC-CO-1';
@@ -172,13 +191,20 @@ export async function GET(request: NextRequest) {
           }
         }
 
+        const rawName = it.productName || it.product?.name || 'Herbic Cure Ayurvedic Product';
+        const cleanItemName = rawName
+          .replace(/,\s*delivery\s*rs\s*\d+/gi, '')
+          .replace(/\s*x\d+$/i, '')
+          .replace(/[\r\n]+/g, ' ')
+          .trim();
+
         const row = [
           escapeCsvField(order.orderNumber),
           escapeCsvField(pickupLoc),
           escapeCsvField('Surface'),
           escapeCsvField(isCod ? 'COD' : 'Prepaid'),
           escapeCsvField(codAmountVal),
-          escapeCsvField(order.customerName),
+          escapeCsvField(cleanCustomerName),
           escapeCsvField(cleanPhone),
           escapeCsvField(destAddress),
           escapeCsvField(destAddress2),
@@ -186,8 +212,8 @@ export async function GET(request: NextRequest) {
           escapeCsvField(state),
           escapeCsvField(pincode),
           escapeCsvField(skuCode),
-          escapeCsvField(it.productName),
-          escapeCsvField(it.quantity),
+          escapeCsvField(cleanItemName),
+          escapeCsvField(Math.max(1, Math.round(it.quantity || 1))),
           escapeCsvField('Box'),
           escapeCsvField(Number(it.price || 0).toFixed(2)),
           escapeCsvField(15),
