@@ -206,13 +206,13 @@ export async function GET(request: NextRequest) {
           escapeCsvField(''),
           escapeCsvField(''),
           escapeCsvField(''),
-          escapeCsvField('HERBIC CURE'),
           escapeCsvField(''),
-          escapeCsvField('Naralasetti vari palem, Bapatla'),
           escapeCsvField(''),
-          escapeCsvField('Bapatla'),
-          escapeCsvField('Andhra Pradesh'),
-          escapeCsvField('522101'),
+          escapeCsvField(''),
+          escapeCsvField(''),
+          escapeCsvField(''),
+          escapeCsvField(''),
+          escapeCsvField(''),
           escapeCsvField('No'),
         ];
         rows.push(row.join(','));

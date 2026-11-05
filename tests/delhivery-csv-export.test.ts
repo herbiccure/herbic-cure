@@ -161,9 +161,9 @@ describe('Delhivery One Forward Orders 41-Column Bulk CSV Export', () => {
     expect(ord1Cols[6]).toBe('9876543210');
     expect(ord1Cols[12]).toBe('HC-OIL-Q1');
     expect(ord1Cols[14]).toBe('2'); // Quantity: 2
-    expect(ord1Cols[33]).toBe('HERBIC CURE');
-    expect(ord1Cols[35]).toBe('Naralasetti vari palem, Bapatla');
-    expect(ord1Cols[39]).toBe('522101');
+    expect(ord1Cols[33]).toBe(''); // Seller Name empty (inherits from *Pickup Location Name)
+    expect(ord1Cols[34]).toBe(''); // Seller GST Number strictly empty to prevent 400 invalid gstin error
+    expect(ord1Cols[40]).toBe('No'); // Select NDD
 
     // Order 2 (COD, item 1)
     const ord2Item1 = parseCsvLine(lines[2]);
@@ -182,5 +182,28 @@ describe('Delhivery One Forward Orders 41-Column Bulk CSV Export', () => {
     expect(ord2Item2[4]).toBe('648');
     expect(ord2Item2[12]).toBe('HC-SHMP-Q1'); // Separate SKU
     expect(ord2Item2[14]).toBe('1');
+  });
+
+  it('validates public/delhivery-test-orders-sample.csv structure has strictly 41 columns and empty GSTIN column', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(process.cwd(), 'public', 'delhivery-test-orders-sample.csv');
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const rows = content.trim().split(/\r?\n/);
+
+    expect(rows.length).toBe(7); // 1 header + 6 order rows
+
+    for (let i = 0; i < rows.length; i++) {
+      const cols = parseCsvLine(rows[i]);
+      expect(cols.length).toBe(41);
+      if (i > 0) {
+        // Column 35 (Index 34) is Seller GST Number -> must be strictly empty to prevent 400 invalid gstin
+        expect(cols[34]).toBe('');
+        // Column 41 (Index 40) is Select NDD
+        expect(cols[40]).toBe('No');
+        // Column 2 (Index 1) is *Pickup Location Name
+        expect(cols[1]).toBe('HERBIC CURE B2C');
+      }
+    }
   });
 });
